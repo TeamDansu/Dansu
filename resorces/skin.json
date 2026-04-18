@@ -1,0 +1,49 @@
+{
+	"animations": [
+		{
+			"effect": "none",
+			"fps": 2,
+			"frames": [
+				"danshe_idle.png"
+			],
+			"id": 1,
+			"name": "none",
+			"return_idle": true
+		},
+		{
+			"effect": "shake",
+			"fps": 2,
+			"frames": [
+				"danshe_dance_1.png"
+			],
+			"id": 2,
+			"name": "none",
+			"return_idle": true
+		},
+				{
+			"effect": "shake",
+			"fps": 2,
+			"frames": [
+				"danshe_dance_2.png"
+			],
+			"id": 3,
+			"name": "none",
+			"return_idle": true
+		}
+	],
+	"player": {
+		"hits": [
+			1,
+			2,
+			3,
+			2
+		],
+		"idle": 2,
+		"jump": 1,
+		"land": 1,
+		"left": 0,
+		"right": 0,
+		"repeat_idle": true
+	},
+	"name": "Danshe"
+}

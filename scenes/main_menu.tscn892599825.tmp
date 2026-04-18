@@ -1,0 +1,83 @@
+[gd_scene format=3 uid="uid://dc4p2f37qm243"]
+
+[ext_resource type="Script" uid="uid://c2buv7k6nksw4" path="res://scenes/main_menu.gd" id="1_l6cm7"]
+[ext_resource type="Script" uid="uid://b8qv4ieu31bd1" path="res://song_select/song_select_list_view.gd" id="2_bqqt6"]
+[ext_resource type="PackedScene" uid="uid://c7j7t1dccrwp7" path="res://scenes/ui/chart_thumb.tscn" id="3_wu84c"]
+
+[node name="SongSelect" type="Control" unique_id=370489749 node_paths=PackedStringArray("search_input", "sort_option_button", "list_view")]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_l6cm7")
+search_input = NodePath("SearchInput")
+sort_option_button = NodePath("SortOptionButton")
+list_view = NodePath("SongList")
+
+[node name="SearchInput" type="LineEdit" parent="." unique_id=801351844]
+layout_mode = 1
+offset_left = 24.0
+offset_top = 24.0
+offset_right = 384.0
+offset_bottom = 56.0
+
+[node name="SortOptionButton" type="OptionButton" parent="." unique_id=1546328115]
+layout_mode = 1
+offset_left = 400.0
+offset_top = 24.0
+offset_right = 560.0
+offset_bottom = 56.0
+
+[node name="SongList" type="Control" parent="." unique_id=17453313 node_paths=PackedStringArray("scroll_container", "content_root", "top_spacer", "chart_list", "bottom_spacer")]
+layout_mode = 1
+anchor_right = 0.6
+anchor_bottom = 1.0
+offset_left = 24.0
+offset_top = 80.0
+offset_right = -24.0
+offset_bottom = -24.0
+grow_vertical = 2
+script = ExtResource("2_bqqt6")
+thumb_scene = ExtResource("3_wu84c")
+scroll_container = NodePath("ScrollContainer")
+content_root = NodePath("ScrollContainer/Content")
+top_spacer = NodePath("ScrollContainer/Content/TopSpacer")
+chart_list = NodePath("ScrollContainer/Content/ChartGrid")
+bottom_spacer = NodePath("ScrollContainer/Content/BottomSpacer")
+
+[node name="ScrollContainer" type="ScrollContainer" parent="SongList" unique_id=309792014]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Content" type="VBoxContainer" parent="SongList/ScrollContainer" unique_id=1362394355]
+custom_minimum_size = Vector2(1, 0)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 0
+
+[node name="TopSpacer" type="Control" parent="SongList/ScrollContainer/Content" unique_id=288522680]
+layout_mode = 2
+
+[node name="ChartGrid" type="GridContainer" parent="SongList/ScrollContainer/Content" unique_id=1141680988]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/h_separation = 6
+theme_override_constants/v_separation = 6
+
+[node name="BottomSpacer" type="Control" parent="SongList/ScrollContainer/Content" unique_id=1420158878]
+layout_mode = 2
+
+[node name="Panel" type="Panel" parent="." unique_id=1125533138]
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.6
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 12.0
+grow_horizontal = 0

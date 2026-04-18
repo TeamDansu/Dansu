@@ -1,0 +1,125 @@
+[gd_scene format=3 uid="uid://c7j7t1dccrwp7"]
+
+[ext_resource type="Theme" uid="uid://bqwa4bxpqfagm" path="res://resorces/themes/dansu.tres" id="1_vm6ri"]
+[ext_resource type="Script" uid="uid://i1k22xsmt7is" path="res://select/chart_thumb.gd" id="2_wcvp3"]
+[ext_resource type="Shader" uid="uid://dcx0q8onb3h04" path="res://resorces/shaders/rounded_texture.gdshader" id="3_wcvp3"]
+[ext_resource type="Texture2D" uid="uid://df6chgix05otu" path="res://bg.jpg" id="4_wcvp3"]
+[ext_resource type="PackedScene" uid="uid://bpuiu5f7xjnoq" path="res://scenes/select/thumb_rating_displayer.tscn" id="5_sh51t"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_sh51t"]
+shader = ExtResource("3_wcvp3")
+shader_parameter/corner_scale = 0.30000001425
+
+[sub_resource type="Gradient" id="Gradient_sh51t"]
+offsets = PackedFloat32Array(0.6734007)
+colors = PackedColorArray(0.051970966, 0.05197096, 0.05197095, 1)
+
+[sub_resource type="GradientTexture2D" id="GradientTexture2D_7vmxj"]
+gradient = SubResource("Gradient_sh51t")
+
+[sub_resource type="Animation" id="Animation_fmyiw"]
+length = 0.001
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("Control/Thumb:self_modulate")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 0,
+"values": [Color(1, 1, 1, 1)]
+}
+
+[sub_resource type="Animation" id="Animation_sgqmh"]
+resource_name = "cover_loaded"
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("Control/Thumb:self_modulate")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(-0.1, 0.3),
+"transitions": PackedFloat32Array(1, 1),
+"update": 0,
+"values": [Color(1, 1, 1, 0), Color(1, 1, 1, 1)]
+}
+
+[sub_resource type="AnimationLibrary" id="AnimationLibrary_7mih0"]
+_data = {
+&"RESET": SubResource("Animation_fmyiw"),
+&"cover_loaded": SubResource("Animation_sgqmh")
+}
+
+[node name="ChartThumb" type="Button" unique_id=1339649428 node_paths=PackedStringArray("cover_art", "rating_hbox")]
+self_modulate = Color(1, 1, 1, 0)
+clip_contents = true
+custom_minimum_size = Vector2(128, 128)
+anchors_preset = -1
+anchor_right = 0.067
+anchor_bottom = 0.119
+offset_right = -0.6399994
+offset_bottom = -0.5200043
+theme = ExtResource("1_vm6ri")
+script = ExtResource("2_wcvp3")
+cover_art = NodePath("Control/Thumb")
+rating_hbox = NodePath("Control/Ratings")
+
+[node name="Control" type="Control" parent="." unique_id=222459199]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="Background" type="TextureRect" parent="Control" unique_id=2035770880]
+material = SubResource("ShaderMaterial_sh51t")
+layout_mode = 1
+anchors_preset = -1
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 1.0
+offset_right = 1.0
+pivot_offset = Vector2(65, 66)
+texture = SubResource("GradientTexture2D_7vmxj")
+expand_mode = 1
+stretch_mode = 6
+
+[node name="Thumb" type="TextureRect" parent="Control" unique_id=453915018]
+material = SubResource("ShaderMaterial_sh51t")
+layout_mode = 1
+anchors_preset = -1
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 1.0
+offset_right = 1.0
+pivot_offset = Vector2(65, 66)
+texture = ExtResource("4_wcvp3")
+expand_mode = 1
+stretch_mode = 6
+
+[node name="Ratings" type="HBoxContainer" parent="Control" unique_id=623847476]
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.1253125
+anchor_top = 0.93775004
+anchor_right = 0.8750625
+anchor_bottom = 1.0040001
+offset_left = -0.040000916
+offset_top = -0.03200531
+offset_right = -0.008003235
+offset_bottom = -0.03199768
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 0
+alignment = 1
+
+[node name="Rating" parent="Control/Ratings" unique_id=813901389 instance=ExtResource("5_sh51t")]
+layout_mode = 2
+
+[node name="AnimationPlayer" type="AnimationPlayer" parent="." unique_id=1886006250]
+libraries/ = SubResource("AnimationLibrary_7mih0")

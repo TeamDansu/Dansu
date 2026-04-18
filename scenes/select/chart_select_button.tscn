@@ -1,0 +1,11 @@
+[gd_scene format=3 uid="uid://cyn0kyyn3kdee"]
+
+[ext_resource type="Script" uid="uid://bmx1hwrpwv761" path="res://select/ui/chart_select_button.gd" id="1_g84q2"]
+
+[node name="ChartSelectButton" type="Button" unique_id=1093211130]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_g84q2")

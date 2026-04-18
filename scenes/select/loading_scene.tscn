@@ -1,0 +1,40 @@
+[gd_scene format=3 uid="uid://bdpetqga2c33q"]
+
+[ext_resource type="Script" uid="uid://cj38avml2gtq7" path="res://loading_scene.gd" id="1_a1urn"]
+
+[node name="LoadingScene" type="Control" unique_id=1444413565 node_paths=PackedStringArray("progress_bar", "current_chartset_label")]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_a1urn")
+progress_bar = NodePath("ProgressBar")
+current_chartset_label = NodePath("Label")
+
+[node name="ProgressBar" type="ProgressBar" parent="." unique_id=1245717841]
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.17600001
+anchor_top = 1.0
+anchor_right = 0.776
+anchor_bottom = 1.0
+offset_left = 0.07998657
+offset_top = -79.0
+offset_right = 0.079956055
+offset_bottom = -52.0
+max_value = 1.0
+
+[node name="Label" type="Label" parent="." unique_id=803381044]
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.179
+anchor_top = 1.0
+anchor_right = 0.179
+anchor_bottom = 1.0
+offset_left = 0.3199768
+offset_top = -124.0
+offset_right = 662.31995
+offset_bottom = -101.0
+text = "asdadsad"

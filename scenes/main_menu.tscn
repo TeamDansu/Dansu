@@ -1,0 +1,278 @@
+[gd_scene format=3 uid="uid://dc4p2f37qm243"]
+
+[ext_resource type="Script" uid="uid://c2buv7k6nksw4" path="res://select/select_scene.gd" id="1_l6cm7"]
+[ext_resource type="Script" uid="uid://b8qv4ieu31bd1" path="res://select/song_select_list_view.gd" id="2_bqqt6"]
+[ext_resource type="PackedScene" uid="uid://c7j7t1dccrwp7" path="res://scenes/select/chart_thumb.tscn" id="3_wu84c"]
+[ext_resource type="Script" uid="uid://htcqvp6e8g2g" path="res://select/ui/detail_view.gd" id="4_rtw2f"]
+[ext_resource type="Texture2D" uid="uid://df6chgix05otu" path="res://bg.jpg" id="4_wu84c"]
+[ext_resource type="FontFile" uid="uid://ilx2bok8gswe" path="res://resorces/fonts/BebasNeue-Regular.ttf" id="7_oa1go"]
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_tbmy8"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_tbmy8"]
+bg_color = Color(0, 0, 0, 0.7058824)
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_jk1qb"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_rtw2f"]
+
+[sub_resource type="Gradient" id="Gradient_8ln24"]
+offsets = PackedFloat32Array(0, 0.978836)
+colors = PackedColorArray(1, 1, 1, 0.67999995, 1, 1, 1, 0)
+
+[sub_resource type="GradientTexture2D" id="GradientTexture2D_rtw2f"]
+gradient = SubResource("Gradient_8ln24")
+fill_from = Vector2(0.525641, 0)
+fill_to = Vector2(0.517094, 1)
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_8ln24"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_rtw2f"]
+bg_color = Color(0, 0, 0, 0.43137255)
+
+[sub_resource type="Animation" id="Animation_oa1go"]
+length = 0.001
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("MarginContainer/VBoxContainer/Margin/RatingColor:modulate")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 0,
+"values": [Color(1, 1, 1, 1)]
+}
+
+[sub_resource type="Animation" id="Animation_rtw2f"]
+resource_name = "rating_rect_fade_out"
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("MarginContainer/VBoxContainer/Margin/RatingColor:modulate")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0, 0.7),
+"transitions": PackedFloat32Array(0.37892967, 0.46651652),
+"update": 0,
+"values": [Color(1, 1, 1, 0.5803922), Color(1, 1, 1, 1)]
+}
+
+[sub_resource type="AnimationLibrary" id="AnimationLibrary_oa1go"]
+_data = {
+&"RESET": SubResource("Animation_oa1go"),
+&"rating_rect_fade_out": SubResource("Animation_rtw2f")
+}
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_oa1go"]
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_rtw2f"]
+
+[node name="SongSelect" type="Control" unique_id=370489749 node_paths=PackedStringArray("search_input", "sort_option_button", "list_view")]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_l6cm7")
+search_input = NodePath("PanelContainer/SearchArea/SearchInput")
+sort_option_button = NodePath("PanelContainer/SearchArea/SortOptionButton")
+list_view = NodePath("SongList")
+
+[node name="TextureRect" type="TextureRect" parent="." unique_id=1885232696]
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+texture = ExtResource("4_wu84c")
+expand_mode = 1
+
+[node name="SongList" type="PanelContainer" parent="." unique_id=207703299 node_paths=PackedStringArray("scroll_container", "content_root", "top_spacer", "chart_list", "bottom_spacer")]
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.012
+anchor_right = 0.512
+anchor_bottom = 1.0
+offset_left = 0.9599991
+offset_right = 0.9598999
+grow_vertical = 2
+theme_override_styles/panel = SubResource("StyleBoxEmpty_tbmy8")
+script = ExtResource("2_bqqt6")
+scroll_container = NodePath("MarginContainer/ScrollContainer")
+content_root = NodePath("MarginContainer/ScrollContainer/Content")
+top_spacer = NodePath("MarginContainer/ScrollContainer/Content/TopSpacer")
+chart_list = NodePath("MarginContainer/ScrollContainer/Content/ChartGrid")
+bottom_spacer = NodePath("MarginContainer/ScrollContainer/Content/BottomSpacer")
+thumb_scene = ExtResource("3_wu84c")
+
+[node name="MarginContainer" type="MarginContainer" parent="SongList" unique_id=1109789237]
+layout_mode = 2
+
+[node name="ScrollContainer" type="ScrollContainer" parent="SongList/MarginContainer" unique_id=309792014]
+layout_mode = 2
+horizontal_scroll_mode = 3
+vertical_scroll_mode = 3
+metadata/_edit_use_anchors_ = true
+
+[node name="Content" type="VBoxContainer" parent="SongList/MarginContainer/ScrollContainer" unique_id=1362394355]
+custom_minimum_size = Vector2(1, 0)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 0
+
+[node name="TopSpacer" type="Control" parent="SongList/MarginContainer/ScrollContainer/Content" unique_id=288522680]
+layout_mode = 2
+
+[node name="ChartGrid" type="GridContainer" parent="SongList/MarginContainer/ScrollContainer/Content" unique_id=1141680988]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/h_separation = 6
+theme_override_constants/v_separation = 6
+columns = 3
+
+[node name="BottomSpacer" type="Control" parent="SongList/MarginContainer/ScrollContainer/Content" unique_id=1420158878]
+layout_mode = 2
+
+[node name="Padding2" type="Control" parent="SongList/MarginContainer/ScrollContainer/Content" unique_id=1548414495]
+custom_minimum_size = Vector2(0, 300)
+layout_mode = 2
+
+[node name="DetailView" type="PanelContainer" parent="." unique_id=1610973269 node_paths=PackedStringArray("play_button", "edit_button")]
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.53300005
+anchor_top = -7.407577e-05
+anchor_right = 1.000375
+anchor_bottom = 0.9997778
+offset_left = 0.6398926
+offset_top = 0.08000183
+offset_right = -0.7200928
+offset_bottom = 0.2399292
+grow_horizontal = 0
+theme_override_styles/panel = SubResource("StyleBoxFlat_tbmy8")
+script = ExtResource("4_rtw2f")
+play_button = NodePath("MarginContainer/VBoxContainer/Margin/VBoxContainer/Play")
+edit_button = NodePath("MarginContainer/VBoxContainer/Margin/VBoxContainer/Edit")
+metadata/_edit_use_anchors_ = true
+
+[node name="MarginContainer" type="MarginContainer" parent="DetailView" unique_id=794558237]
+layout_mode = 2
+
+[node name="VBoxContainer" type="VBoxContainer" parent="DetailView/MarginContainer" unique_id=1947675231]
+layout_mode = 2
+theme_override_constants/separation = 0
+
+[node name="CoverHandler" type="PanelContainer" parent="DetailView/MarginContainer/VBoxContainer" unique_id=702399617]
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxEmpty_jk1qb")
+
+[node name="Cover" type="TextureRect" parent="DetailView/MarginContainer/VBoxContainer/CoverHandler" unique_id=809823764]
+unique_name_in_owner = true
+material = SubResource("ShaderMaterial_rtw2f")
+custom_minimum_size = Vector2(0, 150)
+layout_mode = 2
+expand_mode = 1
+stretch_mode = 6
+
+[node name="Margin" type="MarginContainer" parent="DetailView/MarginContainer/VBoxContainer" unique_id=584355071]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="RatingColor" type="TextureRect" parent="DetailView/MarginContainer/VBoxContainer/Margin" unique_id=994604722]
+unique_name_in_owner = true
+layout_mode = 2
+texture = SubResource("GradientTexture2D_rtw2f")
+
+[node name="VBoxContainer" type="VBoxContainer" parent="DetailView/MarginContainer/VBoxContainer/Margin" unique_id=921322276]
+layout_mode = 2
+
+[node name="HSeparator2" type="HSeparator" parent="DetailView/MarginContainer/VBoxContainer/Margin/VBoxContainer" unique_id=1203342397]
+layout_mode = 2
+theme_override_constants/separation = 25
+theme_override_styles/separator = SubResource("StyleBoxEmpty_8ln24")
+
+[node name="Title" type="Label" parent="DetailView/MarginContainer/VBoxContainer/Margin/VBoxContainer" unique_id=1987971023]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 50)
+layout_mode = 2
+theme_override_fonts/font = ExtResource("7_oa1go")
+theme_override_font_sizes/font_size = 42
+horizontal_alignment = 1
+vertical_alignment = 1
+autowrap_mode = 3
+
+[node name="SongInfo" type="Label" parent="DetailView/MarginContainer/VBoxContainer/Margin/VBoxContainer" unique_id=1296928514]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 14)
+layout_mode = 2
+theme_override_fonts/font = ExtResource("7_oa1go")
+theme_override_font_sizes/font_size = 17
+horizontal_alignment = 1
+autowrap_mode = 3
+
+[node name="Charts" type="VBoxContainer" parent="DetailView/MarginContainer/VBoxContainer/Margin/VBoxContainer" unique_id=557553091]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
+alignment = 1
+
+[node name="Play" type="Button" parent="DetailView/MarginContainer/VBoxContainer/Margin/VBoxContainer" unique_id=1186328216]
+custom_minimum_size = Vector2(0, 100)
+layout_mode = 2
+theme_override_fonts/font = ExtResource("7_oa1go")
+theme_override_font_sizes/font_size = 25
+theme_override_styles/normal = SubResource("StyleBoxFlat_rtw2f")
+text = "PLAY"
+
+[node name="Edit" type="Button" parent="DetailView/MarginContainer/VBoxContainer/Margin/VBoxContainer" unique_id=90996517]
+custom_minimum_size = Vector2(0, 50)
+layout_mode = 2
+theme_override_fonts/font = ExtResource("7_oa1go")
+theme_override_font_sizes/font_size = 25
+theme_override_styles/normal = SubResource("StyleBoxFlat_rtw2f")
+text = "EDIT"
+
+[node name="AnimationPlayer" type="AnimationPlayer" parent="DetailView" unique_id=344866700]
+unique_name_in_owner = true
+libraries/ = SubResource("AnimationLibrary_oa1go")
+
+[node name="PanelContainer" type="PanelContainer" parent="." unique_id=1438381093]
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.058000002
+anchor_top = 1.0
+anchor_right = 0.37100002
+anchor_bottom = 1.0
+offset_left = 0.6399994
+offset_top = -66.0
+offset_right = -0.32006836
+offset_bottom = -27.0
+
+[node name="SearchArea" type="HBoxContainer" parent="PanelContainer" unique_id=625214477]
+layout_mode = 2
+metadata/_edit_lock_ = true
+
+[node name="SearchInput" type="LineEdit" parent="PanelContainer/SearchArea" unique_id=801351844]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.875, 0.875, 0.875, 1)
+theme_override_fonts/font = ExtResource("7_oa1go")
+theme_override_font_sizes/font_size = 25
+theme_override_styles/normal = SubResource("StyleBoxEmpty_oa1go")
+theme_override_styles/focus = SubResource("StyleBoxEmpty_rtw2f")
+placeholder_text = "search"
+
+[node name="SortOptionButton" type="OptionButton" parent="PanelContainer/SearchArea" unique_id=1546328115]
+layout_mode = 2
+theme_override_fonts/font = ExtResource("7_oa1go")
+theme_override_font_sizes/font_size = 25
+flat = true
+alignment = 1
+item_count = 1
+popup/item_0/id = 0
