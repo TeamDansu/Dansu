@@ -1,6 +1,19 @@
 [gd_scene format=3 uid="uid://cyn0kyyn3kdee"]
 
 [ext_resource type="Script" uid="uid://bmx1hwrpwv761" path="res://select/ui/chart_select_button.gd" id="1_g84q2"]
+[ext_resource type="FontFile" uid="uid://ilx2bok8gswe" path="res://resorces/fonts/BebasNeue-Regular.ttf" id="1_ldw1q"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_7rdpp"]
+bg_color = Color(0, 0, 0, 0.06666667)
+border_width_left = 2
+border_width_top = 3
+border_width_right = 2
+border_width_bottom = 3
+border_color = Color(1, 1, 1, 0.21960784)
+corner_radius_top_left = 10
+corner_radius_top_right = 10
+corner_radius_bottom_right = 10
+corner_radius_bottom_left = 10
 
 [node name="ChartSelectButton" type="Button" unique_id=1093211130]
 anchors_preset = 15
@@ -8,4 +21,7 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+theme_override_fonts/font = ExtResource("1_ldw1q")
+theme_override_font_sizes/font_size = 25
+theme_override_styles/normal = SubResource("StyleBoxFlat_7rdpp")
 script = ExtResource("1_g84q2")

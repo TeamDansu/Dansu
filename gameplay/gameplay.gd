@@ -14,22 +14,36 @@ class SpawnableNote:
 
 # note
 var note_scene = preload("res://scenes/gameplay/note.tscn")
-var notes : Array[SpawnableNote] = []
+var notes: Array[SpawnableNote] = []
 var note_spawn_index: int
-var next_process_note : Note
-var next_process_note_index : int
-var processing_touch_notes : Array[GameNote] = []
+var next_process_note: Note
+var next_process_note_index: int
+var touch_notes: Array[SpawnableNote] = []
 var spawned_note_nodes: Dictionary = {}
 var note_owner_by_note: Dictionary = {}
 var processed_notes: Dictionary = {}
 
 # rail
 var rail_scene = preload("res://scenes/gameplay/rail.tscn")
-var rails : Array[Rail] = []
-var spawned_rails : Array[GameRail] = []
+var rails: Array[Rail] = []
+var spawned_rails: Array[GameRail] = []
 var rail_nodes_by_data: Dictionary = {}
 var rail_spawn_index: int
-var standing_rail: Rail
+var standing_rail: Rail:
+	set(value):
+		if standing_rail != value:
+			var prev_node: GameRail = rail_nodes_by_data.get(standing_rail)
+			if prev_node != null:
+				prev_node.is_standing = false
+			standing_rail = value
+			var new_node: GameRail = rail_nodes_by_data.get(value)
+			if new_node != null:
+				new_node.is_standing = true
+
+# long note state
+var is_holding_long_move := false
+var pending_move_dir: Note.Dir = Note.Dir.NONE
+var holding_long_hit_note: Note = null
 
 var score := Score.new()
 var combo := 0
@@ -37,9 +51,9 @@ var judgeDisplayDuration := 1
 var song_end := 0
 var paused := false
 
-@export var player : Node3D
-@export var rail_container : Node3D
-@export var songplayer : AudioStreamPlayer
+@export var player: Player
+@export var rail_container: Node3D
+@export var songplayer: AudioStreamPlayer
 
 const LEAD_IN_MS := 3000.0
 
@@ -73,6 +87,11 @@ func reset() -> void:
 	is_song_playing = false
 	pause_begin_usec = 0
 
+	is_holding_long_move = false
+	pending_move_dir = Note.Dir.NONE
+	holding_long_hit_note = null
+	standing_rail = null
+
 	audio_start_target_usec = Time.get_ticks_usec() + int(LEAD_IN_MS * 1000.0)
 
 	_update_current_time()
@@ -102,11 +121,6 @@ func _process(delta: float) -> void:
 		if now_usec >= play_call_time_usec:
 			songplayer.play()
 			is_song_playing = true
-
-
-		#songplayer.volume_db -= delta * 30.0
-		#if Game.current_time > song_end + 2000.0:
-			#Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
 
 	_spawn_objects()
 
@@ -153,9 +167,7 @@ func _update_current_time() -> void:
 		(Time.get_ticks_usec() - audio_start_target_usec) / 1000.0
 	) - Config.offset
 
-## TODO: 전역 notes 지우고 rail별로 포인터로 다음 노트 찾기
-
-func _spawn_objects():
+func _spawn_objects() -> void:
 	var spawn_threshold := Game.current_time + GameplayPlayfield.get_visible_travel_time_ms()
 
 	while rail_spawn_index < rails.size() and rails[rail_spawn_index].start_time <= spawn_threshold:
@@ -163,8 +175,10 @@ func _spawn_objects():
 		var new_rail: GameRail = rail_scene.instantiate()
 		new_rail.rail = rail_data
 		rail_container.add_child(new_rail)
+		new_rail.position.y = rail_spawn_index * 0.0002
 		spawned_rails.append(new_rail)
 		rail_nodes_by_data[rail_data] = new_rail
+		new_rail.is_standing = (rail_data == standing_rail)
 		rail_spawn_index += 1
 
 	while note_spawn_index < notes.size() and notes[note_spawn_index].note.time <= spawn_threshold:
@@ -179,14 +193,12 @@ func _spawn_objects():
 			owner_rail.note_container.add_child(new_note)
 			spawned_note_nodes[note_entry.note] = new_note
 
-
 		note_spawn_index += 1
 
 func _build_game_objects() -> void:
-
 	rails = []
 	notes = []
-	processing_touch_notes = []
+	touch_notes = []
 	spawned_note_nodes = {}
 	note_owner_by_note = {}
 	processed_notes = {}
@@ -196,7 +208,6 @@ func _build_game_objects() -> void:
 	next_process_note_index = 0
 	rail_spawn_index = 0
 	note_spawn_index = 0
-	standing_rail = null
 
 	for rail in CM.rails:
 		rail.sort_points()
@@ -204,13 +215,16 @@ func _build_game_objects() -> void:
 
 	for rail in rails:
 		for note in rail.notes:
-			var new_note = SpawnableNote.new(note, rail)
-			notes.append(new_note)
+			var new_entry := SpawnableNote.new(note, rail)
+			notes.append(new_entry)
 			note_owner_by_note[note] = rail
+			if note.type == Note.NoteType.TRACE or note.type == Note.NoteType.SPIKE:
+				touch_notes.append(new_entry)
 
 	notes.sort_custom(_sort_notes)
 	rails.sort_custom(_sort_rails)
-	
+	touch_notes.sort_custom(_sort_notes)
+
 	_set_next_note()
 
 func _sort_notes(a: SpawnableNote, b: SpawnableNote) -> bool:
@@ -224,60 +238,181 @@ func _physics_process(_delta: float) -> void:
 		return
 
 	_update_current_time()
+	_update_standing_rail()
 	_check_miss()
+	_check_touch_notes()
 
-	if Input.is_action_just_pressed("action_left"):
-		_player_move_action(Note.Dir.LEFT, Game.current_time)
+	# Long MOVE note: movement deferred to key release
+	if is_holding_long_move:
+		var released := (
+			(pending_move_dir == Note.Dir.LEFT and Input.is_action_just_released("action_left")) or
+			(pending_move_dir == Note.Dir.RIGHT and Input.is_action_just_released("action_right"))
+		)
+		if released:
+			_move_player_in_direction(pending_move_dir)
+			is_holding_long_move = false
+			pending_move_dir = Note.Dir.NONE
 
-	if Input.is_action_just_pressed("action_right"):
-		_player_move_action(Note.Dir.RIGHT, Game.current_time)
+	# Long HIT note: release clears hold lock
+	if holding_long_hit_note != null:
+		if Input.is_action_just_released("action_hit1") or Input.is_action_just_released("action_hit2"):
+			holding_long_hit_note = null
+
+	# Movement blocked while holding any long note
+	if not is_holding_long_move and holding_long_hit_note == null:
+		if Input.is_action_just_pressed("action_left"):
+			_player_move_action(Note.Dir.LEFT, Game.current_time)
+		if Input.is_action_just_pressed("action_right"):
+			_player_move_action(Note.Dir.RIGHT, Game.current_time)
 
 	if Input.is_action_just_pressed("action_hit1") or Input.is_action_just_pressed("action_hit2"):
 		_input_action(Game.current_time)
 
-func _check_miss():
-	pass
+func _is_rail_active(rail: Rail) -> bool:
+	return (
+		Game.current_time >= rail.start_time - Score.T.GREAT and
+		Game.current_time <= rail.end_time
+	)
 
-func _check_touch_notes():
-	pass
+func _update_standing_rail() -> void:
+	if standing_rail != null and _is_rail_active(standing_rail):
+		return
+	var new_rail := _find_closest_active_rail()
+	if new_rail != null and new_rail != standing_rail:
+		standing_rail = new_rail
+		player.move_to_rail(new_rail)
 
-func _input_action(time: float, dir: Note.Dir = Note.Dir.NONE) -> void:
+func _find_closest_active_rail() -> Rail:
+	var current_x := player.position.x
+	var closest: Rail = null
+	var min_dist := INF
+	for rail in rails:
+		if not _is_rail_active(rail):
+			continue
+		var rail_x := GameplayPlayfield.normalized_x_to_world(rail._get_rail_x_at_time(int(Game.current_time)))
+		var dist = abs(rail_x - current_x)
+		if dist < min_dist:
+			min_dist = dist
+			closest = rail
+	return closest
+
+func _find_nearest_active_rail_in_direction(dir: Note.Dir) -> Rail:
+	var current_x := GameplayPlayfield.normalized_x_to_world(
+		standing_rail._get_rail_x_at_time(int(Game.current_time)) if standing_rail != null else 0.5
+	)
+	var best: Rail = null
+	var min_dist := INF
+	for rail in rails:
+		if rail == standing_rail or not _is_rail_active(rail):
+			continue
+		var rail_x := GameplayPlayfield.normalized_x_to_world(rail._get_rail_x_at_time(int(Game.current_time)))
+		var delta_x := rail_x - current_x
+		var is_in_dir := (dir == Note.Dir.LEFT and delta_x < 0.0) or (dir == Note.Dir.RIGHT and delta_x > 0.0)
+		if is_in_dir:
+			var dist = abs(delta_x)
+			if dist < min_dist:
+				min_dist = dist
+				best = rail
+	return best
+
+func _move_player_in_direction(dir: Note.Dir) -> void:
+	var target_rail := _find_nearest_active_rail_in_direction(dir)
+	if target_rail != null:
+		standing_rail = target_rail
+		player.move_to_rail(target_rail)
+
+func _check_miss() -> void:
+	while next_process_note != null:
+		var gap := next_process_note.time - Game.current_time
+		if gap < -Score.T.BAD:
+			_process_note_result(next_process_note, Score.MISS)
+		else:
+			break
+
+func _check_touch_notes() -> void:
+	for note_entry in touch_notes:
+		var note := note_entry.note
+		if processed_notes.has(note):
+			continue
+
+		var gap := note.time - Game.current_time
+		if gap > Score.T.BAD:
+			continue
+
+		var note_rail := note_entry.rail
+
+		match note.type:
+			Note.NoteType.TRACE:
+				# 판정은 note.time에 딱 한번 처리 (히트사운드 싱크)
+				# T.BAD 전에 레일 위에 있으면 note.time 도달 시 PERFECT_PLUS
+				if gap <= 0:
+					if standing_rail == note_rail:
+						_process_note_result(note, Score.PERPECT_PLUS)
+					else:
+						_process_note_result(note, Score.MISS)
+
+			Note.NoteType.SPIKE:
+				if standing_rail == note_rail:
+					_process_note_result(note, Score.MISS)
+				elif gap < -Score.T.BAD:
+					# Successful dodge: no score impact
+					processed_notes[note] = Score.NONE
+					var note_node: GameNote = spawned_note_nodes.get(note)
+					if note_node != null:
+						note_node.consume(Score.NONE)
+
+func _input_action(time: float) -> void:
 	if next_process_note == null or standing_rail == null:
+		return
+
+	if next_process_note.type != Note.NoteType.HIT:
 		return
 
 	var target_rail: Rail = note_owner_by_note.get(next_process_note)
 	if target_rail == null or standing_rail != target_rail:
 		return
 
-	match next_process_note.type:
-		Note.NoteType.MOVE:
-			pass
-		Note.NoteType.MOVE:
-			pass
 	var gap := next_process_note.time - time
 	var judgement := score.get_judgement(gap)
-	if judgement == score.NONE:
+	if judgement == Score.NONE:
 		return
 
-	_process_note_result(next_process_note, judgement)
+	var note := next_process_note
+	var is_long := note.length > 0
+	_process_note_result(note, judgement)
+	if is_long:
+		holding_long_hit_note = note
 
-func _player_move_action(dir: Note.Dir, time: float):
-	if next_process_note == null:
-		return
+func _player_move_action(dir: Note.Dir, time: float) -> void:
+	# Check for a matching MOVE note on the current rail
+	if (next_process_note != null and
+			next_process_note.type == Note.NoteType.MOVE and
+			note_owner_by_note.get(next_process_note) == standing_rail and
+			next_process_note.dir == dir):
 
-	var target_rail: Rail = note_owner_by_note.get(next_process_note)
-	if standing_rail != target_rail:
-		return
+		var gap := next_process_note.time - time
+		var judgement := score.get_judgement(gap)
+		if judgement != Score.NONE:
+			var note := next_process_note
+			_process_note_result(note, judgement)
+			if note.length > 0:
+				# Long MOVE: defer physical movement to key release
+				is_holding_long_move = true
+				pending_move_dir = dir
+				return
+			else:
+				_move_player_in_direction(dir)
+				return
 
+	# No matching note — just move
+	_move_player_in_direction(dir)
 
 func process_note(j: int, note_node: GameNote) -> void:
 	spawned_note_nodes.erase(note_node.note)
-	processing_touch_notes.erase(note_node)
 
 func _set_next_note() -> void:
-	
 	next_process_note = null
-	
+
 	while next_process_note_index < notes.size():
 		var note_entry: SpawnableNote = notes[next_process_note_index]
 		var note: Note = note_entry.note
@@ -296,6 +431,17 @@ func _set_next_note() -> void:
 
 func _process_note_result(note: Note, judgement: int) -> void:
 	processed_notes[note] = judgement
+	score.add_score(judgement)
+
+	if judgement == Score.MISS:
+		combo = 0
+	elif judgement != Score.NONE:
+		combo += 1
+		score.high_combo = max(score.high_combo, combo)
+
+	if judgement != Score.MISS and judgement != Score.NONE:
+		player.play_hit_animation()
+
 	_play_note_sfx(note)
 
 	var note_node: GameNote = spawned_note_nodes.get(note)
@@ -321,10 +467,10 @@ func _play_note_sfx(note: Note) -> void:
 func _play_stream_sfx(stream: AudioStream) -> void:
 	if stream == null or _sfx_players.is_empty():
 		return
-	var player := _sfx_players[_next_sfx_player_index]
+	var sfx_player := _sfx_players[_next_sfx_player_index]
 	_next_sfx_player_index = (_next_sfx_player_index + 1) % _sfx_players.size()
-	player.stream = stream
-	player.play()
+	sfx_player.stream = stream
+	sfx_player.play()
 
 func _resolve_note_sfx_stream(note: Note) -> AudioStream:
 	if note == null:

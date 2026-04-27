@@ -1,0 +1,117 @@
+[gd_scene format=3 uid="uid://d0gsgs0n6371q"]
+
+[ext_resource type="Script" uid="uid://bevepd3rd0moe" path="res://gameplay/gameplay.gd" id="1_m3hu3"]
+[ext_resource type="Script" uid="uid://htxxtrys50xl" path="res://gameplay/player.gd" id="2_q64rj"]
+[ext_resource type="Texture2D" uid="uid://caegtu8bhulxq" path="res://resorces/skins/danshe/sprite/danshe_idle.png" id="3_0w2j2"]
+[ext_resource type="Script" uid="uid://3sywjcfkoeok" path="res://skin/skin_sprite.gd" id="4_gh441"]
+
+[sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_m3hu3"]
+sky_horizon_color = Color(0.66224277, 0.6717428, 0.6867428, 1)
+ground_horizon_color = Color(0.66224277, 0.6717428, 0.6867428, 1)
+
+[sub_resource type="Sky" id="Sky_q64rj"]
+sky_material = SubResource("ProceduralSkyMaterial_m3hu3")
+
+[sub_resource type="Environment" id="Environment_0w2j2"]
+background_mode = 2
+sky = SubResource("Sky_q64rj")
+tonemap_mode = 2
+glow_enabled = true
+
+[sub_resource type="Animation" id="Animation_00tan"]
+length = 0.001
+tracks/0/type = "scale_3d"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("Player/Sprite3D")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = PackedFloat32Array(0, 1, 1, 1, 1)
+tracks/1/type = "value"
+tracks/1/imported = false
+tracks/1/enabled = true
+tracks/1/path = NodePath("Player/Sprite3D:rotation")
+tracks/1/interp = 1
+tracks/1/loop_wrap = true
+tracks/1/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 0,
+"values": [Vector3(0, 0, 0)]
+}
+
+[sub_resource type="Animation" id="Animation_l1v76"]
+resource_name = "groove"
+length = 0.23333333
+tracks/0/type = "scale_3d"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("Player/Sprite3D")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = PackedFloat32Array(0, 1, 1, 1.2, 1, 0.15, 1, 1, 1, 1)
+
+[sub_resource type="Animation" id="Animation_ct7aa"]
+resource_name = "spin"
+length = 0.3
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("Player/Sprite3D:rotation")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0, 0.06, 0.12),
+"transitions": PackedFloat32Array(0.4061271, 1.5157164, 1),
+"update": 0,
+"values": [Vector3(0, 0, 0), Vector3(0, 3.1415927, 0), Vector3(0, 6.2831855, 0)]
+}
+
+[sub_resource type="AnimationLibrary" id="AnimationLibrary_ct7aa"]
+_data = {
+&"RESET": SubResource("Animation_00tan"),
+&"groove": SubResource("Animation_l1v76"),
+&"spin": SubResource("Animation_ct7aa")
+}
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_00tan"]
+size = Vector2(15, 100)
+center_offset = Vector3(0, 0, -40)
+
+[node name="Gameplay" type="Node3D" unique_id=1019670328 node_paths=PackedStringArray("player", "rail_container", "songplayer")]
+script = ExtResource("1_m3hu3")
+player = NodePath("Player")
+rail_container = NodePath("PlayArea/RailContainer")
+songplayer = NodePath("AudioStreamPlayer")
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=151517771]
+environment = SubResource("Environment_0w2j2")
+
+[node name="Camera3D" type="Camera3D" parent="." unique_id=1092359596]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.9, 2.5)
+
+[node name="Player" type="Node3D" parent="." unique_id=480149074 node_paths=PackedStringArray("sprite")]
+script = ExtResource("2_q64rj")
+sprite = NodePath("Sprite3D")
+
+[node name="Sprite3D" type="Sprite3D" parent="Player" unique_id=1036638687 node_paths=PackedStringArray("effectplayer")]
+offset = Vector2(0, 980)
+pixel_size = 0.001
+texture = ExtResource("3_0w2j2")
+script = ExtResource("4_gh441")
+effectplayer = NodePath("../../AnimationPlayer")
+
+[node name="AudioStreamPlayer" type="AudioStreamPlayer" parent="." unique_id=906267777]
+
+[node name="AnimationPlayer" type="AnimationPlayer" parent="." unique_id=297134405]
+libraries/ = SubResource("AnimationLibrary_ct7aa")
+
+[node name="PlayArea" type="Node3D" parent="." unique_id=1670040184]
+transform = Transform3D(1, 0, 0, 0, 0.8660253, -0.49999997, 0, 0.49999997, 0.8660253, 0, 0, 0)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="PlayArea" unique_id=910030164]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.1, 0)
+mesh = SubResource("PlaneMesh_00tan")
+
+[node name="RailContainer" type="Node3D" parent="PlayArea" unique_id=739287196]
+transform = Transform3D(1, 0, 0, 0, 1.0000001, 0, 0, 0, 1.0000001, 0, 0, -70)

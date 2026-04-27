@@ -19,10 +19,11 @@ static func restore(editor: Editor, snapshot: Dictionary) -> void:
 	editor.chart.timings = _restore_timings(snapshot.get("timings", []))
 	CM.hitsounds = _restore_hitsounds(editor.chart, snapshot.get("hitsounds", []))
 	CM.rails = _restore_rails(snapshot.get("rails", []))
-	editor.timeline = EditorTimeline.new(editor.chart, editor._stream_length_sec)
+	editor.timeline = EditorTimeline.new(editor.chart, editor.transport.stream_length_sec)
 	editor.timeline.beat_division = int(snapshot.get("beat_division", 4))
+	editor.transport.timeline = editor.timeline
 	Game.current_time = editor.timeline.clamp_time(float(snapshot.get("current_time", 0.0)))
-	editor._rebuild_hitsound_cache()
+	editor.hitsound_manager.rebuild_cache()
 	editor.selection.clear()
 	editor._refresh_metadata_fields()
 	editor._rebuild_timing_ui()

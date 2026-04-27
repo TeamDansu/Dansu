@@ -1,4 +1,4 @@
-extends ObjectParser
+extends ChartParser
 class_name ObjectParserV1
 
 enum { OBJECT, HITSOUNDS }
@@ -38,7 +38,7 @@ func _parse_note_line(line: String) -> Note:
 
 	var new_note := Note.new()
 	new_note.time = int(parts[0])
-	new_note.type = int(parts[1])
+	new_note.type = int(parts[1]) as Note.NoteType
 	new_note.length = int(parts[2])
 
 	for i in range(3, parts.size()):
@@ -55,7 +55,7 @@ func _parse_note_line(line: String) -> Note:
 			"h":
 				new_note.hitsound = int(value)
 			"d":
-				new_note.dir = int(value)
+				new_note.dir = int(value) as Note.Dir
 
 	return new_note
 

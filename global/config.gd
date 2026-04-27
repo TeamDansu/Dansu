@@ -12,7 +12,7 @@ const SECTION_ETC := "ETC"
 
 ## CONST
 const FILE_EXTENSION = ".dansu"
-const DEFAULT_SKIN_PATH = "res://resorces/skin.json"
+const DEFAULT_SKIN_PATH = "res://resorces/skins/danshe/skin.json"
 const DEFAULT_API_URL = "https://dansu.h4ya.net/api/v1"
 
 var config := ConfigFile.new()
@@ -23,7 +23,7 @@ func apply_settings() -> void:
 	action_right = action_right
 	action_hit1 = action_hit1
 	action_hit2 = action_hit2
-	is_always_custom_skin = is_always_custom_skin
+	ignore_chart_skin = ignore_chart_skin
 	window_size = window_size
 	window_mode = window_mode
 	ticks_per_second = ticks_per_second
@@ -153,11 +153,11 @@ var taa : bool:
 
 ## Gameplay
 
-var is_always_custom_skin: bool:
+var ignore_chart_skin: bool:
 	get:
-		return config.get_value(SECTION_GAMEPLAY,"is_always_custom_skin",false)
+		return config.get_value(SECTION_GAMEPLAY,"ignore_chart_skin",false)
 	set(value):
-		config.set_value(SECTION_AUDIO,"is_always_custom_skin",value)
+		config.set_value(SECTION_GAMEPLAY,"ignore_chart_skin",value)
 
 var custom_skin_path: String:
 	get:
@@ -229,9 +229,10 @@ var server_api_url:
 	get:
 		return config.get_value(SECTION_ETC,"server_api_url",DEFAULT_API_URL)
 	set(value):
-		config.set_value(SECTION_ETC,"server_api_url",DEFAULT_API_URL)
+		config.set_value(SECTION_ETC,"server_api_url",value)
 
 func _ready() -> void:
+	config.load(FILE_PATH)
 	save_config()
 
 func save_config() -> void:

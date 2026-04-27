@@ -2,12 +2,36 @@
 
 [ext_resource type="Script" uid="uid://c2buv7k6nksw4" path="res://select/select_scene.gd" id="1_l6cm7"]
 [ext_resource type="Script" uid="uid://b8qv4ieu31bd1" path="res://select/song_select_list_view.gd" id="2_bqqt6"]
+[ext_resource type="Shader" uid="uid://cflu32au5woaj" path="res://resorces/shaders/bg.gdshader" id="2_rtw2f"]
 [ext_resource type="PackedScene" uid="uid://c7j7t1dccrwp7" path="res://scenes/select/chart_thumb.tscn" id="3_wu84c"]
 [ext_resource type="Script" uid="uid://htcqvp6e8g2g" path="res://select/ui/detail_view.gd" id="4_rtw2f"]
-[ext_resource type="Texture2D" uid="uid://df6chgix05otu" path="res://bg.jpg" id="4_wu84c"]
 [ext_resource type="FontFile" uid="uid://ilx2bok8gswe" path="res://resorces/fonts/BebasNeue-Regular.ttf" id="7_oa1go"]
 
-[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_tbmy8"]
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_oa1go"]
+shader = ExtResource("2_rtw2f")
+shader_parameter/bg_color = Color(0.08309781, 0.06413742, 0.19619906, 1)
+shader_parameter/shape_color = Color(0.13947189, 0.111921616, 0.30005166, 1)
+shader_parameter/scale = 7.0
+shader_parameter/move_speed = 0.02
+shader_parameter/cycle_speed = 0.2
+shader_parameter/transition_ratio = 0.12
+shader_parameter/softness = 0.0
+shader_parameter/circle_size = 0.3
+shader_parameter/square_size = 0.2
+shader_parameter/triangle_size = 0.3
+shader_parameter/square_roundness = 0.05
+shader_parameter/triangle_roundness = 0.025
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_jk1qb"]
+bg_color = Color(0.1764706, 0.11764706, 0.48235294, 0.5058824)
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_color = Color(0.49019608, 0.49019608, 0.8627451, 1)
+corner_radius_top_left = 10
+corner_radius_top_right = 10
+expand_margin_left = 20.0
+expand_margin_right = 20.0
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_tbmy8"]
 bg_color = Color(0, 0, 0, 0.7058824)
@@ -18,7 +42,7 @@ bg_color = Color(0, 0, 0, 0.7058824)
 
 [sub_resource type="Gradient" id="Gradient_8ln24"]
 offsets = PackedFloat32Array(0, 0.978836)
-colors = PackedColorArray(1, 1, 1, 0.67999995, 1, 1, 1, 0)
+colors = PackedColorArray(1, 1, 1, 0.047058824, 1, 1, 1, 0)
 
 [sub_resource type="GradientTexture2D" id="GradientTexture2D_rtw2f"]
 gradient = SubResource("Gradient_8ln24")
@@ -66,6 +90,23 @@ _data = {
 &"rating_rect_fade_out": SubResource("Animation_rtw2f")
 }
 
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_oa1go"]
+bg_color = Color(0.1764706, 0.11764706, 0.48235294, 1)
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(0.4509804, 0.4509804, 0.8509804, 1)
+corner_radius_top_left = 10
+corner_radius_top_right = 10
+corner_radius_bottom_right = 10
+corner_radius_bottom_left = 10
+corner_detail = 12
+expand_margin_left = 5.0
+expand_margin_top = 5.0
+expand_margin_right = 5.0
+expand_margin_bottom = 5.0
+
 [sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_oa1go"]
 
 [sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_rtw2f"]
@@ -82,71 +123,68 @@ search_input = NodePath("PanelContainer/SearchArea/SearchInput")
 sort_option_button = NodePath("PanelContainer/SearchArea/SortOptionButton")
 list_view = NodePath("SongList")
 
-[node name="TextureRect" type="TextureRect" parent="." unique_id=1885232696]
-visible = false
+[node name="ColorRect" type="ColorRect" parent="." unique_id=1292659260]
+material = SubResource("ShaderMaterial_oa1go")
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-texture = ExtResource("4_wu84c")
-expand_mode = 1
 
 [node name="SongList" type="PanelContainer" parent="." unique_id=207703299 node_paths=PackedStringArray("scroll_container", "content_root", "top_spacer", "chart_list", "bottom_spacer")]
 layout_mode = 1
 anchors_preset = -1
-anchor_left = 0.012
-anchor_right = 0.512
+anchor_left = 0.042729165
+anchor_top = 0.11851852
+anchor_right = 0.3968959
 anchor_bottom = 1.0
 offset_left = 0.9599991
 offset_right = 0.9598999
 grow_vertical = 2
-theme_override_styles/panel = SubResource("StyleBoxEmpty_tbmy8")
+theme_override_styles/panel = SubResource("StyleBoxFlat_jk1qb")
 script = ExtResource("2_bqqt6")
-scroll_container = NodePath("MarginContainer/ScrollContainer")
-content_root = NodePath("MarginContainer/ScrollContainer/Content")
-top_spacer = NodePath("MarginContainer/ScrollContainer/Content/TopSpacer")
-chart_list = NodePath("MarginContainer/ScrollContainer/Content/ChartGrid")
-bottom_spacer = NodePath("MarginContainer/ScrollContainer/Content/BottomSpacer")
+scroll_container = NodePath("ScrollContainer")
+content_root = NodePath("ScrollContainer/Content")
+top_spacer = NodePath("ScrollContainer/Content/TopSpacer")
+chart_list = NodePath("ScrollContainer/Content/ChartGrid")
+bottom_spacer = NodePath("ScrollContainer/Content/BottomSpacer")
 thumb_scene = ExtResource("3_wu84c")
+metadata/_edit_use_anchors_ = true
 
-[node name="MarginContainer" type="MarginContainer" parent="SongList" unique_id=1109789237]
+[node name="ScrollContainer" type="ScrollContainer" parent="SongList" unique_id=309792014]
 layout_mode = 2
-
-[node name="ScrollContainer" type="ScrollContainer" parent="SongList/MarginContainer" unique_id=309792014]
-layout_mode = 2
-horizontal_scroll_mode = 3
 vertical_scroll_mode = 3
 metadata/_edit_use_anchors_ = true
 
-[node name="Content" type="VBoxContainer" parent="SongList/MarginContainer/ScrollContainer" unique_id=1362394355]
+[node name="Content" type="VBoxContainer" parent="SongList/ScrollContainer" unique_id=1362394355]
 custom_minimum_size = Vector2(1, 0)
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_constants/separation = 0
 
-[node name="TopSpacer" type="Control" parent="SongList/MarginContainer/ScrollContainer/Content" unique_id=288522680]
+[node name="TopSpacer" type="Control" parent="SongList/ScrollContainer/Content" unique_id=288522680]
+custom_minimum_size = Vector2(0, 20)
 layout_mode = 2
 
-[node name="ChartGrid" type="GridContainer" parent="SongList/MarginContainer/ScrollContainer/Content" unique_id=1141680988]
+[node name="ChartGrid" type="GridContainer" parent="SongList/ScrollContainer/Content" unique_id=1900626137]
 layout_mode = 2
 size_flags_horizontal = 3
-theme_override_constants/h_separation = 6
-theme_override_constants/v_separation = 6
+theme_override_constants/h_separation = 0
+theme_override_constants/v_separation = 0
 columns = 3
 
-[node name="BottomSpacer" type="Control" parent="SongList/MarginContainer/ScrollContainer/Content" unique_id=1420158878]
+[node name="BottomSpacer" type="Control" parent="SongList/ScrollContainer/Content" unique_id=1420158878]
 layout_mode = 2
 
-[node name="Padding2" type="Control" parent="SongList/MarginContainer/ScrollContainer/Content" unique_id=1548414495]
+[node name="Padding2" type="Control" parent="SongList/ScrollContainer/Content" unique_id=1548414495]
 custom_minimum_size = Vector2(0, 300)
 layout_mode = 2
 
 [node name="DetailView" type="PanelContainer" parent="." unique_id=1610973269 node_paths=PackedStringArray("play_button", "edit_button")]
 layout_mode = 1
 anchors_preset = -1
-anchor_left = 0.53300005
+anchor_left = 0.6663334
 anchor_top = -7.407577e-05
 anchor_right = 1.000375
 anchor_bottom = 0.9997778
@@ -202,7 +240,8 @@ unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 50)
 layout_mode = 2
 theme_override_fonts/font = ExtResource("7_oa1go")
-theme_override_font_sizes/font_size = 42
+theme_override_font_sizes/font_size = 31
+text = "title"
 horizontal_alignment = 1
 vertical_alignment = 1
 autowrap_mode = 3
@@ -213,6 +252,7 @@ custom_minimum_size = Vector2(0, 14)
 layout_mode = 2
 theme_override_fonts/font = ExtResource("7_oa1go")
 theme_override_font_sizes/font_size = 17
+text = "song_info"
 horizontal_alignment = 1
 autowrap_mode = 3
 
@@ -245,14 +285,15 @@ libraries/ = SubResource("AnimationLibrary_oa1go")
 [node name="PanelContainer" type="PanelContainer" parent="." unique_id=1438381093]
 layout_mode = 1
 anchors_preset = -1
-anchor_left = 0.058000002
-anchor_top = 1.0
-anchor_right = 0.37100002
-anchor_bottom = 1.0
-offset_left = 0.6399994
-offset_top = -66.0
-offset_right = -0.32006836
-offset_bottom = -27.0
+anchor_left = 0.037
+anchor_top = 0.058000002
+anchor_right = 0.404
+anchor_bottom = 0.058000002
+offset_left = 0.9599991
+offset_top = -22.640003
+offset_right = 0.3199463
+offset_bottom = 22.359997
+theme_override_styles/panel = SubResource("StyleBoxFlat_oa1go")
 
 [node name="SearchArea" type="HBoxContainer" parent="PanelContainer" unique_id=625214477]
 layout_mode = 2

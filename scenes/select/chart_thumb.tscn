@@ -55,13 +55,14 @@ _data = {
 
 [node name="ChartThumb" type="Button" unique_id=1339649428 node_paths=PackedStringArray("cover_art", "rating_hbox")]
 self_modulate = Color(1, 1, 1, 0)
-clip_contents = true
-custom_minimum_size = Vector2(128, 128)
+custom_minimum_size = Vector2(0, 128)
 anchors_preset = -1
 anchor_right = 0.067
 anchor_bottom = 0.119
 offset_right = -0.6399994
 offset_bottom = -0.5200043
+size_flags_horizontal = 3
+size_flags_vertical = 0
 theme = ExtResource("1_vm6ri")
 script = ExtResource("2_wcvp3")
 cover_art = NodePath("Control/Thumb")
@@ -77,6 +78,7 @@ grow_vertical = 2
 mouse_filter = 2
 
 [node name="Background" type="TextureRect" parent="Control" unique_id=2035770880]
+visible = false
 material = SubResource("ShaderMaterial_sh51t")
 layout_mode = 1
 anchors_preset = -1
@@ -90,7 +92,6 @@ expand_mode = 1
 stretch_mode = 6
 
 [node name="Thumb" type="TextureRect" parent="Control" unique_id=453915018]
-material = SubResource("ShaderMaterial_sh51t")
 layout_mode = 1
 anchors_preset = -1
 anchor_right = 1.0
@@ -99,20 +100,18 @@ offset_left = 1.0
 offset_right = 1.0
 pivot_offset = Vector2(65, 66)
 texture = ExtResource("4_wcvp3")
-expand_mode = 1
+expand_mode = 4
 stretch_mode = 6
 
 [node name="Ratings" type="HBoxContainer" parent="Control" unique_id=623847476]
 layout_mode = 1
 anchors_preset = -1
 anchor_left = 0.1253125
-anchor_top = 0.93775004
-anchor_right = 0.8750625
-anchor_bottom = 1.0040001
+anchor_top = 1.0
+anchor_right = 0.87500006
+anchor_bottom = 1.0
 offset_left = -0.040000916
-offset_top = -0.03200531
-offset_right = -0.008003235
-offset_bottom = -0.03199768
+offset_top = -8.0
 grow_horizontal = 2
 grow_vertical = 2
 theme_override_constants/separation = 0

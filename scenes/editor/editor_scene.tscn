@@ -43,10 +43,10 @@ timing_template = NodePath("Inspector/TabContainer/Timing/ScrollContainer/HBoxCo
 [node name="Inspector" type="PanelContainer" parent="." unique_id=792765145]
 layout_mode = 1
 anchors_preset = -1
-anchor_left = 1.0
+anchor_left = 0.7911042
 anchor_right = 1.0
-anchor_bottom = 1.0
-offset_left = -430.0
+anchor_bottom = 0.94814813
+offset_left = 0.079956055
 pivot_offset = Vector2(430, 0)
 metadata/_edit_use_anchors_ = true
 
@@ -63,6 +63,7 @@ layout_mode = 1
 anchors_preset = -1
 anchor_right = 1.0
 anchor_bottom = 1.0
+offset_top = 1.0
 
 [node name="Contents" type="VBoxContainer" parent="Inspector/TabContainer/Chart/ScrollContainer" unique_id=27965570]
 layout_mode = 2
@@ -90,7 +91,8 @@ text = "Failed to load cover file"
 [node name="CoverBrowserButton" type="Button" parent="Inspector/TabContainer/Chart/ScrollContainer/Contents/Header/Detail" unique_id=479850018]
 unique_name_in_owner = true
 layout_mode = 2
-text = "select cover from browser"
+text = "select cover
+from browser"
 
 [node name="file_audio" type="Label" parent="Inspector/TabContainer/Chart/ScrollContainer/Contents/Header/Detail" unique_id=1865292649]
 unique_name_in_owner = true
@@ -100,7 +102,8 @@ text = "Failed to load audio file"
 [node name="AudioBrowserButton" type="Button" parent="Inspector/TabContainer/Chart/ScrollContainer/Contents/Header/Detail" unique_id=36270786]
 unique_name_in_owner = true
 layout_mode = 2
-text = "select audio from file browser"
+text = "select audio
+from file browser"
 
 [node name="label" type="Label" parent="Inspector/TabContainer/Chart/ScrollContainer/Contents" unique_id=1915322027]
 layout_mode = 2
@@ -446,23 +449,31 @@ layout_mode = 2
 
 [node name="Chart" type="Control" parent="." unique_id=342643612]
 layout_mode = 1
-anchor_left = 0.15960416
-anchor_right = 0.467
-anchor_bottom = 1.0
-offset_left = -6.4400024
-offset_right = 3.3599854
+anchor_left = 0.33143753
+anchor_right = 0.6694375
+anchor_bottom = 0.9480001
+offset_left = 0.6399536
+offset_right = -0.32006836
+offset_bottom = 0.15991211
 mouse_filter = 1
+metadata/_edit_use_anchors_ = true
+
+[node name="BPMLines" type="Control" parent="Chart" unique_id=758959830 node_paths=PackedStringArray("editor", "chart_panel")]
+layout_mode = 1
+anchor_right = 1.0
+anchor_bottom = 0.99953145
+offset_bottom = 0.47991943
+script = ExtResource("2_9wr6r")
+editor = NodePath("../..")
+chart_panel = NodePath("../Panel")
 metadata/_edit_use_anchors_ = true
 
 [node name="Panel" type="Panel" parent="Chart" unique_id=154676679]
 clip_contents = true
 layout_mode = 1
 anchors_preset = -1
-anchor_top = 0.019000001
 anchor_right = 1.0
-anchor_bottom = 0.94400007
-offset_top = -0.52000046
-offset_bottom = 0.47991943
+anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 1
@@ -484,15 +495,6 @@ anchor_right = 1.0
 offset_bottom = 2.0
 grow_horizontal = 2
 metadata/_edit_use_anchors_ = true
-
-[node name="BPMLines" type="Control" parent="Chart" unique_id=758959830]
-layout_mode = 1
-anchor_top = 0.022000002
-anchor_right = 1.0
-anchor_bottom = 0.94400007
-offset_top = -3.7600021
-offset_bottom = 0.47991943
-script = ExtResource("2_9wr6r")
 
 [node name="Object" type="VBoxContainer" parent="." unique_id=2054365102]
 layout_mode = 1
@@ -565,19 +567,27 @@ text = "Save Chart"
 [node name="SongSlider" type="HSlider" parent="." unique_id=1825726041]
 layout_mode = 1
 anchors_preset = -1
-anchor_left = 0.05
-anchor_top = 0.96300006
-anchor_right = 0.57500005
+anchor_top = 1.0
+anchor_right = 1.0024167
 anchor_bottom = 1.0
-offset_top = -0.040039063
-offset_right = -0.00012207031
+offset_left = 24.0
+offset_top = -40.0
+offset_right = -28.640137
 metadata/_edit_use_anchors_ = true
 
 [node name="CurrentTime" type="Label" parent="SongSlider" unique_id=114104395]
-layout_mode = 0
-offset_top = -12.0
-offset_right = 40.0
-offset_bottom = 11.0
+layout_mode = 1
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -77.0
+offset_top = -53.0
+offset_right = 77.0
+offset_bottom = -30.0
+grow_horizontal = 2
+grow_vertical = 0
 text = "1:20/3:20(62,000ms)"
 
 [node name="Label" type="Label" parent="." unique_id=160094082]

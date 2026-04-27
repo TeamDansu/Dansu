@@ -1,15 +1,21 @@
 extends Node3D
 class_name GameRail
 
-const CLIP_SHADER := preload("res://gameplay/rail_clip.gdshader")
+const CLIP_SHADER := preload("res://resorces/shaders/rail_clip.gdshader")
 
 var rail: Rail
 
 @export var note_container: Node3D
-@export var width: float = 1.5
+@export var width: float = 0.3
 @onready var mesh_instance: MeshInstance3D = $MeshInstance3D
 
 var _clip_material: ShaderMaterial = null
+
+var is_standing := false:
+	set(value):
+		is_standing = value
+		if _clip_material != null:
+			_clip_material.set_shader_parameter("brightness", 1.0 if value else 0.5)
 
 func _ready() -> void:
 	if rail != null and not rail.points.is_empty():
@@ -83,13 +89,13 @@ func _build_ribbon_mesh(path: Array[Vector3], rail_width: float) -> ArrayMesh:
 		var c := left_points[i + 1]
 		var d := right_points[i + 1]
 
-		st.add_vertex(a)
-		st.add_vertex(c)
-		st.add_vertex(b)
+		st.set_uv(Vector2(0, 0)); st.add_vertex(a)
+		st.set_uv(Vector2(0, 1)); st.add_vertex(c)
+		st.set_uv(Vector2(1, 0)); st.add_vertex(b)
 
-		st.add_vertex(b)
-		st.add_vertex(c)
-		st.add_vertex(d)
+		st.set_uv(Vector2(1, 0)); st.add_vertex(b)
+		st.set_uv(Vector2(0, 1)); st.add_vertex(c)
+		st.set_uv(Vector2(1, 1)); st.add_vertex(d)
 
 	st.generate_normals()
 	return st.commit()
@@ -126,6 +132,7 @@ func _apply_clip_material() -> void:
 	_clip_material.shader = CLIP_SHADER
 	_clip_material.set_shader_parameter("min_visible_z", 0.0)
 	_clip_material.set_shader_parameter("albedo_color", Vector3.ONE)
+	_clip_material.set_shader_parameter("brightness", 0.5 if is_standing else 1.0)
 	mesh_instance.material_override = _clip_material
 	_update_clip_material()
 

@@ -1,6 +1,10 @@
 extends RefCounted
 class_name FileSystem
 
+const res_skin_path: String = "res://resorces/skins/"
+const res_hitsounds_path: String = "res://resorces/audio/hitsounds/"
+const chart_path: String = "user://charts"
+
 static func ensure_dir(path: String) -> void:
 	if DirAccess.dir_exists_absolute(path):
 		return

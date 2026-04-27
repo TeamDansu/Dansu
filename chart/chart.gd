@@ -20,13 +20,18 @@ var file_name: String = ""
 var is_built_in := false
 var chart_set: ChartSet = null
 
+
+var skin_path: String:
+	get:
+		return FileSystem.chart_path.path_join(folder_name).path_join(file_skin)
+
 var file_path: String:
 	get:
-		return CM.SONG_PATH.path_join(folder_name).path_join(file_name)
+		return FileSystem.chart_path.path_join(folder_name).path_join(file_name)
 
 var folder_path: String:
 	get:
-		return CM.SONG_PATH.path_join(folder_name)
+		return FileSystem.chart_path.path_join(folder_name)
 
 var search_string: String = ""
 var search_string_lower: String = ""

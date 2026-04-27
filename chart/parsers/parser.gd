@@ -9,7 +9,7 @@ static func parse_meta(chart: Chart) -> bool:
 		push_error("FILE : Failed to open chart file: %s" % chart.file_path)
 		return false
 
-	var parser: MetaParser = null
+	var parser: ChartParser = null
 	var version: String = file.get_line().strip_edges()
 	if version == PARSER_V1:
 		parser = MetaParserV1.new()
@@ -29,7 +29,7 @@ func parse_object(chart: Chart) -> bool:
 		push_error("FILE : Failed to open chart file: %s" % chart.file_path)
 		return false
 
-	var parser: ObjectParser = null
+	var parser: ChartParser = null
 	var version: String = file.get_line().strip_edges()
 	if version == PARSER_V1:
 		parser = ObjectParserV1.new()

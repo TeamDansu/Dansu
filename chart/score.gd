@@ -1,8 +1,10 @@
-extends Node
+extends RefCounted
 class_name Score
 
 enum {NONE,MISS,PERPECT_PLUS,PERFECT,GREAT,OK,BAD}
+# Timing
 enum T {NONE=-1,MISS=105,PERFECT_PLUS=21,PERFECT=42,GREAT=63,OK=84,BAD=105}
+# Scores
 enum S {MISS=0,PERFECT_PLUS=100,PERFECT=99,GREAT=50,OK=25,BAD=10}
 
 # count of judgement for result
@@ -23,24 +25,22 @@ var high_combo := 0
 var object_hash = ""
 
 func get_judgement(time_gap) -> int:
-	var judgement = NONE
-	if time_gap < T.PERFECT_PLUS && time_gap > T.PERFECT_PLUS * -1:
-		judgement = PERPECT_PLUS
-	elif time_gap < T.PERFECT && time_gap > T.PERFECT * -1:
-		judgement = PERFECT
-	elif time_gap < T.GREAT && time_gap > T.GREAT * -1:
-		judgement = GREAT
-	elif time_gap < T.OK && time_gap > T.OK * -1:
-		judgement = OK
-	elif time_gap < T.BAD && time_gap > T.BAD * -1:
-		judgement = BAD
-	add_score(judgement)
-	return judgement
+	if abs(time_gap) < T.PERFECT_PLUS:
+		return PERPECT_PLUS
+	elif abs(time_gap) < T.PERFECT:
+		return PERFECT
+	elif abs(time_gap) < T.GREAT:
+		return GREAT
+	elif abs(time_gap) < T.OK:
+		return OK
+	elif abs(time_gap) < T.BAD:
+		return BAD
+	return NONE
 
 func add_score(i):
 	if i == NONE:
 		return
-	max_score += perfect_plus
+	max_score += S.PERFECT_PLUS
 	notes += 1
 	if i == PERPECT_PLUS:
 		perfect_plus += 1

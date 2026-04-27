@@ -2,8 +2,8 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://caegtu8bhulxq"
-path.s3tc="res://.godot/imported/danshe_idle.png-61d78970a03db305dc6643cbdd564fa7.s3tc.ctex"
+uid="uid://tlxak2t3nuda"
+path.s3tc="res://.godot/imported/move.png-e2a0c7782cd51b7b0426a5f198bac948.s3tc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc"],
 "vram_texture": true
@@ -11,8 +11,8 @@ metadata={
 
 [deps]
 
-source_file="res://resorces/sprite/danshe_idle.png"
-dest_files=["res://.godot/imported/danshe_idle.png-61d78970a03db305dc6643cbdd564fa7.s3tc.ctex"]
+source_file="res://resorces/textures/gameplay/move.png"
+dest_files=["res://.godot/imported/move.png-e2a0c7782cd51b7b0426a5f198bac948.s3tc.ctex"]
 
 [params]
 

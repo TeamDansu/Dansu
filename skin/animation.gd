@@ -1,13 +1,11 @@
 extends RefCounted
 class_name PlayerAnimation
 
-enum {EFFECT_NONE, EFFECT_GROOVE, EFFECT_SPIN}
-
 var id := -1
 var frames : Array[Texture2D] = []
 var frames_file_name : Array[String] = []
 var fps := 10.0
-var effect := EFFECT_NONE
+var effect := "none"
 var name := "new animation"
 
 var total_time: float:

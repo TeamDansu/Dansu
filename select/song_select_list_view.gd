@@ -103,13 +103,10 @@ func _update_grid_metrics() -> void:
 		if first_thumb != null:
 			thumb_min_size = first_thumb.get_combined_minimum_size()
 
-	var h_separation := float(chart_list.get_theme_constant("h_separation"))
 	var v_separation := float(chart_list.get_theme_constant("v_separation"))
-	var cell_width = max(thumb_min_size.x + h_separation, 1.0)
 	var available_width := _get_content_width()
 
-	column_count = max(int(floor((available_width + h_separation) / cell_width)), 1)
-	chart_list.columns = column_count
+	column_count = chart_list.columns
 
 	row_height = max(thumb_min_size.y + v_separation, 1.0)
 	visible_row_count = max(int(ceil(scroll_container.size.y / row_height)), 1)
@@ -192,7 +189,7 @@ func _refresh_visible_nodes() -> void:
 	elif start_row != last_start_row:
 		_shift_visible_range(start_row - last_start_row, start_index, display_count, last_display_count)
 
-	top_spacer.custom_minimum_size.y = start_row * row_height
+	top_spacer.custom_minimum_size.y = start_row * row_height + 20
 	bottom_spacer.custom_minimum_size.y = max(total_rows - start_row - displayed_rows, 0) * row_height
 	chart_list.visible = display_count > 0
 	last_start_row = start_row

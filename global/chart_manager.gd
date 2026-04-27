@@ -11,7 +11,6 @@ signal chartset_selected(chart_set: ChartSet)
 signal chart_loaded()
 
 const SONG_PATH = "user://charts/"
-const EDITOR_SONG_PATH = "user://editor/charts"
 
 var selected_chart : Chart = null
 var selected_chartset : ChartSet = null
@@ -58,7 +57,6 @@ func _ready():
 
 func _select_chart(chart: Chart):
 	selected_chart = chart
-	print(chart.title)
 
 func _select_chartset(chartset: ChartSet):
 	selected_chartset = chartset

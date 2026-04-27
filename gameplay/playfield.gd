@@ -1,7 +1,7 @@
 extends RefCounted
 class_name GameplayPlayfield
 
-const PLAY_AREA_SIZE : Vector2 = Vector2(15,70)
+const PLAY_AREA_SIZE : Vector2 = Vector2(10,50)
 
 static func get_visible_travel_time_ms() -> float:
 	return PLAY_AREA_SIZE.y / maxf(Config.note_speed, 0.001) * 1000.0

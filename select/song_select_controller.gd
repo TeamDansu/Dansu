@@ -137,6 +137,10 @@ func _sort_by_artist(a: SongListItem, b: SongListItem) -> bool:
 func _sort_by_rating_desc(a: SongListItem, b: SongListItem) -> bool:
 	var ar := _get_item_rating(a)
 	var br := _get_item_rating(b)
+	if ar == br:
+		var ast = _get_search_string(a)
+		var bst = _get_search_string(b)
+		return ast < bst
 	return ar > br
 
 
@@ -144,6 +148,11 @@ func _get_item_title(item: SongListItem) -> String:
 	if item == null or item.primary_chart == null:
 		return ""
 	return item.primary_chart.title
+
+func _get_search_string(item: SongListItem) -> String:
+	if item == null or item.primary_chart == null:
+		return ""
+	return item.primary_chart.search_string
 
 
 func _get_item_artist(item: SongListItem) -> String:

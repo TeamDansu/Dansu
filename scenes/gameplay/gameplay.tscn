@@ -1,13 +1,25 @@
 [gd_scene format=3 uid="uid://d0gsgs0n6371q"]
 
 [ext_resource type="Script" uid="uid://bevepd3rd0moe" path="res://gameplay/gameplay.gd" id="1_m3hu3"]
+[ext_resource type="Script" uid="uid://b40g7sb3k05x2" path="res://scenes/gameplay/camera_3d.gd" id="2_0w2j2"]
 [ext_resource type="Script" uid="uid://htxxtrys50xl" path="res://gameplay/player.gd" id="2_q64rj"]
-[ext_resource type="Texture2D" uid="uid://caegtu8bhulxq" path="res://resorces/sprite/danshe_idle.png" id="3_0w2j2"]
 [ext_resource type="Script" uid="uid://3sywjcfkoeok" path="res://skin/skin_sprite.gd" id="4_gh441"]
+[ext_resource type="Texture2D" uid="uid://qfbvykpfreya" path="res://resorces/skins/danshe/sprite/danshe_dance_1.png" id="4_q64rj"]
+[ext_resource type="FontFile" uid="uid://drcicje7q2t7x" path="res://resorces/fonts/Next Bravo.ttf" id="6_0w2j2"]
+[ext_resource type="Shader" uid="uid://qbfnricvyktb" path="res://resorces/shaders/wave.gdshader" id="6_gh441"]
+[ext_resource type="Shader" uid="uid://bg3xwm24e5f7h" path="res://resorces/shaders/new_shader.gdshader" id="8_pa1on"]
+[ext_resource type="Texture2D" uid="uid://b61rhgjv6q106" path="res://a-new-lazer-song-select-uk-is-in-the-works-and-theyre-v0-118uerdd1pne1.webp" id="9_elju3"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_m3hu3"]
-sky_horizon_color = Color(0.66224277, 0.6717428, 0.6867428, 1)
-ground_horizon_color = Color(0.66224277, 0.6717428, 0.6867428, 1)
+sky_top_color = Color(0.08235294, 0.0627451, 0.19607843, 1)
+sky_horizon_color = Color(0.27618274, 0.29020807, 0.6033915, 1)
+sky_curve = 0.31057927
+sky_energy_multiplier = 0.3
+ground_bottom_color = Color(0.08235294, 0.0627451, 0.19607843, 1)
+ground_horizon_color = Color(0.27450982, 0.2901961, 0.6039216, 1)
+ground_curve = 0.23425391
+ground_energy_multiplier = 0.3
+sun_angle_max = 29.2
 
 [sub_resource type="Sky" id="Sky_q64rj"]
 sky_material = SubResource("ProceduralSkyMaterial_m3hu3")
@@ -17,6 +29,9 @@ background_mode = 2
 sky = SubResource("Sky_q64rj")
 tonemap_mode = 2
 glow_enabled = true
+fog_light_color = Color(0, 0, 0, 1)
+fog_light_energy = 0.0
+fog_sky_affect = 0.0
 
 [sub_resource type="Animation" id="Animation_00tan"]
 length = 0.001
@@ -42,6 +57,7 @@ tracks/1/keys = {
 
 [sub_resource type="Animation" id="Animation_l1v76"]
 resource_name = "groove"
+length = 0.36666667
 tracks/0/type = "scale_3d"
 tracks/0/imported = false
 tracks/0/enabled = true
@@ -73,15 +89,54 @@ _data = {
 &"spin": SubResource("Animation_ct7aa")
 }
 
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_pa1on"]
+transparency = 1
+blend_mode = 1
+metallic = 0.35
+emission_energy_multiplier = 4.23
+
 [sub_resource type="PlaneMesh" id="PlaneMesh_00tan"]
-size = Vector2(15, 100)
-center_offset = Vector3(0, 0, -40)
+material = SubResource("StandardMaterial3D_pa1on")
+size = Vector2(10, 80)
+center_offset = Vector3(0, 0, -15)
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_pa1on"]
+shader = ExtResource("6_gh441")
+shader_parameter/height = 3.0
+shader_parameter/frequency = 20.0
+shader_parameter/speed = 2.0
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_elju3"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_elju3"]
+shader = ExtResource("8_pa1on")
+shader_parameter/pulse_color = Color(0.1, 0.9, 1, 1)
+shader_parameter/origin_x = 0.4890000232275
+shader_parameter/judge_y = 1.0
+shader_parameter/progress = 1.0
+shader_parameter/max_radius = 0.0450000021375
+shader_parameter/band_width = 0.0010000000475
+shader_parameter/softness = 0.0190000009025
+shader_parameter/glow_strength = 0.54400002584
+shader_parameter/aspect_ratio = 1.7778
+shader_parameter/vertical_softness = 0.04
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_elju3"]
+bg_color = Color(0.08235294, 0.0627451, 0.19607843, 1)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_lb4ud"]
+bg_color = Color(0.6, 0.6, 1, 1)
 
 [node name="Gameplay" type="Node3D" unique_id=1019670328 node_paths=PackedStringArray("player", "rail_container", "songplayer")]
 script = ExtResource("1_m3hu3")
 player = NodePath("Player")
 rail_container = NodePath("PlayArea/RailContainer")
 songplayer = NodePath("AudioStreamPlayer")
+
+[node name="Camera3D" type="Camera3D" parent="." unique_id=1092359596 node_paths=PackedStringArray("player")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.8, 3)
+script = ExtResource("2_0w2j2")
+player = NodePath("../Player")
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=151517771]
 environment = SubResource("Environment_0w2j2")
@@ -90,26 +145,127 @@ environment = SubResource("Environment_0w2j2")
 script = ExtResource("2_q64rj")
 
 [node name="Sprite3D" type="Sprite3D" parent="Player" unique_id=1036638687 node_paths=PackedStringArray("effectplayer")]
+layers = 2
 offset = Vector2(0, 980)
-pixel_size = 0.001
-texture = ExtResource("3_0w2j2")
+pixel_size = 0.0009
+texture = ExtResource("4_q64rj")
 script = ExtResource("4_gh441")
 effectplayer = NodePath("../../AnimationPlayer")
-
-[node name="Camera3D" type="Camera3D" parent="Player" unique_id=1092359596]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.9, 2.5)
 
 [node name="AudioStreamPlayer" type="AudioStreamPlayer" parent="." unique_id=906267777]
 
 [node name="AnimationPlayer" type="AnimationPlayer" parent="." unique_id=297134405]
 libraries/ = SubResource("AnimationLibrary_ct7aa")
 
+[node name="Particles" type="Node3D" parent="." unique_id=753023239]
+transform = Transform3D(1, 0, 0, 0, 1, -2.9802322e-08, 0, 2.9802322e-08, 1, 0, 0, 0)
+
 [node name="PlayArea" type="Node3D" parent="." unique_id=1670040184]
-transform = Transform3D(1, 0, 0, 0, 0.8660253, -0.49999997, 0, 0.49999997, 0.8660253, 0, 0, 0)
+transform = Transform3D(1, 0, 0, 0, 0.81915194, -0.57357633, 0, 0.57357633, 0.81915194, 0, 0, 0)
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="PlayArea" unique_id=910030164]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.1, 0)
+visible = false
+cast_shadow = 0
 mesh = SubResource("PlaneMesh_00tan")
 
 [node name="RailContainer" type="Node3D" parent="PlayArea" unique_id=739287196]
-transform = Transform3D(1, 0, 0, 0, 1.0000001, 0, 0, 0, 1.0000001, 0, 0, -70)
+transform = Transform3D(1, 0, 0, 0, 1.0000001, 0, 0, 0, 1.0000001, 0, 0, -50)
+
+[node name="Control" type="Control" parent="." unique_id=1030558378]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = -1.0
+offset_bottom = -1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="VBoxContainer" type="HBoxContainer" parent="Control" unique_id=1085134921]
+layout_mode = 1
+anchors_preset = -1
+anchor_top = 1.001
+anchor_bottom = 1.001
+offset_left = 32.0
+offset_top = -96.08008
+offset_right = 368.0
+offset_bottom = -21.080078
+
+[node name="Combo" type="Label" parent="Control/VBoxContainer" unique_id=2031579115]
+material = SubResource("ShaderMaterial_pa1on")
+layout_mode = 2
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 20
+theme_override_fonts/font = ExtResource("6_0w2j2")
+theme_override_font_sizes/font_size = 75
+text = "1000"
+horizontal_alignment = 3
+vertical_alignment = 3
+metadata/_edit_lock_ = true
+
+[node name="VSeparator" type="VSeparator" parent="Control/VBoxContainer" unique_id=928597432]
+layout_mode = 2
+theme_override_constants/separation = 10
+theme_override_styles/separator = SubResource("StyleBoxEmpty_elju3")
+
+[node name="Label" type="Label" parent="Control/VBoxContainer" unique_id=133121297]
+layout_mode = 2
+size_flags_vertical = 1
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 15
+theme_override_fonts/font = ExtResource("6_0w2j2")
+theme_override_font_sizes/font_size = 30
+text = "X"
+horizontal_alignment = 2
+vertical_alignment = 2
+metadata/_edit_lock_ = true
+
+[node name="ColorRect" type="ColorRect" parent="Control" unique_id=1222662161]
+visible = false
+material = SubResource("ShaderMaterial_elju3")
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 8.0
+offset_right = 8.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Cover" type="TextureRect" parent="Control" unique_id=2105000127]
+layout_mode = 1
+anchors_preset = -1
+offset_left = 32.0
+offset_top = 24.0
+offset_right = 112.0
+offset_bottom = 104.0
+texture = ExtResource("9_elju3")
+expand_mode = 1
+stretch_mode = 6
+
+[node name="Label" type="Label" parent="Control" unique_id=1438154789]
+layout_mode = 0
+offset_left = 120.0
+offset_top = 24.0
+offset_right = 160.0
+offset_bottom = 47.0
+theme_override_fonts/font = ExtResource("6_0w2j2")
+theme_override_font_sizes/font_size = 25
+text = "title - artist"
+
+[node name="ProgressBar" type="ProgressBar" parent="Control" unique_id=86631262]
+layout_mode = 1
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = -12.0
+offset_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 0
+theme_override_font_sizes/font_size = 1
+theme_override_styles/background = SubResource("StyleBoxFlat_elju3")
+theme_override_styles/fill = SubResource("StyleBoxFlat_lb4ud")
+value = 50.0
+show_percentage = false
