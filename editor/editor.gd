@@ -4,6 +4,7 @@ class_name Editor
 signal selection_changed()
 signal hitsounds_changed()
 
+const SkinEditorRouterScript = preload("res://skin/skin_editor_router.gd")
 const PIXELS_PER_MS := 1
 const TRANSPORT_UI_UPDATE_USEC := 33333
 const MAX_HISTORY_STEPS := 128
@@ -31,6 +32,9 @@ const MAX_HISTORY_STEPS := 128
 @export var add_timing_button: Button
 @export var timing_list_container: VBoxContainer
 @export var timing_template: Node
+@export var skin_file_label: Label
+@export var skin_browser_button: Button
+@export var open_skin_editor_button: Button
 
 var timeline: EditorTimeline = null
 var selection: ChartEditorSelection = ChartEditorSelection.new()
@@ -69,9 +73,11 @@ var _undo_stack: Array[Dictionary] = []
 var _redo_stack: Array[Dictionary] = []
 var _is_restoring_history := false
 var _point_drag_history_pending := false
+var _skin_file_dialog: FileDialog
 
 func _ready() -> void:
-	Game.current_time = 0.0
+	if not Game.reopen_editor_without_chart_reload:
+		Game.current_time = 0.0
 	chart = _ensure_chart()
 	previous_file_path = chart.file_path
 	selection.changed.connect(_on_selection_changed)
@@ -84,6 +90,7 @@ func _ready() -> void:
 	hitsound_manager = EditorHitsoundManager.new()
 	hitsound_manager.changed.connect(_on_hitsounds_changed)
 
+	_create_dialogs()
 	_prepare_layers()
 	_configure_chart_input()
 	_load_chart_data()
@@ -172,7 +179,9 @@ func _load_chart_data() -> void:
 	if chart == null:
 		return
 	chart.timings.sort_custom(func(a, b) -> bool: return a.time < b.time)
-	if CM.selected_chart != null:
+	var skip_reload := Game.reopen_editor_without_chart_reload
+	Game.reopen_editor_without_chart_reload = false
+	if CM.selected_chart != null and not skip_reload:
 		EditorChartOps.load_selected_chart()
 
 	transport.chart = chart
@@ -215,6 +224,18 @@ func _connect_ui() -> void:
 		beat_division_slider.value_changed.connect(_on_beat_division_slider_changed)
 	if add_timing_button != null:
 		add_timing_button.pressed.connect(_add_timing)
+	if skin_browser_button != null:
+		skin_browser_button.pressed.connect(_on_skin_browser_pressed)
+	if open_skin_editor_button != null:
+		open_skin_editor_button.pressed.connect(_open_skin_editor)
+
+func _create_dialogs() -> void:
+	_skin_file_dialog = FileDialog.new()
+	_skin_file_dialog.access = FileDialog.ACCESS_FILESYSTEM
+	_skin_file_dialog.file_mode = FileDialog.FILE_MODE_OPEN_FILE
+	_skin_file_dialog.filters = PackedStringArray(["*.json ; Skin JSON"])
+	_skin_file_dialog.file_selected.connect(_on_skin_file_selected)
+	add_child(_skin_file_dialog)
 
 # — View —
 
@@ -350,6 +371,10 @@ func _handle_mouse_button(event: InputEventMouseButton) -> void:
 
 	selection.clear()
 
+
+func exit() -> void:
+	Transition.return_to_menu(1)
+
 func _handle_key_input(event: InputEventKey) -> void:
 	if event.ctrl_pressed:
 		if event.keycode == KEY_Z:
@@ -362,6 +387,7 @@ func _handle_key_input(event: InputEventKey) -> void:
 	match event.keycode:
 		KEY_R: _create_rail()
 		KEY_Z: _create_hit_note()
+		KEY_ESCAPE: exit()
 		KEY_X: _create_trace_note()
 		KEY_C: _create_spike_note()
 		KEY_A: _create_left_note()
@@ -519,6 +545,33 @@ func _save_chart() -> void:
 		previous_file_path = chart.file_path
 		_update_save_button_state()
 
+func _open_skin_editor() -> void:
+	if chart == null:
+		return
+	CM.selected_chart = chart
+	SkinEditorRouterScript.open_chart_skin_editor(chart)
+
+func _on_skin_browser_pressed() -> void:
+	if chart == null or _skin_file_dialog == null:
+		return
+	var chart_folder_path := ProjectSettings.globalize_path(chart.folder_path)
+	FileSystem.ensure_dir(chart_folder_path)
+	_skin_file_dialog.root_subfolder = chart_folder_path
+	_skin_file_dialog.current_dir = chart_folder_path
+	if chart.file_skin != "":
+		_skin_file_dialog.current_path = chart_folder_path.path_join(chart.file_skin)
+	_skin_file_dialog.popup_centered_ratio(0.7)
+
+func _on_skin_file_selected(path: String) -> void:
+	if chart == null:
+		return
+	var chart_folder_path := ProjectSettings.globalize_path(chart.folder_path).simplify_path()
+	var selected_path := path.simplify_path()
+	if selected_path.get_base_dir() != chart_folder_path:
+		return
+	chart.file_skin = selected_path.get_file()
+	_update_skin_file_ui()
+
 # UI state
 
 func _refresh_metadata_fields() -> void:
@@ -529,6 +582,12 @@ func _refresh_metadata_fields() -> void:
 	source_line_edit.text = chart.source
 	tags_line_edit.text = chart.tags
 	_syncing_metadata = false
+	_update_skin_file_ui()
+
+func _update_skin_file_ui() -> void:
+	if skin_file_label == null or chart == null:
+		return
+	skin_file_label.text = chart.file_skin if chart.file_skin != "" else "(no linked skin file)"
 
 func _rebuild_timing_ui() -> void:
 	timeline.ensure_timings()

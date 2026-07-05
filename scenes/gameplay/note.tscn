@@ -1,21 +1,17 @@
 [gd_scene format=3 uid="uid://deqdwxgcegkci"]
 
 [ext_resource type="Script" uid="uid://yt15g07posb4" path="res://gameplay/note_game.gd" id="1_yi1o8"]
-[ext_resource type="Texture2D" uid="uid://dh5nlh3yrienw" path="res://resorces/textures/gameplay/note-hit.png" id="2_5h52q"]
-[ext_resource type="Texture2D" uid="uid://c7my8grjoce5n" path="res://resorces/textures/gameplay/arrow.png" id="3_5h52q"]
+[ext_resource type="Texture2D" uid="uid://0tsl2wcyjngr" path="res://resorces/textures/gameplay/hit_note.png" id="2_6hwfw"]
 
-[node name="Note" type="Node3D" unique_id=495088426 node_paths=PackedStringArray("note_sprite", "arrow_sprite")]
+[node name="Note" type="Node3D" unique_id=495088426 node_paths=PackedStringArray("note_sprite")]
 transform = Transform3D(0.5, 0, 0, 0, 0.5, 0, 0, 0, 0.5, 0, 0, 0)
 script = ExtResource("1_yi1o8")
 note_sprite = NodePath("Sprite")
-arrow_sprite = NodePath("Arrow")
 
 [node name="Sprite" type="Sprite3D" parent="." unique_id=645126525]
-transform = Transform3D(1, 0, 0, 0, 1.5, 0, 0, 0, 1.667, 0, 0.7, 0)
+transform = Transform3D(1, 0, 0, 0, 1.5, 0, 0, 0, 1.667, 0, 0, 0)
 layers = 4
-texture = ExtResource("2_5h52q")
-
-[node name="Arrow" type="Sprite3D" parent="." unique_id=858478558]
-transform = Transform3D(2, 0, 0, 0, 2, 0, 0, 0, 1, 0, 3.690703, 0)
-visible = false
-texture = ExtResource("3_5h52q")
+modulate = Color(0.78682333, 0.7825977, 0.97887665, 1)
+pixel_size = 0.003
+double_sided = false
+texture = ExtResource("2_6hwfw")

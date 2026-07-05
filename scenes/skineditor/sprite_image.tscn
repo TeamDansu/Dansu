@@ -1,0 +1,20 @@
+[gd_scene format=3 uid="uid://txbv3tuwtel0"]
+
+[ext_resource type="Script" path="res://scenes/skineditor/sprite_image.gd" id="1_suuvg"]
+[ext_resource type="Texture2D" uid="uid://n48htgfia26x" path="res://resorces/skins/danshe/sprite/danshe_dance_2.png" id="1_4gqg5"]
+
+[node name="SpriteImage" type="VBoxContainer" unique_id=414158218 node_paths=PackedStringArray("file_name_label", "texture_rect")]
+alignment = 1
+script = ExtResource("1_suuvg")
+file_name_label = NodePath("file_name")
+texture_rect = NodePath("TextureRect")
+
+[node name="file_name" type="Label" parent="." unique_id=862158639]
+layout_mode = 2
+text = "sprite file name"
+
+[node name="TextureRect" type="TextureRect" parent="." unique_id=1611643655]
+layout_mode = 2
+texture = ExtResource("1_4gqg5")
+expand_mode = 4
+stretch_mode = 5

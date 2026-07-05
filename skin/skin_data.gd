@@ -4,6 +4,7 @@ class_name PlayerSkinData
 enum TYPE { BUILT_IN, IN_CHART, IN_SKIN_FOLDER }
 
 var skin_name: String = "none"
+var scale: float = 1.0
 
 var type : TYPE
 var folder_name: String = ""
@@ -34,10 +35,18 @@ func get_folder_path() -> String:
 	return ""
 
 func parse_objects(_type:TYPE,_folder_name:String,_json_name:String) -> bool:
-
 	type = _type
 	folder_name = _folder_name
 	json_name = _json_name
+	animations.clear()
+	hits.clear()
+	idle = null
+	left = null
+	right = null
+	jump = null
+	land = null
+	repeat_idle = false
+	texture_cache.clear()
 	var folder_path = get_folder_path()
 
 	var file = FileAccess.open(folder_path.path_join(json_name), FileAccess.READ)
@@ -45,42 +54,50 @@ func parse_objects(_type:TYPE,_folder_name:String,_json_name:String) -> bool:
 		push_warning("FILE : %s is missing" , folder_path.path_join(folder_name))
 		return false
 	var json = JSON.parse_string(file.get_as_text())
-	skin_name = json.get(["name"],"new skin")
+	if typeof(json) != TYPE_DICTIONARY:
+		return false
+
+	skin_name = json.get("name","new skin")
+	scale = float(json.get("scale", 1.0))
 	if "animations" in json:
 		for animation in json["animations"]:
 			var _frames = animation.get("frames", [])
 			var textures: Array[Texture2D] = []
+			var frame_file_names: Array[String] = []
 			for _frame in _frames:
-				var _texture = load_texture(_frame)
+				var frame_file_name := str(_frame)
+				frame_file_names.append(frame_file_name)
+				var _texture = load_texture(frame_file_name)
 				if _texture:
 					textures.append(_texture)
 			var new_animation = PlayerAnimation.new()
 			new_animation.id = animation.get("id", -1)
 			new_animation.frames = textures
+			new_animation.frames_file_name = frame_file_names
 			new_animation.name = animation.get("name", "new animation")
 			new_animation.fps = float(animation.get("fps", 10.0))
 			new_animation.effect = animation.get("effect","none")
+			new_animation.return_idle = bool(animation.get("return_idle",true))
 			animations.append(new_animation)
 	if "player" in json:
 		if "hits" in json["player"]:
 			for id in json["player"]["hits"]:
 				hits.append(get_animation_via_id(int(id)))
 		idle = get_animation_via_id(int(json["player"].get("idle",-1)))
-		print((int(json["player"].get("idle",-1))))
 		jump = get_animation_via_id(int(json["player"].get("jump",-1)))
 		land = get_animation_via_id(int(json["player"].get("land",-1)))
 		left = get_animation_via_id(int(json["player"].get("left",-1)))
 		right = get_animation_via_id(int(json["player"].get("right",-1)))
-		repeat_idle = bool(json["player"]["repeat_idle"])
+		repeat_idle = bool(json["player"].get("repeat_idle", true))
 	
-	if not idle:
-		return false
+	if not idle and not animations.is_empty():
+		idle = animations[0]
 	
-	return true
+	return idle != null
 
 func get_animation_via_id(id:int) -> PlayerAnimation:
-	if id == -1:
-		return
+	if id <= 0:
+		return null
 	for animation in animations:
 		if animation.id == id:
 			return animation

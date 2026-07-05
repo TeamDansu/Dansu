@@ -4,6 +4,10 @@ class_name Rail
 var id := -1
 var points: Array[RailPoint] = []
 var notes: Array[Note] = []
+var cached_fill_mesh: ArrayMesh = null
+var cached_outline_mesh: ArrayMesh = null
+var cached_render_width := -1.0
+var cached_outline_size := -1.0
 
 func _init() -> void:
 	points = []
@@ -28,6 +32,12 @@ func sort_points() -> void:
 
 func sort_notes() -> void:
 	notes.sort_custom(func(a, b) -> bool: return a.time < b.time)
+
+func clear_render_cache() -> void:
+	cached_fill_mesh = null
+	cached_outline_mesh = null
+	cached_render_width = -1.0
+	cached_outline_size = -1.0
 
 func _apply_curve(t: float, curve: float) -> float:
 	curve = clamp(curve, -1.0, 1.0)

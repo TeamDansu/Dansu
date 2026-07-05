@@ -24,8 +24,8 @@ func apply_settings() -> void:
 	action_hit1 = action_hit1
 	action_hit2 = action_hit2
 	ignore_chart_skin = ignore_chart_skin
-	window_size = window_size
 	window_mode = window_mode
+	window_size = window_size
 	ticks_per_second = ticks_per_second
 	master_db = master_db
 	music_db = music_db
@@ -39,6 +39,7 @@ func apply_settings() -> void:
 	postaa = postaa
 	chart_load_threads = chart_load_threads
 	server_api_url = server_api_url
+	call_deferred("_center_window_if_windowed")
 	
 
 var language: String:
@@ -102,18 +103,18 @@ var window_size: Vector2i:
 	set(value):
 		get_window().size = value
 		config.set_value(SECTION_GRAPHICS, "window_size", value)
+		call_deferred("_center_window_if_windowed")
 
 var window_mode: DisplayServer.WindowMode:
 	get:
 		var value = config.get_value(SECTION_GRAPHICS,"window_mode",DisplayServer.WINDOW_MODE_FULLSCREEN)
-		if value > 4:
-			value = DisplayServer.WINDOW_MODE_FULLSCREEN
+		value = _sanitize_window_mode(value)
 		return value
 	set(value):
-		if value > 4:
-			value = DisplayServer.WINDOW_MODE_FULLSCREEN
+		value = _sanitize_window_mode(value)
 		config.set_value(SECTION_GRAPHICS,"window_mode",value)
 		DisplayServer.window_set_mode(value)
+		call_deferred("_center_window_if_windowed")
 
 var vsync_mode: DisplayServer.VSyncMode:
 	get:
@@ -238,3 +239,30 @@ func _ready() -> void:
 func save_config() -> void:
 	apply_settings()
 	config.save(FILE_PATH)
+
+func _center_window_if_windowed() -> void:
+	if DisplayServer.window_get_mode() != DisplayServer.WINDOW_MODE_WINDOWED:
+		return
+
+	var window := get_window()
+	if window == null:
+		return
+
+	var screen := DisplayServer.window_get_current_screen()
+	if screen < 0:
+		screen = DisplayServer.get_primary_screen()
+
+	var screen_pos := DisplayServer.screen_get_position(screen)
+	var screen_size := DisplayServer.screen_get_size(screen)
+	var target_size := window.size
+	var centered_position := screen_pos + (screen_size - target_size) / 2
+
+	DisplayServer.window_set_position(Vector2i(centered_position))
+
+func _sanitize_window_mode(value) -> DisplayServer.WindowMode:
+	var mode := int(value)
+	if mode == DisplayServer.WINDOW_MODE_MINIMIZED:
+		return DisplayServer.WINDOW_MODE_WINDOWED
+	if mode < 0 or mode > int(DisplayServer.WINDOW_MODE_EXCLUSIVE_FULLSCREEN):
+		return DisplayServer.WINDOW_MODE_FULLSCREEN
+	return mode as DisplayServer.WindowMode

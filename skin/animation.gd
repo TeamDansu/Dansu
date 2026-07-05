@@ -7,6 +7,7 @@ var frames_file_name : Array[String] = []
 var fps := 10.0
 var effect := "none"
 var name := "new animation"
+var return_idle := true
 
 var total_time: float:
 	get:
@@ -14,7 +15,7 @@ var total_time: float:
 
 var time_per_frame: float:
 	get:
-		return frames.size() / fps
+		return 1 / fps
 
 func get_index(time: float) -> int:
 	var value = int(time/time_per_frame)

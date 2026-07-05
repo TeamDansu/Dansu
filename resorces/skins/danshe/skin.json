@@ -1,47 +1,48 @@
 {
-	"animations": [
-		{
-			"effect": "none",
-			"fps": 2,
-			"frames": [
-				"danshe_idle.png"
-			],
-			"id": 1,
-			"name": "none",
-			"return_idle": true
-		},
-		{
-			"effect": "groove",
-			"fps": 2,
-			"frames": [
-				"danshe_dance_1.png"
-			],
-			"id": 2,
-			"name": "none",
-			"return_idle": true
-		},
-				{
-			"effect": "groove",
-			"fps": 2,
-			"frames": [
-				"danshe_dance_2.png"
-			],
-			"id": 3,
-			"name": "none",
-			"return_idle": true
-		}
-	],
-	"player": {
-		"hits": [
-			2,
-			3,
-		],
-		"idle": 1,
-		"jump": 1,
-		"land": 1,
-		"left": 1,
-		"right": 1,
-		"repeat_idle": true
+  "animations": [
+	{
+	  "effect": "none",
+	  "fps": 2,
+	  "frames": [
+        "danshe_idle.png"
+	  ],
+	  "id": 1,
+	  "name": "none",
+	  "return_idle": true
 	},
-	"name": "Danshe"
+	{
+	  "effect": "groove",
+	  "fps": 2,
+	  "frames": [
+        "danshe_dance_1.png"
+	  ],
+	  "id": 2,
+	  "name": "none",
+	  "return_idle": true
+	},
+	{
+	  "effect": "groove",
+	  "fps": 2,
+	  "frames": [
+        "danshe_dance_2.png"
+	  ],
+	  "id": 3,
+	  "name": "none",
+	  "return_idle": true
+	}
+  ],
+  "player": {
+	"hits": [
+	  2,
+	  3
+	],
+	"idle": 1,
+	"jump": 1,
+	"land": 1,
+	"left": 1,
+	"right": 1,
+	"repeat_idle": true
+  },
+  "name": "Danshe",
+  "scale": 1.027749
 }

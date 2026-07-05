@@ -1,0 +1,355 @@
+[gd_scene format=3 uid="uid://c38kmmrek716x"]
+
+[ext_resource type="Script" uid="uid://cndji7g2243bh" path="res://result/result_scene.gd" id="1_ofb62"]
+[ext_resource type="Shader" uid="uid://cflu32au5woaj" path="res://resorces/shaders/bg.gdshader" id="2_b83s4"]
+[ext_resource type="FontFile" uid="uid://drcicje7q2t7x" path="res://resorces/fonts/Next Bravo.ttf" id="3_dpngd"]
+[ext_resource type="Texture2D" uid="uid://caegtu8bhulxq" path="res://resorces/skins/danshe/sprite/danshe_idle.png" id="3_sm1ph"]
+[ext_resource type="PackedScene" uid="uid://c51ndn5ftq4wo" path="res://scenes/mainmenu/menubutton.tscn" id="4_0nb76"]
+[ext_resource type="Script" uid="uid://dyc450njpqbqy" path="res://skin/player_sprite_2d.gd" id="4_g6gwf"]
+[ext_resource type="Texture2D" uid="uid://4mpob6r0inkq" path="res://resorces/icons/arrow-big-left.svg" id="5_sm1ph"]
+[ext_resource type="Shader" uid="uid://qbfnricvyktb" path="res://resorces/shaders/wave.gdshader" id="6_3ugua"]
+[ext_resource type="FontFile" uid="uid://cay31gip2omwr" path="res://resorces/fonts/BebasNeue-Regular.ttf" id="8_n4qk8"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_dpngd"]
+shader = ExtResource("2_b83s4")
+shader_parameter/bg_color = Color(0.0627451, 0.0627451, 0.078431375, 1)
+shader_parameter/shape_color = Color(0.080000006, 0.080000006, 0.1, 1)
+shader_parameter/rect_size = Vector2(1920, 1080)
+shader_parameter/cell_size = 180.0
+shader_parameter/move_speed = 0.5
+shader_parameter/cycle_speed = 0.2
+shader_parameter/transition_ratio = 0.12
+shader_parameter/softness = 0.0
+shader_parameter/circle_size = 0.3
+shader_parameter/square_size = 0.2
+shader_parameter/triangle_size = 0.3
+shader_parameter/square_roundness = 0.05
+shader_parameter/triangle_roundness = 0.025
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_dpngd"]
+bg_color = Color(0.10681517, 0.090740524, 0.16382176, 1)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_rrb66"]
+bg_color = Color(0.5160377, 0.46044075, 0.92617404, 1)
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_c3w4j"]
+shader = ExtResource("6_3ugua")
+shader_parameter/height = 3.0
+shader_parameter/frequency = 20.0
+shader_parameter/speed = 3.0
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_g6gwf"]
+
+[node name="Control" type="Control" unique_id=440496817 node_paths=PackedStringArray("rank", "next_rank_score", "current_rank_score", "score_label")]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_ofb62")
+fake_score = 90.15
+rank = NodePath("Rank")
+next_rank_score = NodePath("NextRankScore")
+current_rank_score = NodePath("CurrentRankScore")
+score_label = NodePath("Score")
+
+[node name="Background" type="ColorRect" parent="." unique_id=1374195926]
+material = SubResource("ShaderMaterial_dpngd")
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="PlayerSprite" type="Sprite2D" parent="." unique_id=1661195411]
+position = Vector2(1504.0001, 624)
+scale = Vector2(0.25, 0.25)
+texture = ExtResource("3_sm1ph")
+script = ExtResource("4_g6gwf")
+
+[node name="ProgressBar" type="ProgressBar" parent="." unique_id=1832890200]
+layout_mode = 1
+anchors_preset = -1
+anchor_right = 1.0
+offset_bottom = 168.0
+theme_override_fonts/font = ExtResource("3_dpngd")
+theme_override_styles/background = SubResource("StyleBoxFlat_dpngd")
+theme_override_styles/fill = SubResource("StyleBoxFlat_rrb66")
+max_value = 1.0
+show_percentage = false
+
+[node name="NextRankScore" type="Label" parent="." unique_id=1415875889]
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -160.0
+offset_top = 33.0
+offset_right = -14.627197
+offset_bottom = 136.0
+grow_horizontal = 0
+theme_override_colors/font_color = Color(0.9647059, 0.9254902, 0.74509805, 1)
+theme_override_constants/shadow_offset_x = 1
+theme_override_constants/shadow_offset_y = 1
+theme_override_fonts/font = ExtResource("3_dpngd")
+theme_override_font_sizes/font_size = 50
+text = "S
+95%"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="CurrentRankScore" type="Label" parent="." unique_id=789195092]
+layout_mode = 0
+offset_left = 16.0
+offset_top = 8.0
+offset_right = 162.0
+offset_bottom = 164.0
+theme_override_colors/font_color = Color(0.7781524, 0.9855893, 0.71779585, 1)
+theme_override_colors/font_shadow_color = Color(0.9647059, 0.9254902, 0.74509805, 1)
+theme_override_constants/shadow_offset_x = 1
+theme_override_constants/shadow_offset_y = 1
+theme_override_fonts/font = ExtResource("3_dpngd")
+theme_override_font_sizes/font_size = 50
+text = "A
+90%"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Rank" type="Label" parent="." unique_id=249286124]
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -258.6507
+offset_top = 70.06203
+offset_right = 269.14624
+offset_bottom = 323.062
+grow_horizontal = 2
+rotation = -0.2012667
+theme_override_colors/font_color = Color(0.7781524, 0.9855893, 0.71779585, 1)
+theme_override_colors/font_shadow_color = Color(0.9647059, 0.9254902, 0.74509805, 1)
+theme_override_colors/font_outline_color = Color(0.4392157, 0.35686275, 0.87058824, 1)
+theme_override_constants/shadow_offset_x = 1
+theme_override_constants/shadow_offset_y = 1
+theme_override_constants/outline_size = 30
+theme_override_fonts/font = ExtResource("3_dpngd")
+theme_override_font_sizes/font_size = 256
+text = "A"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="RankUp" type="CPUParticles2D" parent="Rank" unique_id=197007416]
+position = Vector2(-673.18585, -208.85498)
+rotation = 0.20126672
+scale = Vector2(1.0000001, 1.0000001)
+
+[node name="Score" type="Label" parent="." unique_id=1322564712]
+material = SubResource("ShaderMaterial_c3w4j")
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -48.0
+offset_top = 267.0
+offset_right = 124.0
+offset_bottom = 317.0
+grow_horizontal = 2
+theme_override_colors/font_color = Color(0.7781524, 0.9855893, 0.71779585, 1)
+theme_override_colors/font_shadow_color = Color(0.9647059, 0.9254902, 0.74509805, 1)
+theme_override_colors/font_outline_color = Color(0.4392157, 0.35686275, 0.87058824, 1)
+theme_override_constants/shadow_offset_x = 1
+theme_override_constants/shadow_offset_y = 1
+theme_override_constants/outline_size = 30
+theme_override_fonts/font = ExtResource("3_dpngd")
+theme_override_font_sizes/font_size = 50
+text = "92.27%"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Back" parent="." unique_id=869280924 instance=ExtResource("4_0nb76")]
+custom_minimum_size = Vector2(300, 64)
+layout_mode = 1
+anchors_preset = 2
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = 32.0
+offset_top = -104.0
+offset_right = 332.0
+offset_bottom = -40.0
+grow_vertical = 0
+bg_color = Color(0.10980392, 0.101960786, 0.1764706, 1)
+button_text = "back"
+icon_texture = ExtResource("5_sm1ph")
+hover_scale = 1.04
+
+[node name="Final" type="CPUParticles2D" parent="." unique_id=856141947]
+
+[node name="Final2" type="CPUParticles2D" parent="." unique_id=875579375]
+
+[node name="PanelContainer" type="PanelContainer" parent="." unique_id=1820402306]
+layout_mode = 0
+offset_left = 128.0
+offset_top = 464.0
+offset_right = 952.0
+offset_bottom = 832.0
+theme_override_styles/panel = SubResource("StyleBoxEmpty_g6gwf")
+
+[node name="VBoxContainer" type="VBoxContainer" parent="PanelContainer" unique_id=371856651]
+layout_mode = 2
+
+[node name="GridContainer" type="GridContainer" parent="PanelContainer/VBoxContainer" unique_id=1032436735]
+layout_mode = 2
+size_flags_vertical = 3
+columns = 4
+
+[node name="JustPlus" type="Label" parent="PanelContainer/VBoxContainer/GridContainer" unique_id=2009536505]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 6
+theme_override_fonts/font = ExtResource("8_n4qk8")
+theme_override_font_sizes/font_size = 48
+text = "JUST+"
+horizontal_alignment = 1
+
+[node name="JustPlusCount" type="Label" parent="PanelContainer/VBoxContainer/GridContainer" unique_id=1606669100]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 6
+theme_override_fonts/font = ExtResource("8_n4qk8")
+theme_override_font_sizes/font_size = 48
+text = "100"
+horizontal_alignment = 1
+
+[node name="Just" type="Label" parent="PanelContainer/VBoxContainer/GridContainer" unique_id=1393489084]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 6
+theme_override_fonts/font = ExtResource("8_n4qk8")
+theme_override_font_sizes/font_size = 48
+text = "JUST"
+horizontal_alignment = 1
+
+[node name="JustCount" type="Label" parent="PanelContainer/VBoxContainer/GridContainer" unique_id=2080776618]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 6
+theme_override_fonts/font = ExtResource("8_n4qk8")
+theme_override_font_sizes/font_size = 48
+text = "100"
+horizontal_alignment = 1
+
+[node name="Good" type="Label" parent="PanelContainer/VBoxContainer/GridContainer" unique_id=666884407]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 6
+theme_override_fonts/font = ExtResource("8_n4qk8")
+theme_override_font_sizes/font_size = 48
+text = "GOOD"
+horizontal_alignment = 1
+
+[node name="GoodCount" type="Label" parent="PanelContainer/VBoxContainer/GridContainer" unique_id=1119901331]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 6
+theme_override_fonts/font = ExtResource("8_n4qk8")
+theme_override_font_sizes/font_size = 48
+text = "100"
+horizontal_alignment = 1
+
+[node name="Okay" type="Label" parent="PanelContainer/VBoxContainer/GridContainer" unique_id=1941377722]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 6
+theme_override_fonts/font = ExtResource("8_n4qk8")
+theme_override_font_sizes/font_size = 48
+text = "OKAY"
+horizontal_alignment = 1
+
+[node name="OkayCount" type="Label" parent="PanelContainer/VBoxContainer/GridContainer" unique_id=1137128119]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 6
+theme_override_fonts/font = ExtResource("8_n4qk8")
+theme_override_font_sizes/font_size = 48
+text = "100"
+horizontal_alignment = 1
+
+[node name="Nah" type="Label" parent="PanelContainer/VBoxContainer/GridContainer" unique_id=1962022953]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 6
+theme_override_fonts/font = ExtResource("8_n4qk8")
+theme_override_font_sizes/font_size = 48
+text = "NAH"
+horizontal_alignment = 1
+
+[node name="NahCount" type="Label" parent="PanelContainer/VBoxContainer/GridContainer" unique_id=730113270]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 6
+theme_override_fonts/font = ExtResource("8_n4qk8")
+theme_override_font_sizes/font_size = 48
+text = "100"
+horizontal_alignment = 1
+
+[node name="Miss" type="Label" parent="PanelContainer/VBoxContainer/GridContainer" unique_id=1323897885]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 6
+theme_override_fonts/font = ExtResource("8_n4qk8")
+theme_override_font_sizes/font_size = 48
+text = "MISS"
+horizontal_alignment = 1
+
+[node name="MissCount" type="Label" parent="PanelContainer/VBoxContainer/GridContainer" unique_id=935043803]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 6
+theme_override_fonts/font = ExtResource("8_n4qk8")
+theme_override_font_sizes/font_size = 48
+text = "100"
+horizontal_alignment = 1
+
+[node name="HBoxContainer" type="HBoxContainer" parent="PanelContainer/VBoxContainer" unique_id=141621232]
+layout_mode = 2
+theme_override_constants/separation = 20
+
+[node name="Combo" type="Label" parent="PanelContainer/VBoxContainer/HBoxContainer" unique_id=723227403]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 6
+theme_override_fonts/font = ExtResource("8_n4qk8")
+theme_override_font_sizes/font_size = 48
+text = "combo"
+horizontal_alignment = 2
+
+[node name="ComboValue" type="Label" parent="PanelContainer/VBoxContainer/HBoxContainer" unique_id=1399533343]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 6
+theme_override_fonts/font = ExtResource("8_n4qk8")
+theme_override_font_sizes/font_size = 48
+text = "200/1500"
+
+[node name="HBoxContainer2" type="HBoxContainer" parent="PanelContainer/VBoxContainer" unique_id=433870568]
+layout_mode = 2
+theme_override_constants/separation = 20
+
+[node name="AVG" type="Label" parent="PanelContainer/VBoxContainer/HBoxContainer2" unique_id=1025578600]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 6
+theme_override_fonts/font = ExtResource("8_n4qk8")
+theme_override_font_sizes/font_size = 48
+text = "avg"
+horizontal_alignment = 2
+
+[node name="AVGValue" type="Label" parent="PanelContainer/VBoxContainer/HBoxContainer2" unique_id=1975003273]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 6
+theme_override_fonts/font = ExtResource("8_n4qk8")
+theme_override_font_sizes/font_size = 48
+text = "-2ms"

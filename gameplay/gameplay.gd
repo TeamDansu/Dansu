@@ -3,6 +3,15 @@ extends Node3D
 const DEFAULT_HIT_SFX := preload("res://resorces/audio/hitsounds/chop.wav")
 const DEFAULT_MOVE_SFX := preload("res://resorces/audio/hitsounds/chop.wav")
 const SFX_PLAYER_COUNT := 8
+const JUDGE_POPUP_SCENE := preload("res://scenes/gameplay/judge_popup.tscn")
+const RESULT_SCENE_PATH := "res://scenes/result_scene.tscn"
+const COMBO_POP_SCALE := Vector2(0.96, 1.12)
+const COMBO_POP_DURATION_IN := 0.08
+const COMBO_POP_DURATION_OUT := 0.14
+const JUDGE_POPUP_OFFSET := Vector3(0.0, 2.0, 0.0)
+const SONG_FADE_START_AFTER_LAST_NOTE_MS := 1000.0
+const RESULT_DELAY_AFTER_LAST_NOTE_MS := 5000.0
+const SONG_FADE_DB_PER_SECOND := 30.0
 
 class SpawnableNote:
 	var note: Note
@@ -55,25 +64,33 @@ var paused := false
 @export var rail_container: Node3D
 @export var songplayer: AudioStreamPlayer
 
+@onready var combo_container: VBoxContainer = $Control/VBoxContainer
+@onready var combo_label: Label = $Control/VBoxContainer/Combo
+
 const LEAD_IN_MS := 3000.0
 
 var is_song_playing := false
 var _sfx_players: Array[AudioStreamPlayer] = []
 var _next_sfx_player_index := 0
 var _hitsound_streams: Dictionary = {}
+var _combo_tween: Tween
+var _result_transition_started := false
+var _last_note_time_ms := 0.0
+var _song_volume_db := 0.0
 
 # timeline
 var audio_start_target_usec: int = 0
 var pause_begin_usec: int = 0
 
 func _ready() -> void:
+	_setup_combo_hud()
 	songplayer.stream = CM.selected_chart.get_stream()
+	_song_volume_db = songplayer.volume_db
 	_prepare_sfx_players()
 	reset()
 
 func reset() -> void:
 	Input.set_mouse_mode(Input.MOUSE_MODE_HIDDEN)
-	$AnimationPlayer.play("camera_intro")
 
 	for child in rail_container.get_children():
 		child.queue_free()
@@ -86,6 +103,9 @@ func reset() -> void:
 	paused = false
 	is_song_playing = false
 	pause_begin_usec = 0
+	_result_transition_started = false
+	_last_note_time_ms = 0.0
+	songplayer.volume_db = _song_volume_db
 
 	is_holding_long_move = false
 	pending_move_dir = Note.Dir.NONE
@@ -98,6 +118,7 @@ func reset() -> void:
 	_rebuild_hitsound_cache()
 	_build_game_objects()
 	_spawn_objects()
+	_reset_combo_hud()
 
 func _prepare_sfx_players() -> void:
 	if not _sfx_players.is_empty():
@@ -108,6 +129,64 @@ func _prepare_sfx_players() -> void:
 		sfx_player.bus = "SFX"
 		add_child(sfx_player)
 		_sfx_players.append(sfx_player)
+
+
+func _setup_combo_hud() -> void:
+	if combo_container == null or combo_label == null:
+		return
+	combo_container.visible = true
+	combo_container.modulate.a = 1.0
+	combo_container.scale = Vector2.ONE
+	combo_container.resized.connect(_refresh_combo_pivot)
+	call_deferred("_refresh_combo_pivot")
+
+
+func _refresh_combo_pivot() -> void:
+	if combo_container == null:
+		return
+	combo_container.pivot_offset = combo_container.size * 0.5
+
+
+func _reset_combo_hud() -> void:
+	if _combo_tween != null:
+		_combo_tween.kill()
+	if combo_container != null:
+		combo_container.visible = true
+		combo_container.modulate.a = 1.0
+		combo_container.scale = Vector2.ONE
+	_update_combo_display()
+
+
+func _update_combo_display() -> void:
+	if combo_container == null or combo_label == null:
+		return
+	combo_label.text = str(combo)
+	combo_container.visible = true
+
+
+func _play_combo_pop() -> void:
+	if combo_container == null:
+		return
+	if _combo_tween != null:
+		_combo_tween.kill()
+	_refresh_combo_pivot()
+	combo_container.scale = Vector2.ONE
+	_combo_tween = create_tween()
+	_combo_tween.set_trans(Tween.TRANS_BACK)
+	_combo_tween.set_ease(Tween.EASE_OUT)
+	_combo_tween.tween_property(combo_container, "scale", COMBO_POP_SCALE, COMBO_POP_DURATION_IN)
+	_combo_tween.tween_property(combo_container, "scale", Vector2.ONE, COMBO_POP_DURATION_OUT)
+
+
+func _spawn_judge_popup(judgement: int) -> void:
+	if judgement == Score.NONE or player == null:
+		return
+	var popup := JUDGE_POPUP_SCENE.instantiate()
+	if popup == null:
+		return
+	popup.judgement = judgement
+	add_child(popup)
+	popup.global_position = player.global_position + JUDGE_POPUP_OFFSET
 
 func _process(delta: float) -> void:
 	if paused:
@@ -123,9 +202,10 @@ func _process(delta: float) -> void:
 			is_song_playing = true
 
 	_spawn_objects()
+	_update_song_fade(delta)
 
 	if Input.is_action_just_pressed("ui_cancel"):
-		%PauseMenu.visible = true
+		exit()
 		pause()
 
 func stop_song() -> void:
@@ -160,7 +240,7 @@ func retry() -> void:
 
 func exit() -> void:
 	Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
-	get_tree().change_scene_to_file("res://Scene/main_menu.tscn")
+	Transition.return_to_menu(1)
 
 func _update_current_time() -> void:
 	Game.current_time = (
@@ -224,6 +304,10 @@ func _build_game_objects() -> void:
 	notes.sort_custom(_sort_notes)
 	rails.sort_custom(_sort_rails)
 	touch_notes.sort_custom(_sort_notes)
+	GameRail.prebake_for_rails(rails)
+	if not notes.is_empty():
+		_last_note_time_ms = float(notes[notes.size() - 1].note.time)
+		song_end = int(_last_note_time_ms + SONG_FADE_START_AFTER_LAST_NOTE_MS)
 
 	_set_next_note()
 
@@ -238,6 +322,7 @@ func _physics_process(_delta: float) -> void:
 		return
 
 	_update_current_time()
+	_check_result_transition()
 	_update_standing_rail()
 	_check_miss()
 	_check_touch_notes()
@@ -249,7 +334,7 @@ func _physics_process(_delta: float) -> void:
 			(pending_move_dir == Note.Dir.RIGHT and Input.is_action_just_released("action_right"))
 		)
 		if released:
-			_move_player_in_direction(pending_move_dir)
+			_move_player_in_direction(pending_move_dir, false)
 			is_holding_long_move = false
 			pending_move_dir = Note.Dir.NONE
 
@@ -315,11 +400,11 @@ func _find_nearest_active_rail_in_direction(dir: Note.Dir) -> Rail:
 				best = rail
 	return best
 
-func _move_player_in_direction(dir: Note.Dir) -> void:
+func _move_player_in_direction(dir: Note.Dir, play_direction_animation: bool = true) -> void:
 	var target_rail := _find_nearest_active_rail_in_direction(dir)
 	if target_rail != null:
 		standing_rail = target_rail
-		player.move_to_rail(target_rail)
+		player.move_to_rail(target_rail, play_direction_animation)
 
 func _check_miss() -> void:
 	while next_process_note != null:
@@ -336,7 +421,7 @@ func _check_touch_notes() -> void:
 			continue
 
 		var gap := note.time - Game.current_time
-		if gap > Score.T.BAD:
+		if gap > Score.T.OK:
 			continue
 
 		var note_rail := note_entry.rail
@@ -352,14 +437,17 @@ func _check_touch_notes() -> void:
 						_process_note_result(note, Score.MISS)
 
 			Note.NoteType.SPIKE:
-				if standing_rail == note_rail:
-					_process_note_result(note, Score.MISS)
-				elif gap < -Score.T.BAD:
-					# Successful dodge: no score impact
-					processed_notes[note] = Score.NONE
-					var note_node: GameNote = spawned_note_nodes.get(note)
-					if note_node != null:
-						note_node.consume(Score.NONE)
+				# note.time을 실제로 지난 순간에만 1회 판정
+				if gap <= 0:
+					if standing_rail == note_rail:
+						_process_note_result(note, Score.MISS)
+					else:
+						# Successful dodge: gives score, no popup
+						processed_notes[note] = Score.NONE
+						score.add_spike_dodge(note)
+						var note_node: GameNote = spawned_note_nodes.get(note)
+						if note_node != null:
+							note_node.consume(Score.NONE)
 
 func _input_action(time: float) -> void:
 	if next_process_note == null or standing_rail == null:
@@ -394,6 +482,7 @@ func _player_move_action(dir: Note.Dir, time: float) -> void:
 		var judgement := score.get_judgement(gap)
 		if judgement != Score.NONE:
 			var note := next_process_note
+			player.play_move_note_animation(note, dir)
 			_process_note_result(note, judgement)
 			if note.length > 0:
 				# Long MOVE: defer physical movement to key release
@@ -401,7 +490,7 @@ func _player_move_action(dir: Note.Dir, time: float) -> void:
 				pending_move_dir = dir
 				return
 			else:
-				_move_player_in_direction(dir)
+				_move_player_in_direction(dir, false)
 				return
 
 	# No matching note — just move
@@ -431,7 +520,7 @@ func _set_next_note() -> void:
 
 func _process_note_result(note: Note, judgement: int) -> void:
 	processed_notes[note] = judgement
-	score.add_score(judgement)
+	score.add_note_result(note, judgement)
 
 	if judgement == Score.MISS:
 		combo = 0
@@ -439,8 +528,15 @@ func _process_note_result(note: Note, judgement: int) -> void:
 		combo += 1
 		score.high_combo = max(score.high_combo, combo)
 
+	if judgement != Score.NONE:
+		_spawn_judge_popup(judgement)
+
+	_update_combo_display()
 	if judgement != Score.MISS and judgement != Score.NONE:
-		player.play_hit_animation()
+		_play_combo_pop()
+
+	if judgement != Score.MISS and judgement != Score.NONE and note.type != Note.NoteType.MOVE:
+		player.play_hit_animation(note)
 
 	_play_note_sfx(note)
 
@@ -450,6 +546,24 @@ func _process_note_result(note: Note, judgement: int) -> void:
 
 	if next_process_note == note:
 		_set_next_note()
+
+func _check_result_transition() -> void:
+	if _result_transition_started:
+		return
+	if Game.current_time < _last_note_time_ms + RESULT_DELAY_AFTER_LAST_NOTE_MS:
+		return
+
+	_result_transition_started = true
+	Game.last_result_score = score
+	Transition.transition_to(RESULT_SCENE_PATH, 1.0)
+
+func _update_song_fade(delta: float) -> void:
+	if song_end <= 0:
+		return
+	if Game.current_time <= song_end:
+		return
+
+	songplayer.volume_db = maxf(-80.0, songplayer.volume_db - (delta * SONG_FADE_DB_PER_SECOND))
 
 func _rebuild_hitsound_cache() -> void:
 	_hitsound_streams.clear()

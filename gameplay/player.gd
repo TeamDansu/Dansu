@@ -44,33 +44,71 @@ func _process(delta: float) -> void:
 		position.x = lerp(position.x, target_x, delta * 20.0)
 		if abs(position.x - target_x) < 0.01:
 			_is_moving = false
-			if sprite.skin:
+			if sprite.skin and _should_return_to_idle_after_move():
 				sprite.play_animation(sprite.skin.idle)
 	else:
 		position.x = target_x
 
-func move_to_rail(rail: Rail, is_hit: bool = false) -> void:
+func move_to_rail(rail: Rail, play_direction_animation: bool = true) -> void:
 	if rail == standing_rail:
 		return
 	var prev_x := position.x
 	standing_rail = rail
 	_is_moving = true
 
-	if sprite.skin:
-		if is_hit:
-			sprite.play_animation(sprite.get_hit_animation())
-		else:
-			var target_x := GameplayPlayfield.normalized_x_to_world(
-				rail._get_rail_x_at_time(int(Game.current_time))
-			)
-			if target_x < prev_x:
-				sprite.play_animation(sprite.skin.left)
-			else:
-				sprite.play_animation(sprite.skin.right)
+	if sprite.skin and play_direction_animation:
+		var target_x := GameplayPlayfield.normalized_x_to_world(
+			rail._get_rail_x_at_time(int(Game.current_time))
+		)
+		var move_animation := sprite.skin.left if target_x < prev_x else sprite.skin.right
+		if move_animation != null:
+			sprite.play_animation(move_animation)
 
-func play_hit_animation() -> void:
-	if sprite.skin:
-		sprite.play_animation(sprite.get_hit_animation())
+func play_hit_animation(note: Note = null) -> void:
+	if not sprite.skin:
+		return
+
+	var custom_animation: PlayerAnimation = null
+	if note != null and int(note.animation) != 0:
+		custom_animation = sprite.skin.get_animation_via_id(int(note.animation))
+
+	if custom_animation != null:
+		sprite.play_animation(custom_animation)
+		return
+
+	sprite.play_animation(sprite.get_hit_animation())
+
+func play_move_note_animation(note: Note, dir: Note.Dir = Note.Dir.NONE) -> void:
+	if not sprite.skin:
+		return
+
+	var custom_animation: PlayerAnimation = null
+	if note != null and int(note.animation) != 0:
+		custom_animation = sprite.skin.get_animation_via_id(int(note.animation))
+
+	if custom_animation != null:
+		sprite.play_animation(custom_animation)
+		return
+
+	var default_animation := sprite.get_hit_animation()
+	if default_animation != null:
+		sprite.play_animation(default_animation)
+		return
+
+	if dir == Note.Dir.LEFT and sprite.skin.left != null:
+		sprite.play_animation(sprite.skin.left)
+		pass
+	elif dir == Note.Dir.RIGHT and sprite.skin.right != null:
+		sprite.play_animation(sprite.skin.right)
+		pass
+
+func _should_return_to_idle_after_move() -> bool:
+	if not sprite.skin:
+		return false
+	return (
+		(sprite.skin.left != null and sprite.is_playing_animation(sprite.skin.left)) or
+		(sprite.skin.right != null and sprite.is_playing_animation(sprite.skin.right))
+	)
 
 func reset() -> void:
 	standing_rail = null

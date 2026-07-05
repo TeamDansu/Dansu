@@ -4,15 +4,25 @@ render_mode unshaded;
 uniform vec4 bg_color : source_color = vec4(0.08, 0.09, 0.12, 1.0);
 uniform vec4 shape_color : source_color = vec4(0.92, 0.95, 1.0, 1.0);
 
-uniform float scale = 5.5;
+// ColorRect 크기 (GDScript에서 설정)
+uniform vec2 rect_size = vec2(1920.0, 1080.0);
+
+// 셀 크기(픽셀)
+uniform float cell_size = 180.0;
+
+// 이동 속도 (셀/초)
 uniform float move_speed = 0.025;
+
+// 도형 변환 속도
 uniform float cycle_speed = 0.45;
+
 uniform float transition_ratio = 0.12;
 uniform float softness = 0.008;
 
 uniform float circle_size = 0.22;
 uniform float square_size = 0.22;
 uniform float triangle_size = 0.44;
+
 uniform float square_roundness = 0.05;
 uniform float triangle_roundness = 0.025;
 
@@ -66,27 +76,26 @@ float blend_shapes(vec2 p, float phase) {
 	if (seg < 1.0) {
 		float t = smoothstep(1.0 - trans, 1.0, seg);
 		return mix(d_circle, d_square, t);
-	} else if (seg < 2.0) {
+	}
+	else if (seg < 2.0) {
 		float t = smoothstep(1.0 - trans, 1.0, seg - 1.0);
 		return mix(d_square, d_triangle, t);
-	} else {
-		float t = smoothstep(1.0 - trans, 1.0, seg - 2.0);
-		return mix(d_triangle, d_circle, t);
 	}
+
+	float t = smoothstep(1.0 - trans, 1.0, seg - 2.0);
+	return mix(d_triangle, d_circle, t);
 }
 
 void fragment() {
-	vec2 screen_size = 1.0 / SCREEN_PIXEL_SIZE;
-	float aspect = screen_size.x / screen_size.y;
+	// 픽셀 좌표계
+	vec2 pixel = UV * rect_size;
 
-	vec2 uv = UV;
-	uv += vec2(-1.0, 1.0) * TIME * move_speed;
+	// 이동
+	pixel += vec2(-1.0, 1.0) * TIME * move_speed * cell_size;
 
-	// 비율 보정된 작업 좌표
-	vec2 work_uv = uv;
-	work_uv.x *= aspect;
+	// 셀 좌표계
+	vec2 grid_uv = pixel / cell_size;
 
-	vec2 grid_uv = work_uv * scale;
 	vec2 cell = floor(grid_uv);
 	vec2 local = fract(grid_uv) - 0.5;
 
@@ -95,7 +104,7 @@ void fragment() {
 	float seed = fract(sin(dot(cell, vec2(127.1, 311.7))) * 43758.5453);
 	float phase = fract(TIME * cycle_speed + seed * 0.35);
 
-	float d = blend_shapes(local, phase);
+	float d = blend_shapes(local, phase); 
 	float mask = 1.0 - smoothstep(0.0, softness, d);
 
 	COLOR = mix(bg_color, shape_color, mask);

@@ -1,0 +1,33 @@
+[gd_scene format=3 uid="uid://bi38ewb02pdbn"]
+
+[ext_resource type="Texture2D" uid="uid://dsuq2l4s6g0ku" path="res://resorces/icons/star.svg" id="1_gol86"]
+[ext_resource type="Script" uid="uid://co8sjsrhea7lh" path="res://scenes/mainmenu/star_button.gd" id="2_el5pr"]
+[ext_resource type="FontFile" uid="uid://drcicje7q2t7x" path="res://resorces/fonts/Next Bravo.ttf" id="2_iorlk"]
+
+[node name="StarButton" type="TextureRect" unique_id=939246191]
+self_modulate = Color(0.49019608, 0.5058824, 0.78039217, 1)
+offset_right = 128.0
+offset_bottom = 120.0
+mouse_behavior_recursive = 2
+mouse_default_cursor_shape = 2
+texture = ExtResource("1_gol86")
+expand_mode = 2
+script = ExtResource("2_el5pr")
+
+[node name="Label" type="Label" parent="." unique_id=595766297]
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.5
+anchor_top = 0.523
+anchor_right = 0.5
+anchor_bottom = 0.523
+offset_left = -42.0
+offset_top = -18.472
+offset_right = 42.0
+offset_bottom = 20.528
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_fonts/font = ExtResource("2_iorlk")
+theme_override_font_sizes/font_size = 32
+text = "0.5"
+horizontal_alignment = 1
+vertical_alignment = 1

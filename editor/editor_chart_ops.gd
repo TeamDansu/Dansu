@@ -52,7 +52,7 @@ static func create_default_rail(time_ms: int) -> Rail:
 	rail.points.append(end_point)
 	return rail
 
-static func create_note(note_type: int, time_ms: int, dir: int = -1) -> Note:
+static func create_note(note_type: Note.NoteType, time_ms: int, dir: Note.Dir = Note.Dir.NONE) -> Note:
 	var note := Note.new()
 	note.time = time_ms
 	note.type = note_type

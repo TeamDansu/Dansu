@@ -1,0 +1,96 @@
+extends RefCounted
+class_name SkinDocument
+
+const SkinEditorContextScript = preload("res://skin/skin_editor_context.gd")
+const PlayerSkinDataScript = preload("res://skin/skin_data.gd")
+
+var context = SkinEditorContextScript.new()
+var skin_data = PlayerSkinDataScript.new()
+var file_path := ""
+var directory_path := ""
+var sprite_directory_path := ""
+var dirty := false
+
+func load_from_file(target_path: String, open_mode: int) -> bool:
+	file_path = target_path
+	directory_path = target_path.get_base_dir()
+	sprite_directory_path = directory_path.path_join("sprite")
+	context.skin_file_path = file_path
+	context.open_mode = open_mode
+	dirty = false
+	skin_data = PlayerSkinDataScript.new()
+
+	var folder_name := ""
+	var json_name := target_path.get_file()
+	var type := PlayerSkinDataScript.TYPE.IN_SKIN_FOLDER
+
+	match open_mode:
+		SkinEditorContextScript.OpenMode.CUSTOM:
+			type = PlayerSkinDataScript.TYPE.IN_SKIN_FOLDER
+			folder_name = directory_path.get_file()
+		SkinEditorContextScript.OpenMode.CHART:
+			type = PlayerSkinDataScript.TYPE.IN_CHART
+		_:
+			type = PlayerSkinDataScript.TYPE.IN_SKIN_FOLDER
+
+	return skin_data.parse_objects(type, folder_name, json_name)
+
+func create_empty(open_mode: int, target_directory_path: String) -> void:
+	file_path = ""
+	directory_path = target_directory_path
+	sprite_directory_path = directory_path.path_join("sprite")
+	context.skin_file_path = ""
+	context.open_mode = open_mode
+	dirty = false
+	skin_data = PlayerSkinDataScript.new()
+
+	match open_mode:
+		SkinEditorContextScript.OpenMode.CHART:
+			skin_data.type = PlayerSkinDataScript.TYPE.IN_CHART
+		SkinEditorContextScript.OpenMode.CUSTOM:
+			skin_data.type = PlayerSkinDataScript.TYPE.IN_SKIN_FOLDER
+			skin_data.folder_name = directory_path.get_file()
+		_:
+			skin_data.type = PlayerSkinDataScript.TYPE.IN_SKIN_FOLDER
+	skin_data.skin_name = "new skin"
+
+func mark_dirty() -> void:
+	dirty = true
+
+func clear_dirty() -> void:
+	dirty = false
+
+func get_selected_animation():
+	if context.selected_animation_index < 0:
+		return null
+	if context.selected_animation_index >= skin_data.animations.size():
+		return null
+	return skin_data.animations[context.selected_animation_index]
+
+func get_selected_frame_file_name() -> String:
+	var animation = get_selected_animation()
+	if animation == null:
+		return ""
+	if context.selected_frame_index < 0 or context.selected_frame_index >= animation.frames_file_name.size():
+		return ""
+	return animation.frames_file_name[context.selected_frame_index]
+
+func get_sprite_file_names() -> Array[String]:
+	var result: Array[String] = []
+	if not DirAccess.dir_exists_absolute(sprite_directory_path):
+		return result
+
+	var files := DirAccess.get_files_at(sprite_directory_path)
+	files.sort()
+	for file_name in files:
+		var extension := file_name.get_extension().to_lower()
+		if extension in ["png", "jpg", "jpeg", "webp", "bmp", "tga"]:
+			result.append(file_name)
+	return result
+
+func get_next_animation_id() -> int:
+	var max_id := 0
+	for animation in skin_data.animations:
+		if animation != null:
+			max_id = max(max_id, animation.id)
+	return max_id + 1

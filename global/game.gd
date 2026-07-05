@@ -1,18 +1,22 @@
 extends Node
-class_name GameState
 
+enum GameStage { Loading, Main, Play, Edit, Browse }
+var stage = GameStage.Loading
 const CHART_FILE_VERSION = 1
 var current_time := 0.0
+var last_result_score: Score = null
+var skin_editor_request = null
+var reopen_editor_without_chart_reload := false
 
 var color_map = {
-	0: Color("a0a0a0"),
-	3: Color("1AC9E6"),
-	10: Color("1DE45D"),
-	13: Color("eacb00ff"),
-	14: Color("DE542C"),
-	17: Color("C02323"),
-	20: Color("DE4CB2"), 
-	25: Color("6100b6"),
+	0: Color("7f9af9ff"),
+	5: Color("6466ccff"),
+	10: Color("91cc53ff"),
+	15: Color("d1bd28ff"),
+	20: Color("964559"),
+	25: Color("602228"),
+	30: Color("492c55"), 
+	35: Color("230215ff"),
 }
 
 var color_map_test = {
@@ -26,7 +30,7 @@ var color_map_test = {
 	35: Color("8b00ffff"),
 }
 
-func get_color_from_rating(value: float) -> Color:
+func get_color_from_rating(value: float,fade: bool = false) -> Color:
 	var keys = color_map.keys()
 	keys.sort()
 
@@ -34,11 +38,15 @@ func get_color_from_rating(value: float) -> Color:
 		return color_map[keys[0]]
 	if value >= keys[-1]:
 		return color_map[keys[-1]]
-
+	
 	for i in range(keys.size() - 1):
 		var a = keys[i]
 		var b = keys[i + 1]
-		if value >= a and value <= b:
-			var t = (value - a) / float(b - a)
-			return color_map[a].lerp(color_map[b], t)
+		if fade:
+			if value >= a and value <= b:
+				var t = (value - a) / float(b - a)
+				return color_map[a].lerp(color_map[b], t)
+		else:
+			if value >= a and value < b:
+				return color_map[a]
 	return color_map[keys[0]]

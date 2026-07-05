@@ -51,15 +51,13 @@ func generate_uuid() -> String:
 			uuid += "-"
 	return uuid
 
-func _ready():
-	chart_selected.connect(_select_chart)
-	chartset_selected.connect(_select_chartset)
-
-func _select_chart(chart: Chart):
+func select_chart(chart: Chart):
 	selected_chart = chart
+	emit_signal("chart_selected",chart)
 
-func _select_chartset(chartset: ChartSet):
+func select_chartset(chartset: ChartSet):
 	selected_chartset = chartset
+	emit_signal("chartset_selected",chartset)
 
 func _load(is_reload: bool) -> void:
 	FileSystem.ensure_dir(SONG_PATH)
@@ -120,8 +118,7 @@ func _thread_func() -> void:
 			new_set.charts.append(new_chart)
 		if new_set.charts.size() > 0:
 			call_deferred("_emit_loaded", new_set)
-		else:
-			push_error("FILE : failed to parse : %s" %folder)
+		else: 			push_error("FILE : failed to parse : %s" %folder)
 		_mutex.lock()
 		_loaded_count += 1
 		var progress := float(_loaded_count) / float(max(1, _loaded_count + _folders_to_load.size()))

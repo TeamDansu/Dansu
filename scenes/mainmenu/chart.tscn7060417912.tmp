@@ -1,0 +1,68 @@
+[gd_scene format=3 uid="uid://cij7mo4rkb3uj"]
+
+[ext_resource type="Script" uid="uid://dow8q3xbpsbpe" path="res://base/menu_chart.gd" id="1_oshov"]
+[ext_resource type="Texture2D" uid="uid://cw8cihgunxcv6" path="res://icon.svg" id="2_olni0"]
+[ext_resource type="FontFile" uid="uid://drcicje7q2t7x" path="res://resorces/fonts/Next Bravo.ttf" id="2_oshov"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_7vwla"]
+bg_color = Color(0, 0, 0, 0.35686275)
+corner_radius_top_left = 20
+corner_radius_top_right = 20
+corner_radius_bottom_right = 20
+corner_radius_bottom_left = 20
+corner_detail = 20
+
+[node name="Chart" type="Panel" unique_id=595133427]
+modulate = Color(1, 1, 1, 0.78431374)
+custom_minimum_size = Vector2(0, 148)
+anchors_preset = -1
+anchor_top = 0.069000006
+anchor_bottom = 0.069000006
+offset_top = -74.520004
+offset_right = 850.0
+offset_bottom = 73.479996
+theme_override_styles/panel = SubResource("StyleBoxFlat_7vwla")
+script = ExtResource("1_oshov")
+
+[node name="Title" type="Label" parent="." unique_id=30459335]
+layout_mode = 1
+anchors_preset = -1
+anchor_top = 0.5
+anchor_bottom = 0.5
+offset_left = 161.0
+offset_top = -49.5
+offset_right = 828.0
+offset_bottom = -16.5
+theme_override_fonts/font = ExtResource("2_oshov")
+theme_override_font_sizes/font_size = 32
+text = "song title"
+clip_text = true
+text_overrun_behavior = 5
+
+[node name="Desc" type="Label" parent="." unique_id=539646590]
+layout_mode = 1
+anchors_preset = -1
+anchor_top = 0.5
+anchor_bottom = 0.5
+offset_left = 161.0
+offset_top = -9.5
+offset_right = 828.0
+offset_bottom = 14.5
+theme_override_fonts/font = ExtResource("2_oshov")
+theme_override_font_sizes/font_size = 24
+text = "artist (mapper)"
+clip_text = true
+text_overrun_behavior = 5
+
+[node name="TextureRect" type="TextureRect" parent="." unique_id=1850767528]
+layout_mode = 1
+anchors_preset = -1
+anchor_top = 0.5
+anchor_bottom = 0.5
+offset_left = 16.0
+offset_top = -67.5
+offset_right = 144.0
+offset_bottom = 60.5
+texture = ExtResource("2_olni0")
+expand_mode = 1
+stretch_mode = 6
