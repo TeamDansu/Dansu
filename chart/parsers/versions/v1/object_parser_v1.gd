@@ -1,9 +1,11 @@
-extends ChartParser
+extends ObjectParser
 class_name ObjectParserV1
 
 enum { OBJECT, HITSOUNDS }
 
-func parse(file: FileAccess, chart: Chart) -> bool:
+func parse(file: FileAccess, chart: Chart) -> ParsedChart:
+	var parsed_chart := ParsedChart.new(chart)
+	parsed_chart.hitsounds.append_array(HitSound.load_builtin_hitsounds())
 	var mode := -1
 	var current_rail: Rail = null
 	if chart != null:
@@ -24,11 +26,11 @@ func parse(file: FileAccess, chart: Chart) -> bool:
 
 		match mode:
 			OBJECT:
-				current_rail = _parse_rail_line(line, current_rail)
+				current_rail = _parse_rail_line(line, current_rail, parsed_chart)
 			HITSOUNDS:
-				_parse_hitsound_line(chart, line)
+				_parse_hitsound_line(chart, line, parsed_chart)
 
-	return true
+	return parsed_chart
 
 func _parse_note_line(line: String) -> Note:
 	var parts := line.split(",", false)
@@ -59,7 +61,7 @@ func _parse_note_line(line: String) -> Note:
 
 	return new_note
 
-func _parse_hitsound_line(chart: Chart, line: String) -> void:
+func _parse_hitsound_line(chart: Chart, line: String, parsed_chart: ParsedChart) -> void:
 	if line.begins_with("defaults:"):
 		var values := line.trim_prefix("defaults:").split(",", false)
 		for index in range(min(values.size(), Chart.DEFAULT_HITSOUND_SLOT_COUNT)):
@@ -79,16 +81,16 @@ func _parse_hitsound_line(chart: Chart, line: String) -> void:
 		return
 
 	var hitsound_id := int(id_text)
-	for existing in CM.hitsounds:
+	for existing in parsed_chart.hitsounds:
 		if existing != null and existing.id == hitsound_id:
 			existing.setup(chart, hitsound_id, file_name)
 			return
 
 	var hitsound := HitSound.new()
 	hitsound.setup(chart, hitsound_id, file_name)
-	CM.hitsounds.append(hitsound)
+	parsed_chart.hitsounds.append(hitsound)
 
-func _parse_rail_line(line: String, current_rail: Rail) -> Rail:
+func _parse_rail_line(line: String, current_rail: Rail, parsed_chart: ParsedChart) -> Rail:
 	if line.begins_with("rail:"):
 		var id_text := line.trim_prefix("rail:").strip_edges()
 		if not id_text.is_valid_int():
@@ -96,7 +98,7 @@ func _parse_rail_line(line: String, current_rail: Rail) -> Rail:
 
 		var new_rail := Rail.new()
 		new_rail.id = int(id_text)
-		CM.rails.append(new_rail)
+		parsed_chart.rails.append(new_rail)
 		return new_rail
 
 	if line == "end":

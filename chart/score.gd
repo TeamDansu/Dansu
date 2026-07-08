@@ -1,6 +1,7 @@
 extends RefCounted
 class_name Score
 
+# name
 enum {NONE,MISS,PERPECT_PLUS,PERFECT,GREAT,OK,BAD}
 # Timing
 enum T {NONE=-1,MISS=105,PERFECT_PLUS=21,PERFECT=42,GREAT=63,OK=84,BAD=105}
@@ -8,6 +9,7 @@ enum T {NONE=-1,MISS=105,PERFECT_PLUS=21,PERFECT=42,GREAT=63,OK=84,BAD=105}
 enum S {MISS=0,PERFECT_PLUS=100,PERFECT=99,GREAT=50,OK=25,BAD=10}
 const TRACE_TOP_SCORE := 50.0
 const SPIKE_DODGE_SCORE := 25.0
+const OVER_100_DISPLAY_MAX := 101.0
 
 # count of judgement for result
 var notes := 0
@@ -18,9 +20,18 @@ var ok := 0
 var bad := 0
 var miss := 0
 
-# current score
-var score :float = 0
-# max score for the map
+var signed_timings : Array[float] = []
+var avg_signed_timings : float :
+	get :
+		if signed_timings.size() <= 0:
+			return 0
+		var total = 0
+		for value in signed_timings:
+			total += value
+		return total / signed_timings.size()
+
+
+var score :float = 0 # current score
 var max_score :float = 0
 var high_combo := 0
 
@@ -39,11 +50,14 @@ func get_judgement(time_gap) -> int:
 		return BAD
 	return NONE
 
-func add_note_result(note: Note, judgement: int) -> void:
+func add_note_result(note: Note, judgement: int, gap: float) -> void:
 	var max_points := _get_max_points_for_note(note)
 	if judgement == NONE and max_points <= 0.0:
 		return
-
+	
+	if [Note.NoteType.HIT,Note.NoteType.MOVE].has(note.type):
+		signed_timings.append(gap)
+		print("gap: " + str(gap), " avg: " + str(avg_signed_timings))
 	max_score += max_points
 	notes += 1
 
@@ -75,7 +89,7 @@ func add_spike_dodge(note: Note) -> void:
 	max_score += max_points
 	score += SPIKE_DODGE_SCORE
 	notes += 1
-	ok += 1
+	perfect_plus += 1
 
 
 func _get_max_points_for_note(note: Note) -> float:
@@ -89,7 +103,6 @@ func _get_max_points_for_note(note: Note) -> float:
 			return SPIKE_DODGE_SCORE
 		_:
 			return S.PERFECT_PLUS
-
 
 func _get_awarded_points_for_note(note: Note, judgement: int) -> float:
 	if note != null:
@@ -160,10 +173,20 @@ var total_score: float:
 		if notes == 0:
 			return 0.0
 		if _is_all_just_result():
-			return minf(101.0, 100.0 + (float(perfect_plus) / float(notes)))
+			return _get_all_just_display_score()
 		if max_score <= 0.0:
 			return 0.0
 		return score / max_score * 100.0
 
 func _is_all_just_result() -> bool:
 	return great == 0 and ok == 0 and bad == 0 and miss == 0
+
+func _get_all_just_display_score() -> float:
+	var just_ratio := clampf(float(perfect_plus) / float(notes), 0.0, 1.0)
+	return 100.0 + (_remap_over_100_ratio(just_ratio) * (OVER_100_DISPLAY_MAX - 100.0))
+
+func _remap_over_100_ratio(value: float) -> float:
+	var t := clampf(value, 0.0, 1.0)
+	if is_equal_approx(t, 0.0) or is_equal_approx(t, 1.0):
+		return t
+	return t ** (5.0 - (2.0 * t))

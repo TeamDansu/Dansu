@@ -1,6 +1,8 @@
 extends Node
 class_name ChartManager
 
+const SkinSerializationScript = preload("res://skin/skin_serialization.gd")
+
 signal chartset_loaded(_set)
 signal progress_changed(ratio: float) # 0.0 ~ 1.0
 signal loading_finished()
@@ -14,10 +16,8 @@ const SONG_PATH = "user://charts/"
 
 var selected_chart : Chart = null
 var selected_chartset : ChartSet = null
-
 var chartsets : Array[ChartSet] = []
-var rails :Array[Rail] = []
-var hitsounds: Array[HitSound] = []
+var parsed_chart : ParsedChart
 
 var all_folders: PackedStringArray = []
 var unloaded_folders: PackedStringArray = []
@@ -32,24 +32,24 @@ var _mutex := Mutex.new()
 var _finish_queued := false
 
 func clear():
-	rails = []
-	hitsounds = []
+	parsed_chart = null
 
-func parse_selected_chart():
+func parse_selected_chart() -> bool:
 	if not selected_chart:
-		return
-	clear()
+		Notification.notice("no chart selected",Notification.Type.WARNING)
+		return false
 	var parser: Parser = Parser.new()
-	parser.parse_object(selected_chart)
+	var result := parser.parse_object(selected_chart)
+	if not result.success:
+		parsed_chart = null
+		return false
+	parsed_chart = result.parsed_chart
+	return true
 
-func generate_uuid() -> String:
-	var hex_chars = "0123456789abcdef"
-	var uuid = ""
-	for i in range(32):
-		uuid += hex_chars[randi() % 16]
-		if i in [7, 11, 15, 19]:
-			uuid += "-"
-	return uuid
+func ensure_parsed_chart() -> ParsedChart:
+	if parsed_chart == null:
+		parsed_chart = ParsedChart.new(selected_chart)
+	return parsed_chart
 
 func select_chart(chart: Chart):
 	selected_chart = chart
@@ -116,9 +116,11 @@ func _thread_func() -> void:
 			Parser.parse_meta(new_chart)
 			new_chart.chart_set = new_set
 			new_set.charts.append(new_chart)
+		SkinSerializationScript.migrate_chartset_skin_layout(new_set.charts)
 		if new_set.charts.size() > 0:
 			call_deferred("_emit_loaded", new_set)
-		else: 			push_error("FILE : failed to parse : %s" %folder)
+		else:
+			push_error("FILE : failed to parse : %s" %folder)
 		_mutex.lock()
 		_loaded_count += 1
 		var progress := float(_loaded_count) / float(max(1, _loaded_count + _folders_to_load.size()))

@@ -85,12 +85,7 @@ func _create_dialogs() -> void:
 	_import_dialog.access = FileDialog.ACCESS_FILESYSTEM
 	_import_dialog.file_mode = FileDialog.FILE_MODE_OPEN_FILES
 	_import_dialog.filters = PackedStringArray([
-		"*.png ; PNG Image",
-		"*.jpg ; JPG Image",
-		"*.jpeg ; JPEG Image",
-		"*.webp ; WEBP Image",
-		"*.bmp ; BMP Image",
-		"*.tga ; TGA Image",
+		"*.png ; PNG Image"
 	])
 	_import_dialog.files_selected.connect(_on_sprite_files_selected)
 	add_child(_import_dialog)
@@ -153,6 +148,8 @@ func _load_document() -> void:
 	document.context = request
 	if request.skin_file_path == "":
 		var target_directory = request.chart_folder_path
+		if request.open_mode == SkinEditorContextScript.OpenMode.CHART and target_directory != "":
+			target_directory = SkinSerializationScript.get_chart_skin_root_path(target_directory).path_join("new_skin")
 		if target_directory == "":
 			target_directory = ProjectSettings.globalize_path("user://skins")
 		document.create_empty(request.open_mode, target_directory)
@@ -803,33 +800,46 @@ func _on_save_pressed() -> void:
 		return
 
 	var old_path = document.file_path
-	var old_file_name = old_path.get_file()
+	var old_reference_name = document.context.referenced_skin_file_name
+	if document.context.open_mode == SkinEditorContextScript.OpenMode.CUSTOM:
+		old_reference_name = old_path.get_file()
+	elif old_reference_name == "" and old_path != "":
+		old_reference_name = old_path.get_base_dir().get_file()
 	var preferred_name = document.skin_data.skin_name.strip_edges()
 	if preferred_name == "":
-		preferred_name = old_path.get_basename().get_file()
+		if document.context.open_mode == SkinEditorContextScript.OpenMode.CHART:
+			preferred_name = old_reference_name
+		else:
+			preferred_name = old_path.get_basename().get_file()
 	preferred_name = preferred_name.validate_filename()
 	if preferred_name == "":
 		preferred_name = "skin"
 
 	var target_path = old_path
-	var desired_path = document.directory_path.path_join("%s.json" % preferred_name)
-	if desired_path.get_file() != old_file_name:
-		target_path = SkinSerializationScript.make_unique_skin_file_path(document.directory_path, preferred_name)
+	if document.context.open_mode == SkinEditorContextScript.OpenMode.CHART:
+		var current_skin_name = document.directory_path.get_file()
+		if old_path == "" or current_skin_name != preferred_name:
+			target_path = SkinSerializationScript.make_unique_chart_skin_file_path(document.context.chart_folder_path, preferred_name)
+	else:
+		var old_file_name = old_path.get_file()
+		var desired_path = document.directory_path.path_join("%s.json" % preferred_name)
+		if desired_path.get_file() != old_file_name:
+			target_path = SkinSerializationScript.make_unique_skin_file_path(document.directory_path, preferred_name)
 
 	var saved_path := SkinSerializationScript.save_skin_document(document, target_path)
 	if saved_path == "":
 		return
 
-	var saved_file_name := saved_path.get_file()
+	var saved_reference_name := saved_path.get_base_dir().get_file() if document.context.open_mode == SkinEditorContextScript.OpenMode.CHART else saved_path.get_file()
 	if document.context.open_mode == SkinEditorContextScript.OpenMode.CUSTOM:
 		Config.custom_skin_path = ProjectSettings.localize_path(saved_path)
 		Config.save_config()
 	else:
-		if document.context.chart_folder_path != "" and old_file_name != "":
-			SkinRefCleanupScript.rename_skin_references(document.context.chart_folder_path, old_file_name, saved_file_name)
-		document.context.referenced_skin_file_name = saved_file_name
-		if CM.selected_chart != null and (CM.selected_chart.file_skin == old_file_name or CM.selected_chart.file_skin == ""):
-			CM.selected_chart.file_skin = saved_file_name
+		if document.context.chart_folder_path != "" and old_reference_name != "":
+			SkinRefCleanupScript.rename_skin_references(document.context.chart_folder_path, old_reference_name, saved_reference_name)
+		document.context.referenced_skin_file_name = saved_reference_name
+		if CM.selected_chart != null and (CM.selected_chart.file_skin == old_reference_name or CM.selected_chart.file_skin == ""):
+			CM.selected_chart.file_skin = saved_reference_name
 
 	var valid_ids := SkinValidationScript.get_animation_ids(document.skin_data)
 	if document.context.open_mode == SkinEditorContextScript.OpenMode.CHART and document.context.chart_folder_path != "":
@@ -840,8 +850,8 @@ func _on_save_pressed() -> void:
 			CM.selected_chart
 		)
 
-	if old_path != saved_path and FileAccess.file_exists(old_path):
-		DirAccess.remove_absolute(old_path)
+	if old_path != saved_path:
+		SkinSerializationScript.delete_obsolete_skin_path(old_path, saved_path)
 
 	_refresh_all()
 

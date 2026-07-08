@@ -1,6 +1,6 @@
 [gd_scene format=3 uid="uid://02cn5r1238k1"]
 
-[ext_resource type="Texture2D" uid="uid://dsuq2l4s6g0ku" path="res://resorces/icons/star.svg" id="1_emj12"]
+[ext_resource type="Texture2D" uid="uid://dsuq2l4s6g0ku" path="res://resources/icons/star.svg" id="1_emj12"]
 
 [node name="Star" type="TextureRect" unique_id=1216917206]
 custom_minimum_size = Vector2(20, 20)

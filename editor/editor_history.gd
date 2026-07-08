@@ -2,11 +2,12 @@ extends RefCounted
 class_name EditorHistory
 
 static func capture(editor: Editor) -> Dictionary:
+	var parsed_chart := CM.ensure_parsed_chart()
 	return {
 		"chart": _capture_chart(editor.chart),
 		"timings": _capture_timings(editor.chart),
-		"hitsounds": _capture_hitsounds(CM.hitsounds),
-		"rails": _capture_rails(CM.rails),
+		"hitsounds": _capture_hitsounds(parsed_chart.hitsounds),
+		"rails": _capture_rails(parsed_chart.rails),
 		"selection": _capture_selection(editor.selection),
 		"current_time": Game.current_time,
 		"beat_division": editor.timeline.beat_division if editor.timeline != null else 4,
@@ -17,8 +18,9 @@ static func restore(editor: Editor, snapshot: Dictionary) -> void:
 		return
 	_restore_chart(editor.chart, snapshot.get("chart", {}))
 	editor.chart.timings = _restore_timings(snapshot.get("timings", []))
-	CM.hitsounds = _restore_hitsounds(editor.chart, snapshot.get("hitsounds", []))
-	CM.rails = _restore_rails(snapshot.get("rails", []))
+	CM.parsed_chart = ParsedChart.new(editor.chart)
+	CM.parsed_chart.hitsounds = _restore_hitsounds(editor.chart, snapshot.get("hitsounds", []))
+	CM.parsed_chart.rails = _restore_rails(snapshot.get("rails", []))
 	editor.timeline = EditorTimeline.new(editor.chart, editor.transport.stream_length_sec)
 	editor.timeline.beat_division = int(snapshot.get("beat_division", 4))
 	editor.transport.timeline = editor.timeline
@@ -154,8 +156,8 @@ static func _restore_rails(data: Array) -> Array[Rail]:
 		for note_data in rail_data.get("notes", []):
 			var note := Note.new()
 			note.time = int(note_data.get("time", 0))
-			note.type = int(note_data.get("type", int(Note.NoteType.HIT)))
-			note.dir = int(note_data.get("dir", int(Note.Dir.NONE)))
+			note.type = int(note_data.get("type", int(Note.NoteType.HIT))) as Note.NoteType
+			note.dir = int(note_data.get("dir", int(Note.Dir.NONE))) as Note.Dir
 			note.length = int(note_data.get("length", 0))
 			note.animation = int(note_data.get("animation", 0))
 			note.hitsound = int(note_data.get("hitsound", -1))
@@ -189,7 +191,10 @@ static func _restore_selection(editor: Editor, data: Dictionary) -> void:
 		return
 	var rail_id := int(data.get("rail_id", -1))
 	var target_rail: Rail = null
-	for rail in CM.rails:
+	if CM.parsed_chart == null:
+		editor.selection.clear()
+		return
+	for rail in CM.parsed_chart.rails:
 		if rail != null and rail.id == rail_id:
 			target_rail = rail
 			break

@@ -32,6 +32,7 @@ CM="*res://global/chart_manager.gd"
 Game="*res://global/game.gd"
 CoverLoader="*res://global/cover_loader.gd"
 Transition="*uid://bw12vr28vpm78"
+Notification="*uid://b6j4mfmqfjhgb"
 
 [display]
 
@@ -74,13 +75,11 @@ locale/translations=PackedStringArray("res://locale.csv")
 
 [physics]
 
-common/physics_ticks_per_second=1000
-common/max_physics_steps_per_frame=100
 common/physics_jitter_fix=0.0
 common/enable_object_picking=false
 
 [rendering]
 
 environment/custom=""
-environment/bg_color=Color(0.14, 0.14, 0.14, 1)
+environment/bg_color=Color(0, 0, 0, 1)
 environment/image=""

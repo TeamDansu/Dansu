@@ -1,4 +1,4 @@
-extends ChartParser
+extends MetaParser
 class_name MetaParserV1
 
 enum { METADATA, TIMINGS }

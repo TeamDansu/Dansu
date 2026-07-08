@@ -51,7 +51,9 @@ static func rename_skin_references(chart_folder_path: String, old_skin_name: Str
 			_write_lines(full_path, lines)
 
 static func _clear_invalid_refs_in_loaded_chart(valid_lookup: Dictionary) -> void:
-	for rail in CM.rails:
+	if CM.parsed_chart == null:
+		return
+	for rail in CM.parsed_chart.rails:
 		if rail == null:
 			continue
 		for note in rail.notes:

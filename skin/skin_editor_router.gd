@@ -28,7 +28,7 @@ static func open_chart_skin_editor(chart) -> void:
 	context.chart_folder_path = ProjectSettings.globalize_path(chart.folder_path)
 	context.referenced_skin_file_name = chart.file_skin
 	if chart.file_skin != "":
-		context.skin_file_path = ProjectSettings.globalize_path(chart.skin_path)
+		context.skin_file_path = SkinSerializationScript.ensure_chart_skin_path(chart)
 	Game.skin_editor_request = context
 	Game.reopen_editor_without_chart_reload = true
 	Transition.transition_to(SKIN_EDITOR_SCENE_PATH, 0.45)

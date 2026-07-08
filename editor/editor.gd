@@ -35,6 +35,10 @@ const MAX_HISTORY_STEPS := 128
 @export var skin_file_label: Label
 @export var skin_browser_button: Button
 @export var open_skin_editor_button: Button
+@export var view_controller: EditorViewController
+@export var inspector_controller: EditorInspectorController
+@export var save_controller: EditorSaveController
+@export var edit_controller: EditorEditController
 
 var timeline: EditorTimeline = null
 var selection: ChartEditorSelection = ChartEditorSelection.new()
@@ -44,36 +48,15 @@ var previous_file_path := ""
 var transport: EditorTransport = EditorTransport.new()
 var hitsound_manager: EditorHitsoundManager = EditorHitsoundManager.new()
 
-var rail_layer: Control
-var note_layer: Control
-var rail_scene := preload("res://scenes/editor/editor_rail.tscn")
-var note_scene := preload("res://scenes/editor/editor_note.tscn")
-var timing_scene := preload("res://scenes/editor/ui/inspector/timing.tscn")
-
-var rail_views: Dictionary = {}
-var note_views: Dictionary = {}
-var timing_items: Array[EditorTimingItem] = []
-
 var point_dragging := false
 var note_passthrough := false
-var _syncing_metadata := false
 var _syncing_song_slider := false
-var _view_layout_dirty := true
 var _last_transport_ui_usec := 0
-
-var _last_panel_size := Vector2.ZERO
-var _last_judge_y := INF
-var _last_view_time := INF
-var _last_selection_rail: Rail = null
-var _last_selection_note: Note = null
-var _last_selection_point_index := -2
-var _last_note_passthrough := false
 
 var _undo_stack: Array[Dictionary] = []
 var _redo_stack: Array[Dictionary] = []
 var _is_restoring_history := false
 var _point_drag_history_pending := false
-var _skin_file_dialog: FileDialog
 
 func _ready() -> void:
 	if not Game.reopen_editor_without_chart_reload:
@@ -115,9 +98,8 @@ func _process(_delta: float) -> void:
 	var should_passthrough := Input.is_key_pressed(KEY_SHIFT)
 	if note_passthrough != should_passthrough:
 		note_passthrough = should_passthrough
-		for note_view in note_views.values():
-			note_view.set_passthrough(note_passthrough)
-		_view_layout_dirty = true
+		if view_controller != null:
+			view_controller.set_note_passthrough(note_passthrough)
 
 	_sync_view_layouts()
 
@@ -154,26 +136,12 @@ func _ensure_chart() -> Chart:
 	return fallback
 
 func _prepare_layers() -> void:
-	rail_layer = Control.new()
-	rail_layer.name = "RailLayer"
-	rail_layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	rail_layer.set_anchors_and_offsets_preset(Control.PRESET_TOP_LEFT)
-	rail_layer.position = Vector2.ZERO
-	rail_layer.size = chart_panel.size
-	chart_panel.add_child(rail_layer)
-
-	note_layer = Control.new()
-	note_layer.name = "NoteLayer"
-	note_layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	note_layer.set_anchors_and_offsets_preset(Control.PRESET_TOP_LEFT)
-	note_layer.position = Vector2.ZERO
-	note_layer.size = chart_panel.size
-	chart_panel.add_child(note_layer)
+	if view_controller != null:
+		view_controller.prepare_layers()
 
 func _configure_chart_input() -> void:
-	for node in [chart_root, chart_panel, bpm_lines, note_pivot]:
-		if node != null:
-			node.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	if view_controller != null:
+		view_controller.configure_chart_input()
 
 func _load_chart_data() -> void:
 	if chart == null:
@@ -230,320 +198,103 @@ func _connect_ui() -> void:
 		open_skin_editor_button.pressed.connect(_open_skin_editor)
 
 func _create_dialogs() -> void:
-	_skin_file_dialog = FileDialog.new()
-	_skin_file_dialog.access = FileDialog.ACCESS_FILESYSTEM
-	_skin_file_dialog.file_mode = FileDialog.FILE_MODE_OPEN_FILE
-	_skin_file_dialog.filters = PackedStringArray(["*.json ; Skin JSON"])
-	_skin_file_dialog.file_selected.connect(_on_skin_file_selected)
-	add_child(_skin_file_dialog)
+	if inspector_controller != null:
+		inspector_controller.create_dialogs()
 
 # — View —
 
 func _refresh_views() -> void:
-	_clear_layers()
-	rail_views.clear()
-	note_views.clear()
-
-	for rail: Rail in CM.rails:
-		if rail == null:
-			continue
-		var rail_view: EditorRail = rail_scene.instantiate()
-		rail_view.rail = rail
-		rail_view.editor = self
-		rail_layer.add_child(rail_view)
-		rail_views[rail] = rail_view
-
-		for note in rail.notes:
-			if note == null:
-				continue
-			var note_view: EditorNote = note_scene.instantiate()
-			note_view.note = note
-			note_view.rail = rail
-			note_view.editor = self
-			note_view.set_passthrough(note_passthrough)
-			note_layer.add_child(note_view)
-			note_views[note] = note_view
-
-	transport.rebuild_playback_notes()
-	_view_layout_dirty = true
-	_sync_view_layouts()
+	if view_controller != null:
+		view_controller.refresh_views()
 
 func _clear_layers() -> void:
-	if rail_layer != null:
-		for child in rail_layer.get_children():
-			child.queue_free()
-	if note_layer != null:
-		for child in note_layer.get_children():
-			child.queue_free()
+	if view_controller != null:
+		view_controller.clear_layers()
 
 func _sync_view_layouts() -> void:
-	if chart_panel == null or note_pivot == null:
-		return
-
-	var panel_size := chart_panel.size
-	var judge_y := note_pivot.position.y - chart_panel.position.y
-
-	if rail_layer != null and rail_layer.size != panel_size:
-		rail_layer.size = panel_size
-	if note_layer != null and note_layer.size != panel_size:
-		note_layer.size = panel_size
-
-	var layout_changed := (
-		_view_layout_dirty
-		or panel_size != _last_panel_size
-		or not is_equal_approx(judge_y, _last_judge_y)
-		or not is_equal_approx(Game.current_time, _last_view_time)
-		or selection.selected_rail != _last_selection_rail
-		or selection.selected_note != _last_selection_note
-		or selection.selected_point_index != _last_selection_point_index
-		or note_passthrough != _last_note_passthrough
-	)
-	if not layout_changed:
-		return
-
-	_last_panel_size = panel_size
-	_last_judge_y = judge_y
-	_last_view_time = Game.current_time
-	_last_selection_rail = selection.selected_rail
-	_last_selection_note = selection.selected_note
-	_last_selection_point_index = selection.selected_point_index
-	_last_note_passthrough = note_passthrough
-	_view_layout_dirty = false
-
-	for rail_view in rail_views.values():
-		rail_view.sync_layout(panel_size, judge_y, PIXELS_PER_MS, Game.current_time)
-		rail_view.set_selection_state(selection.selected_rail == rail_view.rail, selection.selected_point_index)
-
-	for note in note_views.keys():
-		var note_view: EditorNote = note_views[note]
-		note_view.sync_layout(panel_size, judge_y, PIXELS_PER_MS, Game.current_time)
-		note_view.set_selected(selection.selected_note == note)
-
-	_update_time_ui(false)
+	if view_controller != null:
+		view_controller.sync_layouts()
 
 # Input
 
 func _handle_mouse_button(event: InputEventMouseButton) -> void:
-	if not event.pressed:
-		return
-
-	if event.button_index == MOUSE_BUTTON_WHEEL_UP or event.button_index == MOUSE_BUTTON_WHEEL_DOWN:
-		if not _is_mouse_inside_chart():
-			return
-		if Input.is_key_pressed(KEY_ALT):
-			_adjust_selected_object(event.button_index == MOUSE_BUTTON_WHEEL_UP)
-		else:
-			var direction := 1 if event.button_index == MOUSE_BUTTON_WHEEL_UP else -1
-			_set_current_time(timeline.step_time(int(round(Game.current_time)), direction))
-		get_viewport().set_input_as_handled()
-		return
-
-	if event.button_index != MOUSE_BUTTON_LEFT or not _is_mouse_inside_chart():
-		return
-
-	var mouse_pos := get_global_mouse_position()
-
-	if Input.is_key_pressed(KEY_SHIFT):
-		var point_hit := _find_point_at(mouse_pos)
-		if not point_hit.is_empty():
-			selection.select_point(point_hit["rail"], point_hit["point_index"])
-			point_dragging = true
-			_point_drag_history_pending = true
-			get_viewport().set_input_as_handled()
-			return
-
-	if Input.is_key_pressed(KEY_CTRL) and selection.selected_rail != null:
-		_add_point_at_mouse(mouse_pos)
-		get_viewport().set_input_as_handled()
-		return
-
-	var note_hit: Dictionary = {} if note_passthrough else _find_note_at(mouse_pos)
-	if not note_hit.is_empty():
-		selection.select_note(note_hit["rail"], note_hit["note"])
-		get_viewport().set_input_as_handled()
-		return
-
-	var rail_hit := _find_rail_at(mouse_pos)
-	if rail_hit != null:
-		selection.select_rail(rail_hit)
-		get_viewport().set_input_as_handled()
-		return
-
-	selection.clear()
+	if edit_controller != null:
+		edit_controller.handle_mouse_button(event)
 
 
 func exit() -> void:
 	Transition.return_to_menu(1)
 
 func _handle_key_input(event: InputEventKey) -> void:
-	if event.ctrl_pressed:
-		if event.keycode == KEY_Z:
-			_undo_history()
-			return
-		if event.keycode == KEY_Y:
-			_redo_history()
-			return
-
-	match event.keycode:
-		KEY_R: _create_rail()
-		KEY_Z: _create_hit_note()
-		KEY_ESCAPE: exit()
-		KEY_X: _create_trace_note()
-		KEY_C: _create_spike_note()
-		KEY_A: _create_left_note()
-		KEY_D: _create_right_note()
-		KEY_DELETE: _delete_selected()
-		KEY_SPACE: transport.toggle()
-		KEY_LEFT:
-			_push_history_snapshot()
-			EditorChartOps.move_rail(selection.selected_rail, -1.0)
-			_view_layout_dirty = true
-		KEY_RIGHT:
-			_push_history_snapshot()
-			EditorChartOps.move_rail(selection.selected_rail, 1.0)
-			_view_layout_dirty = true
+	if edit_controller != null:
+		edit_controller.handle_key_input(event)
 
 # Chart editing
 
 func _set_current_time(value: float) -> void:
-	Game.current_time = timeline.clamp_time(value)
-	_update_time_ui(true)
-	_view_layout_dirty = true
-	if transport.playing:
-		transport.seek()
+	if edit_controller != null:
+		edit_controller.set_current_time(value)
 
 func _create_rail() -> void:
-	_push_history_snapshot()
-	var new_rail := EditorChartOps.create_default_rail(timeline.snap_time(int(round(Game.current_time))))
-	CM.rails.append(new_rail)
-	selection.select_rail(new_rail)
-	_refresh_views()
+	if edit_controller != null:
+		edit_controller.create_rail()
 
 func _create_hit_note() -> void:
-	_create_note(Note.NoteType.HIT, Note.Dir.NONE)
+	if edit_controller != null:
+		edit_controller.create_hit_note()
 
 func _create_trace_note() -> void:
-	_create_note(Note.NoteType.TRACE, Note.Dir.NONE)
+	if edit_controller != null:
+		edit_controller.create_trace_note()
 
 func _create_spike_note() -> void:
-	_create_note(Note.NoteType.SPIKE, Note.Dir.NONE)
+	if edit_controller != null:
+		edit_controller.create_spike_note()
 
 func _create_left_note() -> void:
-	_create_note(Note.NoteType.MOVE, Note.Dir.LEFT)
+	if edit_controller != null:
+		edit_controller.create_left_note()
 
 func _create_right_note() -> void:
-	_create_note(Note.NoteType.MOVE, Note.Dir.RIGHT)
+	if edit_controller != null:
+		edit_controller.create_right_note()
 
 func _create_note(note_type: Note.NoteType, dir: int) -> void:
-	if selection.selected_rail == null:
-		return
-	_push_history_snapshot()
-	var note_time := timeline.snap_time(int(round(Game.current_time)))
-	var new_note := EditorChartOps.create_note(note_type, note_time, dir)
-	selection.selected_rail.notes.append(new_note)
-	selection.selected_rail.sort_notes()
-	selection.select_note(selection.selected_rail, new_note)
-	_refresh_views()
+	if edit_controller != null:
+		edit_controller.create_note(note_type, dir)
 
 func _delete_selected() -> void:
-	if selection.selected_note == null and not selection.has_point() and selection.selected_rail == null:
-		return
-	_push_history_snapshot()
-	if selection.selected_note != null and selection.selected_rail != null:
-		EditorChartOps.remove_note(selection.selected_rail, selection.selected_note)
-	elif selection.has_point():
-		EditorChartOps.remove_point(selection.selected_rail, selection.selected_point_index)
-	elif selection.selected_rail != null:
-		EditorChartOps.remove_rail(selection.selected_rail)
-	selection.clear()
-	_refresh_views()
+	if edit_controller != null:
+		edit_controller.delete_selected()
 
 func _add_point_at_mouse(global_mouse_pos: Vector2) -> void:
-	_push_history_snapshot()
-	var local := chart_panel.get_global_transform_with_canvas().affine_inverse() * global_mouse_pos
-	var point_time := int(timeline.snap_time(_local_y_to_time(local.y)))
-	var point_x := _snap_point_x(local.x / max(1.0, chart_panel.size.x))
-	var point_index := EditorChartOps.add_point(selection.selected_rail, point_time, point_x)
-	selection.select_point(selection.selected_rail, point_index)
-	_refresh_views()
+	if edit_controller != null:
+		edit_controller.add_point_at_mouse(global_mouse_pos)
 
 func _adjust_selected_object(is_positive: bool) -> void:
-	if selection.selected_note != null:
-		_push_history_snapshot()
-		var delta := 50 if is_positive else -50
-		selection.selected_note.length = max(0, selection.selected_note.length + delta)
-		_refresh_views()
-		return
-	if selection.has_point():
-		_push_history_snapshot()
-		var point := selection.get_point()
-		point.curve = clamp(point.curve + (0.1 if is_positive else -0.1), -1.0, 1.0)
-		_refresh_views()
+	if edit_controller != null:
+		edit_controller.adjust_selected_object(is_positive)
 
 # Hit testing 
 
 func _find_note_at(global_mouse_pos: Vector2) -> Dictionary:
-	for note in note_views.keys():
-		var note_view: EditorNote = note_views[note]
-		if note_view.is_head_hit(global_mouse_pos):
-			return {"note": note, "rail": note_view.rail}
-	return {}
+	return view_controller.find_note_at(global_mouse_pos) if view_controller != null else {}
 
 func _find_rail_at(global_mouse_pos: Vector2) -> Rail:
-	var closest_rail: Rail = null
-	var closest_distance := INF
-	for rail in rail_views.keys():
-		var dist: float = rail_views[rail].distance_to_curve(global_mouse_pos)
-		if dist < 14.0 and dist < closest_distance:
-			closest_distance = dist
-			closest_rail = rail
-	return closest_rail
+	return view_controller.find_rail_at(global_mouse_pos) if view_controller != null else null
 
 func _find_point_at(global_mouse_pos: Vector2) -> Dictionary:
-	var closest_rail: Rail = null
-	var closest_index := -1
-	var closest_distance := INF
-	for rail in rail_views.keys():
-		var rail_view: EditorRail = rail_views[rail]
-		var point_index := rail_view.get_point_hit_index(global_mouse_pos)
-		if point_index == -1:
-			continue
-		var local := rail_view.get_global_transform_with_canvas().affine_inverse() * global_mouse_pos
-		var dist := rail_view._point_to_panel(rail.points[point_index]).distance_to(local)
-		if dist < closest_distance:
-			closest_distance = dist
-			closest_rail = rail
-			closest_index = point_index
-	if closest_rail == null:
-		return {}
-	return {"rail": closest_rail, "point_index": closest_index}
+	return view_controller.find_point_at(global_mouse_pos) if view_controller != null else {}
 
 func _drag_selected_point(global_mouse_pos: Vector2) -> void:
-	var point := selection.get_point()
-	if point == null:
-		return
-	var local := chart_panel.get_global_transform_with_canvas().affine_inverse() * global_mouse_pos
-	var next_x := _snap_point_x(local.x / max(1.0, chart_panel.size.x))
-	var next_time := timeline.snap_time(_local_y_to_time(local.y))
-	if is_equal_approx(point.x, next_x) and point.time == next_time:
-		return
-	if _point_drag_history_pending:
-		_push_history_snapshot()
-		_point_drag_history_pending = false
-	point.x = next_x
-	point.time = next_time
-	selection.selected_rail.sort_points()
-	selection.selected_point_index = selection.selected_rail.points.find(point)
-	_refresh_views()
+	if view_controller != null:
+		view_controller.drag_selected_point(global_mouse_pos)
 
 # Save
 
 func _save_chart() -> void:
-	if not EditorChartOps.can_save(chart):
-		return
-	if EditorChartOps.save_chart(chart, previous_file_path):
-		previous_file_path = chart.file_path
-		_update_save_button_state()
+	if save_controller != null:
+		save_controller.save_chart()
 
 func _open_skin_editor() -> void:
 	if chart == null:
@@ -552,65 +303,26 @@ func _open_skin_editor() -> void:
 	SkinEditorRouterScript.open_chart_skin_editor(chart)
 
 func _on_skin_browser_pressed() -> void:
-	if chart == null or _skin_file_dialog == null:
-		return
-	var chart_folder_path := ProjectSettings.globalize_path(chart.folder_path)
-	FileSystem.ensure_dir(chart_folder_path)
-	_skin_file_dialog.root_subfolder = chart_folder_path
-	_skin_file_dialog.current_dir = chart_folder_path
-	if chart.file_skin != "":
-		_skin_file_dialog.current_path = chart_folder_path.path_join(chart.file_skin)
-	_skin_file_dialog.popup_centered_ratio(0.7)
+	if inspector_controller != null:
+		inspector_controller.open_skin_browser()
 
 func _on_skin_file_selected(path: String) -> void:
-	if chart == null:
-		return
-	var chart_folder_path := ProjectSettings.globalize_path(chart.folder_path).simplify_path()
-	var selected_path := path.simplify_path()
-	if selected_path.get_base_dir() != chart_folder_path:
-		return
-	chart.file_skin = selected_path.get_file()
-	_update_skin_file_ui()
+	if inspector_controller != null:
+		inspector_controller._on_skin_file_selected(path)
 
 # UI state
 
 func _refresh_metadata_fields() -> void:
-	_syncing_metadata = true
-	title_line_edit.text = chart.title
-	artist_line_edit.text = chart.artist
-	difficulty_line_edit.text = chart.difficulty
-	source_line_edit.text = chart.source
-	tags_line_edit.text = chart.tags
-	_syncing_metadata = false
-	_update_skin_file_ui()
+	if inspector_controller != null:
+		inspector_controller.refresh_metadata_fields()
 
 func _update_skin_file_ui() -> void:
-	if skin_file_label == null or chart == null:
-		return
-	skin_file_label.text = chart.file_skin if chart.file_skin != "" else "(no linked skin file)"
+	if inspector_controller != null:
+		inspector_controller.update_skin_file_ui()
 
 func _rebuild_timing_ui() -> void:
-	timeline.ensure_timings()
-	for item in timing_items:
-		if item != null and item != timing_template:
-			item.queue_free()
-	timing_items.clear()
-
-	for index in range(chart.timings.size()):
-		var item: EditorTimingItem
-		if index == 0:
-			item = timing_template as EditorTimingItem
-		else:
-			item = timing_scene.instantiate() as EditorTimingItem
-			timing_list_container.add_child(item)
-		item.bind(chart.timings[index])
-		if not item.change_started.is_connected(_on_timing_item_change_started):
-			item.change_started.connect(_on_timing_item_change_started)
-		if not item.changed.is_connected(_on_timing_item_changed):
-			item.changed.connect(_on_timing_item_changed)
-		if not item.remove_requested.is_connected(_on_timing_remove_requested):
-			item.remove_requested.connect(_on_timing_remove_requested)
-		timing_items.append(item)
+	if inspector_controller != null:
+		inspector_controller.rebuild_timing_ui()
 
 func _update_slider_range() -> void:
 	if song_slider == null:
@@ -621,24 +333,12 @@ func _update_slider_range() -> void:
 	_update_time_ui(true)
 
 func _update_beat_division_ui() -> void:
-	if beat_division_slider == null:
-		return
-	var divisions := _get_supported_beat_divisions()
-	beat_division_slider.min_value = 0
-	beat_division_slider.max_value = divisions.size() - 1
-	beat_division_slider.step = 1
-	var target_index := divisions.find(timeline.beat_division)
-	if target_index == -1:
-		target_index = divisions.find(4)
-		if target_index == -1:
-			target_index = 0
-	timeline.beat_division = divisions[target_index]
-	beat_division_slider.value = target_index
-	beat_division_label.text = "1/%d" % timeline.beat_division
+	if inspector_controller != null:
+		inspector_controller.update_beat_division_ui()
 
 func _update_save_button_state() -> void:
-	if save_button != null:
-		save_button.disabled = not EditorChartOps.can_save(chart)
+	if save_controller != null:
+		save_controller.update_save_button_state()
 
 func _update_time_ui(force: bool) -> void:
 	var now_usec := Time.get_ticks_usec()
@@ -662,7 +362,8 @@ func _set_song_slider_value(value: float) -> void:
 
 func _on_selection_changed() -> void:
 	selection_changed.emit()
-	_view_layout_dirty = true
+	if view_controller != null:
+		view_controller.mark_layout_dirty()
 	_sync_view_layouts()
 
 func _on_hitsounds_changed() -> void:
@@ -674,71 +375,44 @@ func _on_song_slider_value_changed(value: float) -> void:
 		_set_current_time(value)
 
 func _on_title_changed(new_text: String) -> void:
-	if _syncing_metadata:
-		return
-	chart.title = new_text
-	_update_save_button_state()
+	if inspector_controller != null:
+		inspector_controller.on_title_changed(new_text)
 
 func _on_artist_changed(new_text: String) -> void:
-	if _syncing_metadata:
-		return
-	chart.artist = new_text
+	if inspector_controller != null:
+		inspector_controller.on_artist_changed(new_text)
 
 func _on_difficulty_changed(new_text: String) -> void:
-	if _syncing_metadata:
-		return
-	if EditorChartOps.has_duplicate_difficulty(chart, new_text):
-		_syncing_metadata = true
-		chart.difficulty = ""
-		difficulty_line_edit.text = ""
-		_syncing_metadata = false
-	else:
-		chart.difficulty = new_text.strip_edges()
-	_update_save_button_state()
+	if inspector_controller != null:
+		inspector_controller.on_difficulty_changed(new_text)
 
 func _on_source_changed(new_text: String) -> void:
-	if not _syncing_metadata:
-		chart.source = new_text
+	if inspector_controller != null:
+		inspector_controller.on_source_changed(new_text)
 
 func _on_tags_changed(new_text: String) -> void:
-	if not _syncing_metadata:
-		chart.tags = new_text
+	if inspector_controller != null:
+		inspector_controller.on_tags_changed(new_text)
 
 func _on_beat_division_slider_changed(value: float) -> void:
-	var divisions := _get_supported_beat_divisions()
-	var index := clampi(int(round(value)), 0, divisions.size() - 1)
-	if timeline.beat_division == divisions[index]:
-		return
-	_push_history_snapshot()
-	timeline.beat_division = divisions[index]
-	beat_division_label.text = "1/%d" % timeline.beat_division
-	_refresh_views()
+	if inspector_controller != null:
+		inspector_controller.on_beat_division_slider_changed(value)
 
 func _add_timing() -> void:
-	_push_history_snapshot()
-	var new_timing := Timing.new()
-	new_timing.time = timeline.snap_time(int(round(Game.current_time)))
-	new_timing.bpm = 120.0 if chart.timings.is_empty() else chart.timings.back().bpm
-	chart.timings.append(new_timing)
-	chart.timings.sort_custom(func(a, b) -> bool: return a.time < b.time)
-	_rebuild_timing_ui()
-	_refresh_views()
+	if inspector_controller != null:
+		inspector_controller.add_timing()
 
 func _on_timing_item_change_started(_item: EditorTimingItem) -> void:
-	_push_history_snapshot()
+	if inspector_controller != null:
+		inspector_controller.on_timing_item_change_started(_item)
 
 func _on_timing_item_changed(_item: EditorTimingItem) -> void:
-	chart.timings.sort_custom(func(a, b) -> bool: return a.time < b.time)
-	_rebuild_timing_ui()
-	_refresh_views()
+	if inspector_controller != null:
+		inspector_controller.on_timing_item_changed(_item)
 
 func _on_timing_remove_requested(item: EditorTimingItem) -> void:
-	if chart.timings.size() <= 1:
-		return
-	_push_history_snapshot()
-	chart.timings.erase(item.timing)
-	_rebuild_timing_ui()
-	_refresh_views()
+	if inspector_controller != null:
+		inspector_controller.on_timing_remove_requested(item)
 
 # History
 

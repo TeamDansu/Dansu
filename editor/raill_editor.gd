@@ -1,7 +1,7 @@
 extends TextureRect
 class_name EditorRail
 
-@export var point_texture: Texture2D = preload("res://resorces/textures/editor/editor_railpoint.svg")
+@export var point_texture: Texture2D = preload("res://resources/textures/editor/editor_railpoint.svg")
 
 var rail: Rail = null
 var editor: Editor = null

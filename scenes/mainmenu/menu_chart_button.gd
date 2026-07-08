@@ -35,17 +35,21 @@ func _ready() -> void:
 	check_is_selected()
 
 func _on_enter() -> void:
-	hovered = true
-	_apply_hover_state()
-	%Hover.play()
+	_set_hovered_state(true, true)
 
 func _on_exit() -> void:
-	hovered = false
-	_apply_hover_state()
+	_set_hovered_state(false)
 
 func _on_gui_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
 		_pressed()
+
+func sync_hover_state(mouse_position: Vector2) -> void:
+	if not visible:
+		_set_hovered_state(false)
+		return
+
+	_set_hovered_state(get_global_rect().has_point(mouse_position))
 
 func _apply_hover_state() -> void:
 	if hover_tween:
@@ -64,6 +68,16 @@ func _apply_hover_state() -> void:
 		hover_tween.tween_property(panel, "scale", rest_scale, 0.2)
 		hover_tween.parallel().tween_property(panel, "modulate:a", NORMAL_ALPHA, 0.2)
 
+func _set_hovered_state(value: bool, play_sound: bool = false) -> void:
+	if hovered == value:
+		return
+
+	hovered = value
+	_apply_hover_state()
+
+	if hovered and play_sound:
+		%Hover.play()
+
 func set_item(value: SongListItem) -> void:
 	item = value
 	
@@ -72,6 +86,7 @@ func set_item(value: SongListItem) -> void:
 		charts.clear()
 		primary_chart = null
 		current_cover_chart = null
+		_set_hovered_state(false)
 		_clear_rating_displays()
 		visible = false
 		return

@@ -1,12 +1,12 @@
 extends Sprite3D
 class_name GameplayJudgePopup
 
-const JUST_TEXTURE := preload("res://resorces/textures/judges/just.png")
-const GOOD_TEXTURE := preload("res://resorces/textures/judges/good.png")
-const OK_TEXTURE := preload("res://resorces/textures/judges/ok.png")
-const BAD_TEXTURE := preload("res://resorces/textures/judges/nah.png")
-const MISS_TEXTURE := preload("res://resorces/textures/judges/miss.png")
-const JUST_PLUS_TEXTURE := preload("res://resorces/textures/judges/just_plus.png")
+const JUST_TEXTURE := preload("res://resources/textures/judges/just.png")
+const GOOD_TEXTURE := preload("res://resources/textures/judges/good.png")
+const OK_TEXTURE := preload("res://resources/textures/judges/ok.png")
+const BAD_TEXTURE := preload("res://resources/textures/judges/nah.png")
+const MISS_TEXTURE := preload("res://resources/textures/judges/miss.png")
+const JUST_PLUS_TEXTURE := preload("res://resources/textures/judges/just_plus.png")
 
 const HOLD_DURATION := 0.1
 const FADE_DURATION := 0.2

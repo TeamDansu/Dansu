@@ -1,6 +1,8 @@
 extends Node3D
 class_name Player
 
+const SkinSerializationScript = preload("res://skin/skin_serialization.gd")
+
 @onready var sprite: PlayerSprite = $Sprite3D
 
 var standing_rail: Rail = null
@@ -13,9 +15,11 @@ func _setup_skin() -> void:
 	var skin := PlayerSkinData.new()
 	var loaded := false
 
-	if not Config.ignore_chart_skin:
+	if not Config.ignore_chart_skin and CM.selected_chart != null:
 		if CM.selected_chart.file_skin != "":
-			loaded = skin.parse_objects(PlayerSkinData.TYPE.IN_CHART, "", CM.selected_chart.skin_path.get_file())
+			var chart_skin_path := SkinSerializationScript.ensure_chart_skin_path(CM.selected_chart)
+			if chart_skin_path != "":
+				loaded = skin.parse_objects(PlayerSkinData.TYPE.IN_CHART, "", chart_skin_path.get_file())
 
 	if not loaded and Config.custom_skin_path != "":
 		loaded = skin.parse_objects(
@@ -41,7 +45,7 @@ func _process(delta: float) -> void:
 		standing_rail._get_rail_x_at_time(int(Game.current_time))
 	)
 	if _is_moving:
-		position.x = lerp(position.x, target_x, delta * 20.0)
+		position.x = lerp(position.x, target_x, delta * 18.0)
 		if abs(position.x - target_x) < 0.01:
 			_is_moving = false
 			if sprite.skin and _should_return_to_idle_after_move():

@@ -13,7 +13,7 @@ func _process(_delta: float) -> void:
 	if chart_panel == null:
 		return
 
-	var next_position := chart_panel.position
+	var next_position := Vector2.ZERO if get_parent() == chart_panel else chart_panel.position
 	var next_size := chart_panel.size
 	var next_time := Game.current_time
 	var next_pixels_per_ms := editor.get_pixels_per_ms() if editor != null else 0.0

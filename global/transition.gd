@@ -201,5 +201,5 @@ func _setup_transition_layer() -> void:
 	_transition_layer.add_child(_transition_rect)
 
 	_transition_material = ShaderMaterial.new()
-	_transition_material.shader = load("res://resorces/shaders/transition.gdshader") as Shader
+	_transition_material.shader = load("res://resources/shaders/transition.gdshader") as Shader
 	_transition_rect.material = _transition_material

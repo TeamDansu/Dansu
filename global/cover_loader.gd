@@ -26,24 +26,50 @@ func _exit_tree() -> void:
 
 
 func request_cover(chart: Chart) -> void:
-	if chart == null or chart.cover_image != null:
-		return
+	_enqueue_charts([chart], false)
 
-	var cover_path := chart.get_cover_path()
-	if cover_path.is_empty():
-		return
 
-	var chart_id := chart.get_instance_id()
+func replace_queue(charts: Array[Chart]) -> void:
+	_enqueue_charts(charts, true)
+
+
+func _enqueue_charts(charts: Array[Chart], replace_existing: bool) -> void:
+	var filtered: Array[Chart] = []
+	var filtered_ids := {}
+
+	for chart in charts:
+		if chart == null or chart.cover_image != null:
+			continue
+
+		var cover_path := chart.get_cover_path()
+		if cover_path.is_empty():
+			continue
+
+		var chart_id := chart.get_instance_id()
+		if filtered_ids.has(chart_id):
+			continue
+
+		filtered_ids[chart_id] = true
+		filtered.append(chart)
+
+	if replace_existing:
+		mutex.lock()
+		queued_charts = filtered
+		queued_ids = filtered_ids.duplicate()
+		mutex.unlock()
+		for _i in range(filtered.size()):
+			semaphore.post()
+		return
 
 	mutex.lock()
-	if queued_ids.has(chart_id):
-		mutex.unlock()
-		return
-
-	queued_ids[chart_id] = true
-	queued_charts.append(chart)
+	for chart in filtered:
+		var chart_id := chart.get_instance_id()
+		if queued_ids.has(chart_id):
+			continue
+		queued_ids[chart_id] = true
+		queued_charts.append(chart)
+		semaphore.post()
 	mutex.unlock()
-	semaphore.post()
 
 
 func _process(_delta: float) -> void:

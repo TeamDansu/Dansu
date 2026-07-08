@@ -12,8 +12,10 @@ const SECTION_ETC := "ETC"
 
 ## CONST
 const FILE_EXTENSION = ".dansu"
-const DEFAULT_SKIN_PATH = "res://resorces/skins/danshe/skin.json"
+const DEFAULT_SKIN_PATH = "res://resources/skins/danshe/skin.json"
 const DEFAULT_API_URL = "https://dansu.h4ya.net/api/v1"
+const MIN_MAX_FPS := 30
+const MAX_FINITE_FPS := 1000
 
 var config := ConfigFile.new()
 
@@ -26,7 +28,6 @@ func apply_settings() -> void:
 	ignore_chart_skin = ignore_chart_skin
 	window_mode = window_mode
 	window_size = window_size
-	ticks_per_second = ticks_per_second
 	master_db = master_db
 	music_db = music_db
 	sfx_db = sfx_db
@@ -90,8 +91,9 @@ var action_hit2: Key:
 
 var max_fps: int:
 	get:
-		return int(config.get_value(SECTION_GRAPHICS, "max_fps", 0))
+		return _sanitize_max_fps_value(config.get_value(SECTION_GRAPHICS, "max_fps", 0))
 	set(value):
+		value = _sanitize_max_fps_value(value)
 		config.set_value(SECTION_GRAPHICS, "max_fps", value)
 		Engine.max_fps = value
 
@@ -172,13 +174,6 @@ var note_speed: float:
 	set(value):
 		config.set_value(SECTION_GAMEPLAY,"note_speed",value)
 
-var ticks_per_second: int:
-	get:
-		return config.get_value(SECTION_GAMEPLAY,"ticks_per_second",1000)
-	set(value):
-		config.set_value(SECTION_GAMEPLAY,"ticks_per_second",value)
-		Engine.physics_ticks_per_second = value
-
 ## Audio
 var master_db: float:
 	get:
@@ -234,6 +229,7 @@ var server_api_url:
 
 func _ready() -> void:
 	config.load(FILE_PATH)
+	FileSystem.process_startup_imports()
 	save_config()
 
 func save_config() -> void:
@@ -255,6 +251,7 @@ func _center_window_if_windowed() -> void:
 	var screen_pos := DisplayServer.screen_get_position(screen)
 	var screen_size := DisplayServer.screen_get_size(screen)
 	var target_size := window.size
+	@warning_ignore("integer_division")
 	var centered_position := screen_pos + (screen_size - target_size) / 2
 
 	DisplayServer.window_set_position(Vector2i(centered_position))
@@ -266,3 +263,14 @@ func _sanitize_window_mode(value) -> DisplayServer.WindowMode:
 	if mode < 0 or mode > int(DisplayServer.WINDOW_MODE_EXCLUSIVE_FULLSCREEN):
 		return DisplayServer.WINDOW_MODE_FULLSCREEN
 	return mode as DisplayServer.WindowMode
+
+
+func _sanitize_max_fps_value(value) -> int:
+	var fps := int(value)
+	if fps <= 0:
+		return 0
+	if fps < MIN_MAX_FPS:
+		return MIN_MAX_FPS
+	if fps > MAX_FINITE_FPS:
+		return 0
+	return fps

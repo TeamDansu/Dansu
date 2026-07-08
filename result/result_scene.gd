@@ -1,6 +1,8 @@
 extends Control
 
-const RESULT_TICK_STREAM := preload("res://resorces/audio/buttons/switch8.ogg")
+const SkinSerializationScript = preload("res://skin/skin_serialization.gd")
+
+const RESULT_TICK_STREAM := preload("res://resources/audio/buttons/switch8.ogg")
 const RESULT_START_DELAY := 1.0
 const FULL_RANK_SEGMENT_DURATION := 0.28
 const FINAL_SEGMENT_DURATION := 0.95
@@ -108,7 +110,9 @@ func _setup_player_sprite() -> void:
 	var loaded := false
 
 	if not Config.ignore_chart_skin and CM.selected_chart != null and CM.selected_chart.file_skin != "":
-		loaded = skin.parse_objects(PlayerSkinData.TYPE.IN_CHART, "", CM.selected_chart.skin_path.get_file())
+		var chart_skin_path := SkinSerializationScript.ensure_chart_skin_path(CM.selected_chart)
+		if chart_skin_path != "":
+			loaded = skin.parse_objects(PlayerSkinData.TYPE.IN_CHART, "", chart_skin_path.get_file())
 
 	if not loaded and Config.custom_skin_path != "":
 		loaded = skin.parse_objects(

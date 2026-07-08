@@ -4,9 +4,9 @@
 [ext_resource type="PackedScene" uid="uid://c0f1pv7v7l8io" path="res://scenes/skineditor/animation_button.tscn" id="1_xwaek"]
 [ext_resource type="PackedScene" uid="uid://3rgo3pf21gx1" path="res://scenes/skineditor/frame.tscn" id="2_6eirq"]
 [ext_resource type="PackedScene" uid="uid://txbv3tuwtel0" path="res://scenes/skineditor/sprite_image.tscn" id="4_6eirq"]
-[ext_resource type="Texture2D" uid="uid://n48htgfia26x" path="res://resorces/skins/danshe/sprite/danshe_dance_2.png" id="4_byoka"]
-[ext_resource type="Texture2D" uid="uid://qfbvykpfreya" path="res://resorces/skins/danshe/sprite/danshe_dance_1.png" id="4_hbx7w"]
-[ext_resource type="Texture2D" uid="uid://caegtu8bhulxq" path="res://resorces/skins/danshe/sprite/danshe_idle.png" id="5_3574f"]
+[ext_resource type="Texture2D" uid="uid://n48htgfia26x" path="res://resources/skins/danshe/sprite/danshe_dance_2.png" id="4_byoka"]
+[ext_resource type="Texture2D" uid="uid://qfbvykpfreya" path="res://resources/skins/danshe/sprite/danshe_dance_1.png" id="4_hbx7w"]
+[ext_resource type="Texture2D" uid="uid://caegtu8bhulxq" path="res://resources/skins/danshe/sprite/danshe_idle.png" id="5_3574f"]
 
 [node name="SkinEditor" type="Control" unique_id=1593651549 node_paths=PackedStringArray("name_line_edit", "idle_option", "left_option", "right_option", "scale_bar", "hits_option", "hits_add_new_button", "skin_contents", "new_animation_button", "animation_list_container", "animation_template", "frames_container", "frame_template", "delete_frame_button", "calculate_scale_button", "onion_skin_button", "preview_play_button", "fps_line_edit", "effect_option", "save_button", "back_to_menu_button", "back_to_chart_button", "import_sprite_button", "sprite_list_container", "sprite_template", "preview_sprite", "preview_onion_prev", "preview_onion_next")]
 layout_mode = 3

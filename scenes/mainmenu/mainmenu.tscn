@@ -1,31 +1,34 @@
 [gd_scene format=3 uid="uid://yw5raylop0p"]
 
-[ext_resource type="Shader" uid="uid://cflu32au5woaj" path="res://resorces/shaders/bg.gdshader" id="1_br2e8"]
+[ext_resource type="Shader" uid="uid://cflu32au5woaj" path="res://resources/shaders/bg.gdshader" id="1_br2e8"]
 [ext_resource type="Script" uid="uid://c3oh0iofhcct7" path="res://scenes/mainmenu/mainmenu.gd" id="1_jyltf"]
 [ext_resource type="Script" uid="uid://gw4u2exwyrwf" path="res://scenes/mainmenu/menu_animations.gd" id="2_rhsxn"]
 [ext_resource type="Texture2D" uid="uid://blji51614hnb4" path="res://mockup/mockup_character.png" id="3_da4vi"]
 [ext_resource type="PackedScene" uid="uid://c51ndn5ftq4wo" path="res://scenes/mainmenu/menubutton.tscn" id="4_da4vi"]
-[ext_resource type="FontFile" uid="uid://drcicje7q2t7x" path="res://resorces/fonts/Next Bravo.ttf" id="4_ridl2"]
+[ext_resource type="FontFile" uid="uid://drcicje7q2t7x" path="res://resources/fonts/Next Bravo.ttf" id="4_ridl2"]
 [ext_resource type="Texture2D" uid="uid://cw8cihgunxcv6" path="res://icon.svg" id="5_x46xa"]
-[ext_resource type="Shader" uid="uid://cnchsob31pe3k" path="res://resorces/shaders/liquid.gdshader" id="6_da4vi"]
+[ext_resource type="Shader" uid="uid://cnchsob31pe3k" path="res://resources/shaders/liquid.gdshader" id="6_da4vi"]
 [ext_resource type="Script" uid="uid://kieefq7irimy" path="res://scenes/mainmenu/menu_buttons.gd" id="6_xnw7g"]
 [ext_resource type="Script" uid="uid://by3ih1cu6lh5s" path="res://scenes/mainmenu/visualizer.gd" id="7_wnqqh"]
 [ext_resource type="Script" uid="uid://djhm3b0hsswb5" path="res://scenes/mainmenu/menu_audio.gd" id="9_x46xa"]
 [ext_resource type="Script" uid="uid://b0f8fo72g82lr" path="res://scenes/mainmenu/pivot.gd" id="10_6yf2l"]
-[ext_resource type="Shader" uid="uid://qbfnricvyktb" path="res://resorces/shaders/wave.gdshader" id="10_jyltf"]
+[ext_resource type="Shader" uid="uid://qbfnricvyktb" path="res://resources/shaders/wave.gdshader" id="10_jyltf"]
 [ext_resource type="Script" uid="uid://dvjmrd7igbpip" path="res://scenes/mainmenu/difficulty_select.gd" id="11_1w8yq"]
 [ext_resource type="Script" uid="uid://n4yyyajfnst0" path="res://scenes/mainmenu/chart_info.gd" id="11_ll1i1"]
-[ext_resource type="FontFile" uid="uid://cay31gip2omwr" path="res://resorces/fonts/BebasNeue-Regular.ttf" id="12_a8qj1"]
-[ext_resource type="Texture2D" uid="uid://g4w7jxdx88sv" path="res://resorces/icons/play.svg" id="13_hqrtg"]
-[ext_resource type="Texture2D" uid="uid://yxtyt10rngs0" path="res://resorces/icons/log-out.svg" id="13_ne1f7"]
+[ext_resource type="FontFile" uid="uid://cay31gip2omwr" path="res://resources/fonts/BebasNeue-Regular.ttf" id="12_a8qj1"]
+[ext_resource type="Texture2D" uid="uid://g4w7jxdx88sv" path="res://resources/icons/play.svg" id="13_hqrtg"]
+[ext_resource type="Texture2D" uid="uid://yxtyt10rngs0" path="res://resources/icons/log-out.svg" id="13_ne1f7"]
 [ext_resource type="PackedScene" uid="uid://cij7mo4rkb3uj" path="res://scenes/mainmenu/chart.tscn" id="13_xnw7g"]
-[ext_resource type="Texture2D" uid="uid://bh7stcrpeaogx" path="res://resorces/icons/map.svg" id="14_dx8qc"]
-[ext_resource type="Texture2D" uid="uid://dnbui2wkl4v1h" path="res://resorces/icons/bolt.svg" id="14_hqrtg"]
-[ext_resource type="Texture2D" uid="uid://sc3o36e08g15" path="res://resorces/icons/square-pen.svg" id="15_dx8qc"]
+[ext_resource type="Texture2D" uid="uid://bh7stcrpeaogx" path="res://resources/icons/map.svg" id="14_dx8qc"]
+[ext_resource type="Texture2D" uid="uid://dnbui2wkl4v1h" path="res://resources/icons/bolt.svg" id="14_hqrtg"]
+[ext_resource type="Texture2D" uid="uid://sc3o36e08g15" path="res://resources/icons/square-pen.svg" id="15_dx8qc"]
 [ext_resource type="Script" uid="uid://dx05jon4ev7cp" path="res://chart/select/chart_scroll.gd" id="20_vv2g0"]
 [ext_resource type="PackedScene" uid="uid://bi38ewb02pdbn" path="res://scenes/mainmenu/star_button.tscn" id="21_p4mk8"]
-[ext_resource type="Texture2D" uid="uid://4mpob6r0inkq" path="res://resorces/icons/arrow-big-left.svg" id="23_c5bhb"]
+[ext_resource type="Texture2D" uid="uid://4mpob6r0inkq" path="res://resources/icons/arrow-big-left.svg" id="23_c5bhb"]
 [ext_resource type="Script" uid="uid://c0rooft00opwr" path="res://scenes/mainmenu/bottom_buttons.gd" id="24_nnql3"]
+[ext_resource type="PackedScene" uid="uid://cxlaaf6kud3lx" path="res://scenes/mainmenu/settings_popup.tscn" id="25_settings"]
+[ext_resource type="AudioStream" uid="uid://bgbdj8rtca6ja" path="res://resources/audio/bye.wav" id="28_vhubh"]
+[ext_resource type="AudioStream" uid="uid://bg45soaehb2b" path="res://resources/audio/buttons/switch7.ogg" id="29_ckwsv"]
 
 [sub_resource type="Animation" id="Animation_xnw7g"]
 length = 0.001
@@ -1124,15 +1127,15 @@ icon_texture = ExtResource("13_hqrtg")
 hover_scale = 1.04
 
 [node name="Browse" parent="MenuButtons" unique_id=274242608 instance=ExtResource("4_da4vi")]
+visible = false
 layout_mode = 2
 button_text = "browse"
 icon_texture = ExtResource("14_dx8qc")
 hover_scale = 1.04
 
 [node name="Edit" parent="MenuButtons" unique_id=1229603769 instance=ExtResource("4_da4vi")]
-visible = false
 layout_mode = 2
-button_text = "Skin Edit"
+button_text = "Editor"
 icon_texture = ExtResource("15_dx8qc")
 hover_scale = 1.04
 
@@ -1195,6 +1198,21 @@ offset_bottom = 23.0
 text = "indev 2026.07 ⓒ h4yase"
 horizontal_alignment = 2
 
+[node name="SettingsPopup" parent="." unique_id=1336381579 instance=ExtResource("25_settings")]
+layout_mode = 1
+
+[node name="ExitOverlay" type="ColorRect" parent="." unique_id=985512643]
+visible = false
+z_index = 100
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 1
+color = Color(0, 0, 0, 0)
+
 [node name="BottomButtons" type="HBoxContainer" parent="." unique_id=192975253]
 layout_mode = 1
 anchors_preset = -1
@@ -1221,3 +1239,10 @@ size_flags_horizontal = 3
 custom_minimum_size = Vector2(240, 64)
 layout_mode = 2
 bg_color = Color(0.105882354, 0.09019608, 0.16470589, 1)
+
+[node name="Bye" type="AudioStreamPlayer" parent="." unique_id=316893624]
+stream = ExtResource("28_vhubh")
+volume_db = 8.0
+
+[node name="Switch7" type="AudioStreamPlayer" parent="." unique_id=1039771558]
+stream = ExtResource("29_ckwsv")

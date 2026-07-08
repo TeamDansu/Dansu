@@ -1,7 +1,7 @@
 [gd_scene format=3 uid="uid://deqdwxgcegkci"]
 
 [ext_resource type="Script" uid="uid://yt15g07posb4" path="res://gameplay/note_game.gd" id="1_yi1o8"]
-[ext_resource type="Texture2D" uid="uid://0tsl2wcyjngr" path="res://resorces/textures/gameplay/hit_note.png" id="2_6hwfw"]
+[ext_resource type="Texture2D" uid="uid://0tsl2wcyjngr" path="res://resources/textures/gameplay/hit_note.png" id="2_6hwfw"]
 
 [node name="Note" type="Node3D" unique_id=495088426 node_paths=PackedStringArray("note_sprite")]
 transform = Transform3D(0.5, 0, 0, 0, 0.5, 0, 0, 0, 0.5, 0, 0, 0)

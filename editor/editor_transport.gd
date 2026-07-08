@@ -93,7 +93,10 @@ func seek() -> void:
 func rebuild_playback_notes() -> void:
 	_playback_notes.clear()
 	_release_notes.clear()
-	for rail in CM.rails:
+	if CM.parsed_chart == null:
+		_reset_sfx_cursor(Game.current_time)
+		return
+	for rail in CM.parsed_chart.rails:
 		if rail == null:
 			continue
 		for note in rail.notes:

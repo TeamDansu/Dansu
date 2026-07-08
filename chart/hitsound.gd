@@ -1,7 +1,12 @@
 extends RefCounted
 class_name HitSound
 
-const BUILTIN_BASE_PATH := "res://resorces/audio/hitsounds"
+const BUILTIN_BASE_PATH := "res://resources/audio/hitsounds"
+const BUILTIN_FILE_NAMES := Array([
+	"chop.wav",
+	"crash.wav",
+	"hat.wav",
+])
 
 var id: int = -1
 var file_name: String = ""
@@ -40,22 +45,8 @@ func get_display_name() -> String:
 
 static func load_builtin_hitsounds() -> Array[HitSound]:
 	var results: Array[HitSound] = []
-	var files: PackedStringArray = []
-	var dir := DirAccess.open(BUILTIN_BASE_PATH)
-	if dir == null:
-		return results
-
-	dir.list_dir_begin()
-	var file_name := dir.get_next()
-	while not file_name.is_empty():
-		if not dir.current_is_dir() and file_name.get_extension().to_lower() == "wav":
-			files.append(file_name)
-		file_name = dir.get_next()
-	dir.list_dir_end()
-	files.sort()
-
-	for index in range(files.size()):
+	for index in range(BUILTIN_FILE_NAMES.size()):
 		var hitsound := HitSound.new()
-		hitsound.setup(null, index, "res/%s" % files[index])
+		hitsound.setup(null, index, "res/%s" % BUILTIN_FILE_NAMES[index])
 		results.append(hitsound)
 	return results

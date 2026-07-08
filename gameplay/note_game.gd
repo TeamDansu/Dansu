@@ -3,9 +3,9 @@ class_name GameNote
 
 const SPAWN_FADE_PORTION := 0.18
 
-var move_texture : Texture2D = preload("res://resorces/textures/gameplay/move_note.png")
-var spike_texture : Texture2D = preload("res://resorces/textures/gameplay/spike_note.png")
-var trace_texture : Texture2D = preload("res://resorces/textures/gameplay/trace_note.png")
+var move_texture : Texture2D = preload("res://resources/textures/gameplay/move_note.png")
+var spike_texture : Texture2D = preload("res://resources/textures/gameplay/spike_note.png")
+var trace_texture : Texture2D = preload("res://resources/textures/gameplay/trace_note.png")
 
 @export var mesh : MeshInstance3D
 @export var note_sprite: Sprite3D

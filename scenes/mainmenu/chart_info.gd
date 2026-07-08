@@ -1,6 +1,6 @@
 extends Panel
 
-const SHINE_SHADER := preload("res://resorces/shaders/card_shine.gdshader")
+const SHINE_SHADER := preload("res://resources/shaders/card_shine.gdshader")
 
 const MAX_ROTATION_DEGREES := 3.0
 const HOVER_SCALE := 1.015

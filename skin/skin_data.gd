@@ -27,9 +27,11 @@ var repeat_idle := false
 func get_folder_path() -> String:
 	match type:
 		TYPE.BUILT_IN:
-			return "res://resorces/skins/".path_join(folder_name)
+			return "res://resources/skins/".path_join(folder_name)
 		TYPE.IN_CHART:
-			return CM.selected_chart.folder_path
+			if CM.selected_chart == null:
+				return ""
+			return CM.selected_chart.skin_directory_path
 		TYPE.IN_SKIN_FOLDER:
 			return "user://skins".path_join(folder_name)
 	return ""
@@ -107,18 +109,23 @@ func load_texture(file_name: String) -> Texture2D:
 	if texture_cache.has(file_name):
 		return texture_cache[file_name]
 	var base_dir = get_folder_path()
-	var texture_path = base_dir.path_join("sprite").path_join(file_name)
 	var _texture: Texture2D = null
+	var texture_paths := [
+		base_dir.path_join("sprites").path_join(file_name),
+		base_dir.path_join("sprite").path_join(file_name),
+	]
 
-	if texture_path.begins_with("res://"):
-		_texture = load(texture_path)
-
-	elif FileAccess.file_exists(texture_path):
-		var image = Image.new()
-		if image.load(texture_path) == OK:
-			_texture = ImageTexture.create_from_image(image)
-		else:
-			_texture = load("res://resorces/sprite/danshe_dance_1.png")
+	for texture_path in texture_paths:
+		if texture_path.begins_with("res://"):
+			_texture = load(texture_path)
+		elif FileAccess.file_exists(texture_path):
+			var image = Image.new()
+			if image.load(texture_path) == OK:
+				_texture = ImageTexture.create_from_image(image)
+			else:
+				_texture = load("res://resources/sprite/danshe_dance_1.png")
+		if _texture != null:
+			break
 
 	if _texture:
 		texture_cache[file_name] = _texture

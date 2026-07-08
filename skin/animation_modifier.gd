@@ -25,6 +25,8 @@ func load_sprite_texture(file_name: String):
 	pass
 
 func remove_animation(_anim: PlayerAnimation):
-	for note in CM.notes:
+	if CM.parsed_chart == null:
+		return
+	for note in CM.parsed_chart.get_notes():
 		if note.animation == _anim.id:
-			note.animation = null
+			note.animation = -1

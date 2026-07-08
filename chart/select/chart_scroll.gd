@@ -21,6 +21,7 @@ var target_scroll := 0.0
 var smooth_speed := 12.0
 var search_text := ""
 var sort_mode: SortMode = SortMode.TITLE
+var _last_cover_request_ids: Array[int] = []
 
 
 func _ready() -> void:
@@ -57,6 +58,7 @@ func rebuild_items() -> void:
 	_apply_selection_from_index(selected_index)
 	_center_on_index(selected_index)
 	_apply_all()
+	_queue_visible_cover_requests()
 
 
 func set_search_text(value: String) -> void:
@@ -82,8 +84,11 @@ func _process(delta: float) -> void:
 		return
 
 	target_scroll = clamp(target_scroll, 0.0, float(max(data_count - 1, 0)) * step)
+	var previous_scroll := scroll
 	scroll = lerp(scroll, target_scroll, 1.0 - exp(-smooth_speed * delta))
 	_update()
+	if not is_equal_approx(previous_scroll, scroll):
+		_sync_visible_hover_states()
 
 
 func _update() -> void:
@@ -93,15 +98,21 @@ func _update() -> void:
 
 
 func _recycle() -> void:
+	var changed := false
 	for n in nodes:
 		var global_y = n.position.y + content.position.y
 
 		if global_y > size.y + step:
 			n.position.y -= step * nodes.size()
 			_update_node(n as Control)
+			changed = true
 		elif global_y < -step:
 			n.position.y += step * nodes.size()
 			_update_node(n as Control)
+			changed = true
+
+	if changed:
+		_queue_visible_cover_requests()
 
 
 func _update_node(node: Control) -> void:
@@ -125,6 +136,69 @@ func _update_node(node: Control) -> void:
 func _apply_all() -> void:
 	for i in range(nodes.size()):
 		_update_node(nodes[i] as Control)
+	_sync_visible_hover_states()
+
+
+func _queue_visible_cover_requests() -> void:
+	var charts := _collect_visible_cover_charts()
+	var chart_ids: Array[int] = []
+
+	for chart in charts:
+		chart_ids.append(chart.get_instance_id())
+
+	if chart_ids == _last_cover_request_ids:
+		return
+
+	_last_cover_request_ids = chart_ids
+	CoverLoader.replace_queue(charts)
+
+
+func _collect_visible_cover_charts() -> Array[Chart]:
+	var entries: Array[Dictionary] = []
+	var center_y := size.y * 0.5
+	var selected_chart := CM.selected_chart
+
+	for node in nodes:
+		var control := node as Control
+		if control == null or not control.visible:
+			continue
+
+		var chart := _get_node_primary_chart(control)
+		if chart == null:
+			continue
+
+		var node_center_y := control.position.y + content.position.y + item_height * 0.5
+		entries.append({
+			"chart": chart,
+			"distance": absf(node_center_y - center_y),
+			"is_selected": chart == selected_chart,
+		})
+
+	entries.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
+		if a["is_selected"] != b["is_selected"]:
+			return a["is_selected"]
+		return a["distance"] < b["distance"]
+	)
+
+	var charts: Array[Chart] = []
+	for entry in entries:
+		charts.append(entry["chart"])
+	return charts
+
+
+func _get_node_primary_chart(node: Control) -> Chart:
+	if node == null:
+		return null
+
+	var item_value = node.get("item")
+	if item_value is SongListItem:
+		return item_value.primary_chart
+
+	var current_chart = node.get("current_cover_chart")
+	if current_chart is Chart:
+		return current_chart
+
+	return null
 
 
 func _build_visible_items() -> Array[SongListItem]:
@@ -250,3 +324,10 @@ func _center_on_index(index: int) -> void:
 	var max_scroll := float(max(data_count - 1, 0)) * step
 	target_scroll = clamp(centered_scroll, 0.0, max_scroll)
 	scroll = target_scroll
+
+func _sync_visible_hover_states() -> void:
+	var mouse_position := get_viewport().get_mouse_position()
+
+	for node in nodes:
+		if node != null and node.has_method("sync_hover_state"):
+			node.sync_hover_state(mouse_position)

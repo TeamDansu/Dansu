@@ -11,12 +11,17 @@ static func load_selected_chart() -> Chart:
 		return null
 
 	var parser := Parser.new()
-	parser.parse_object(chart)
+	var result := parser.parse_object(chart)
+	if not result.success:
+		return null
+	CM.parsed_chart = result.parsed_chart
 	sort_chart_objects()
 	return chart
 
 static func sort_chart_objects() -> void:
-	for rail: Rail in CM.rails:
+	if CM.parsed_chart == null:
+		return
+	for rail: Rail in CM.parsed_chart.rails:
 		if rail == null:
 			continue
 		rail.sort_points()
@@ -24,7 +29,9 @@ static func sort_chart_objects() -> void:
 
 static func next_rail_id() -> int:
 	var used_ids: Dictionary = {}
-	for rail in CM.rails:
+	if CM.parsed_chart == null:
+		return 1
+	for rail in CM.parsed_chart.rails:
 		if rail != null:
 			used_ids[rail.id] = true
 
@@ -83,7 +90,8 @@ static func move_rail(rail: Rail, direction: float) -> void:
 		point.x = clamp(point.x + direction * RAIL_MOVE_STEP, 0.0, 1.0)
 
 static func remove_rail(rail: Rail) -> void:
-	CM.rails.erase(rail)
+	if CM.parsed_chart != null:
+		CM.parsed_chart.rails.erase(rail)
 
 static func remove_note(rail: Rail, note: Note) -> void:
 	if rail != null:
@@ -125,9 +133,8 @@ static func save_chart(chart: Chart, previous_file_path: String) -> bool:
 	if chart == null:
 		return false
 
-	var cm = CM
 	if chart.chart_set == null:
-		chart.chart_set = cm.selected_chartset
+		chart.chart_set = CM.selected_chartset
 	if chart.chart_set == null:
 		return false
 	if chart.folder_name.is_empty():
@@ -141,17 +148,16 @@ static func save_chart(chart: Chart, previous_file_path: String) -> bool:
 	if FileAccess.file_exists(chart.file_path):
 		DirAccess.remove_absolute(chart.file_path)
 
+	if CM.parsed_chart == null:
+		CM.parsed_chart = ParsedChart.new(chart)
+	else:
+		CM.parsed_chart.chart = chart
+
 	var writer := ChartWriter.new()
-	var success := writer.write_chart(chart)
+	var success := writer.write_chart(CM.parsed_chart)
 	if success:
 		chart.build_search_string()
-		cm.selected_chart = chart
+		CM.selected_chart = chart
 		if not chart.chart_set.charts.has(chart):
 			chart.chart_set.charts.append(chart)
 	return success
-
-static func _root() -> Node:
-	var main_loop = Engine.get_main_loop()
-	if main_loop is SceneTree:
-		return main_loop.root
-	return null

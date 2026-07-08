@@ -3,7 +3,12 @@ class_name ChartWriter
 
 const CHART_FILE_VERSION := 1
 
-func write_chart(chart: Chart) -> bool:
+func write_chart(parsed_chart: ParsedChart) -> bool:
+	if parsed_chart == null or parsed_chart.chart == null:
+		push_error("Failed to write chart: parsed chart is missing chart metadata")
+		return false
+
+	var chart := parsed_chart.chart
 	var file := FileAccess.open(chart.file_path, FileAccess.WRITE)
 	if file == null:
 		push_error("Failed to open chart file for writing: %s" % chart.file_path)
@@ -12,8 +17,8 @@ func write_chart(chart: Chart) -> bool:
 	_write_header(file)
 	_write_metadata(file, chart)
 	_write_timings(file, chart)
-	_write_hitsounds(file, chart, CM.hitsounds)
-	_write_rails(file, CM.rails)
+	_write_hitsounds(file, parsed_chart)
+	_write_rails(file, parsed_chart.rails)
 	file.flush()
 	return true
 
@@ -22,6 +27,8 @@ func _write_header(file: FileAccess) -> void:
 
 func _write_metadata(file: FileAccess, chart: Chart) -> void:
 	file.store_line("@METADATA")
+	if not chart.uuid:
+		chart.build_uuid()
 	file.store_line("uuid: %s" % _safe_string(chart.uuid))
 	file.store_line("title: %s" % _safe_string(chart.title))
 	file.store_line("artist: %s" % _safe_string(chart.artist))
@@ -46,10 +53,11 @@ func _write_timings(file: FileAccess, chart: Chart) -> void:
 	file.store_line("@ENDMETA")
 	file.store_line("")
 
-func _write_hitsounds(file: FileAccess, chart: Chart, hitsounds: Array[HitSound]) -> void:
+func _write_hitsounds(file: FileAccess, parsed_chart: ParsedChart) -> void:
 	file.store_line("@HITSOUNDS")
-	var referenced_ids := _collect_referenced_hitsound_ids(chart)
-	for hitsound in hitsounds:
+	var chart := parsed_chart.chart
+	var referenced_ids := _collect_referenced_hitsound_ids(parsed_chart)
+	for hitsound in parsed_chart.hitsounds:
 		if hitsound == null or hitsound.id < 0:
 			continue
 		if hitsound.is_builtin() and not referenced_ids.has(hitsound.id):
@@ -104,13 +112,16 @@ func _float_to_text(value: float) -> String:
 			text += "0"
 	return text
 
-func _collect_referenced_hitsound_ids(chart: Chart) -> Dictionary:
+func _collect_referenced_hitsound_ids(parsed_chart: ParsedChart) -> Dictionary:
 	var ids: Dictionary = {}
+	if parsed_chart == null:
+		return ids
+	var chart := parsed_chart.chart
 	if chart != null:
 		for value in chart.default_hitsounds:
 			if int(value) >= 0:
 				ids[int(value)] = true
-	for rail in CM.rails:
+	for rail in parsed_chart.rails:
 		if rail == null:
 			continue
 		for note in rail.notes:

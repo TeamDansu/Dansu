@@ -1,13 +1,34 @@
 extends Control
 
+const LOGO_IDLE_SCALE := 1.0
+const LOGO_PEAK_SCALE := 1.15
+const LOGO_DIP_SCALE := 0.96
+const LOGO_PULSE_DURATION := 0.34
+const LOGO_RETURN_SPEED := 12.0
+const EXIT_START_DELAY := 0.4
+const EXIT_FADE_DURATION := 1.5
+
 @export var progress_bar : ProgressBar
 @export var current_chartset_label: Label
 @export var search_input: LineEdit
 @export var sort_option_button: OptionButton
 @export var chart_scroll: Control
 
+@onready var exit_overlay: ColorRect = $ExitOverlay
+@onready var audio_1: AudioStreamPlayer = $MenuAudioSwitcher/Audio1
+@onready var audio_2: AudioStreamPlayer = $MenuAudioSwitcher/Audio2
+@onready var menu_audio_switcher: MenuAudioSwitcher = $MenuAudioSwitcher
+@onready var settings_popup: Control = $SettingsPopup
+@onready var logo: Control = $Logo
+
 var progress: float = 0.0
 var loading_timer = 0.0
+var is_exiting := false
+var _logo_base_scale := Vector2.ONE
+var _logo_pulse_time := LOGO_PULSE_DURATION
+var _last_logo_half_beat_key := ""
+var _last_logo_chart_key := ""
+var _last_logo_playback_msec := -1.0
 
 func _ready() -> void:
 	if progress_bar == null:
@@ -20,7 +41,14 @@ func _ready() -> void:
 		sort_option_button = $Charts/Search/SearchArea/SortOptionButton
 	if chart_scroll == null:
 		chart_scroll = $Charts
-	
+
+	exit_overlay.visible = false
+	exit_overlay.color.a = 0.0
+	_logo_base_scale = logo.scale
+	_refresh_logo_pivot()
+	if logo != null and not logo.resized.is_connected(_refresh_logo_pivot):
+		logo.resized.connect(_refresh_logo_pivot)
+
 	if Game.stage == Game.GameStage.Loading:
 		CM._load(false)
 		
@@ -36,11 +64,90 @@ func _ready() -> void:
 		_setup_sort_options()
 
 func _process(delta):
+	if is_exiting:
+		return
+
 	loading_timer += delta
+	_update_logo_pulse(delta)
 	
 	if Input.is_action_just_pressed("shortcut_enter_editor"):
 		CM.parse_selected_chart()
 		Transition.transition_to("res://scenes/editor/editor_scene.tscn",1)
+
+
+func _input(event: InputEvent) -> void:
+	if not is_exiting:
+		return
+
+	get_viewport().set_input_as_handled()
+
+
+func _unhandled_input(event: InputEvent) -> void:
+	if is_exiting:
+		return
+
+	if event.is_action_pressed("ui_cancel"):
+		if settings_popup != null and settings_popup.has_method("is_open") and settings_popup.is_open():
+			return
+
+		if Game.main_menu_state == Game.MainMenuState.SongSelect:
+			return_to_main_menu()
+			get_viewport().set_input_as_handled()
+
+
+func begin_song_select() -> void:
+	if is_exiting:
+		return
+
+	if Game.main_menu_state == Game.MainMenuState.SongSelect:
+		return
+
+	Game.set_main_menu_state(Game.MainMenuState.SongSelect)
+	$Animations.clean_menu_things()
+	await get_tree().create_timer(0.5).timeout
+	$Animations.song_select_scene()
+
+
+func return_to_main_menu() -> void:
+	if is_exiting:
+		return
+
+	if Game.main_menu_state == Game.MainMenuState.Home:
+		return
+
+	Game.set_main_menu_state(Game.MainMenuState.Home)
+	$Animations.main_menu()
+	$Animations.call_menu_things()
+
+
+func begin_exit() -> void:
+	if is_exiting:
+		return
+
+	is_exiting = true
+	var popup := get_node_or_null("SettingsPopup")
+	if popup != null and popup.has_method("close_popup"):
+		popup.close_popup()
+
+	exit_overlay.mouse_filter = Control.MOUSE_FILTER_STOP
+	await get_tree().create_timer(EXIT_START_DELAY).timeout
+
+	exit_overlay.visible = true
+	$Switch7.play()
+
+	var tween := create_tween()
+	tween.set_parallel(true)
+	tween.tween_property(exit_overlay, "color:a", 1.0, EXIT_FADE_DURATION).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+
+	if audio_1 != null:
+		tween.tween_property(audio_1, "volume_db", -80.0, EXIT_FADE_DURATION).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	if audio_2 != null:
+		tween.tween_property(audio_2, "volume_db", -80.0, EXIT_FADE_DURATION).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+
+	await get_tree().create_timer(EXIT_FADE_DURATION * 0.1).timeout
+	$Bye.play()
+	await tween.finished
+	get_tree().quit()
 
 func _update_progress(_progress: float) -> void:
 	progress = _progress
@@ -53,6 +160,8 @@ func _loading_finished() -> void:
 		chart_scroll.rebuild_items()
 	if current_chartset_label != null:
 		current_chartset_label.text = "enjoy!"
+	Game.stage = Game.GameStage.Main
+	Game.set_main_menu_state(Game.MainMenuState.Home)
 	$Animations.loading_done()
 
 
@@ -79,3 +188,95 @@ func _on_sort_item_selected(index: int) -> void:
 	var sort_id := sort_option_button.get_item_id(index)
 	if chart_scroll != null and chart_scroll.has_method("set_sort_mode"):
 		chart_scroll.set_sort_mode(sort_id)
+
+
+func _update_logo_pulse(delta: float) -> void:
+	if logo == null:
+		return
+
+	var chart := CM.selected_chart
+	var playback_msec := _get_logo_chart_time_msec()
+	if chart == null or playback_msec < 0.0:
+		_last_logo_half_beat_key = ""
+		_last_logo_chart_key = ""
+		_last_logo_playback_msec = -1.0
+		_logo_pulse_time = minf(_logo_pulse_time + delta, LOGO_PULSE_DURATION)
+		logo.scale = logo.scale.lerp(_logo_base_scale * LOGO_IDLE_SCALE, delta * LOGO_RETURN_SPEED)
+		return
+
+	var chart_key := chart.uuid if not chart.uuid.is_empty() else chart.file_path
+	if chart_key != _last_logo_chart_key or playback_msec + 1.0 < _last_logo_playback_msec:
+		_last_logo_half_beat_key = ""
+		_logo_pulse_time = LOGO_PULSE_DURATION
+
+	var beat_key := _get_logo_beat_key(chart, playback_msec)
+	if beat_key != "" and beat_key != _last_logo_half_beat_key:
+		_last_logo_half_beat_key = beat_key
+		_logo_pulse_time = 0.0
+
+	_last_logo_chart_key = chart_key
+	_last_logo_playback_msec = playback_msec
+	_logo_pulse_time = minf(_logo_pulse_time + delta, LOGO_PULSE_DURATION)
+
+	var target_scale := _logo_base_scale * _get_logo_pulse_scale(_logo_pulse_time / LOGO_PULSE_DURATION)
+	logo.scale = logo.scale.lerp(target_scale, delta * LOGO_RETURN_SPEED)
+
+
+func _refresh_logo_pivot() -> void:
+	if logo == null:
+		return
+
+	logo.pivot_offset = logo.size * 0.5
+
+
+func _get_logo_chart_time_msec() -> float:
+	if menu_audio_switcher == null:
+		return -1.0
+	return menu_audio_switcher.get_current_chart_time_msec()
+
+
+func _get_logo_beat_key(chart: Chart, playback_msec: float) -> String:
+	if chart == null:
+		return ""
+
+	var active_timing: Timing = null
+	var active_timing_index := -1
+
+	for index in range(chart.timings.size()):
+		var timing := chart.timings[index]
+		if timing == null or timing.bpm <= 0.0:
+			continue
+		if timing.time <= playback_msec:
+			active_timing = timing
+			active_timing_index = index
+		else:
+			break
+
+	if active_timing == null:
+		for index in range(chart.timings.size()):
+			var timing := chart.timings[index]
+			if timing != null and timing.bpm > 0.0:
+				active_timing = timing
+				active_timing_index = index
+				break
+
+	if active_timing == null:
+		return ""
+
+	var beat_msec := 60000.0 / active_timing.bpm
+	if beat_msec <= 0.0:
+		return ""
+
+	var local_msec := maxf(playback_msec - float(active_timing.time), 0.0)
+	var beat_index := int(floor(local_msec / beat_msec))
+	return "%d:%d" % [active_timing_index, beat_index]
+
+
+func _get_logo_pulse_scale(phase: float) -> float:
+	var t := clampf(phase, 0.0, 1.0)
+
+	if t < 0.18:
+		return lerpf(LOGO_IDLE_SCALE, LOGO_PEAK_SCALE, ease(t / 0.18, 0.45))
+	if t < 0.46:
+		return lerpf(LOGO_PEAK_SCALE, LOGO_DIP_SCALE, ease((t - 0.18) / 0.28, 1.4))
+	return lerpf(LOGO_DIP_SCALE, LOGO_IDLE_SCALE, ease((t - 0.46) / 0.54, 2.0))

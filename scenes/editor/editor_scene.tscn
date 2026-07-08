@@ -4,16 +4,20 @@
 [ext_resource type="Script" uid="uid://orocu1cstoen" path="res://editor/editor.gd" id="1_tudub"]
 [ext_resource type="Script" uid="uid://cfpsx7jd38jr4" path="res://editor/ui/sfx_panel.gd" id="1_yxg55"]
 [ext_resource type="Script" uid="uid://tbp77g1a1cni" path="res://editor/editor_bpm_lines.gd" id="2_9wr6r"]
-[ext_resource type="Shader" uid="uid://cflu32au5woaj" path="res://resorces/shaders/bg.gdshader" id="2_37swi"]
+[ext_resource type="Shader" uid="uid://cflu32au5woaj" path="res://resources/shaders/bg.gdshader" id="2_37swi"]
 [ext_resource type="PackedScene" uid="uid://bu0j8qugn442u" path="res://scenes/editor/ui/inspector/point.tscn" id="3_1ne32"]
-[ext_resource type="Texture2D" uid="uid://dvnjnnyr3ulxr" path="res://resorces/textures/white-circle.svg" id="3_ysqcj"]
+[ext_resource type="Texture2D" uid="uid://dvnjnnyr3ulxr" path="res://resources/textures/white-circle.svg" id="3_ysqcj"]
 [ext_resource type="PackedScene" uid="uid://bg8obfjf1d3ei" path="res://scenes/editor/ui/inspector/timing.tscn" id="4_8or05"]
 [ext_resource type="PackedScene" uid="uid://btmqivw5ns62f" path="res://scenes/editor/hit_sound.tscn" id="5_7qxkj"]
+[ext_resource type="Script" uid="uid://b8yql4aso0jt0" path="res://editor/controllers/editor_view_controller.gd" id="6_8vclr"]
+[ext_resource type="Script" uid="uid://cc1p2wgobvjop" path="res://editor/controllers/editor_inspector_controller.gd" id="7_c2fm2"]
+[ext_resource type="Script" uid="uid://d3fqhwhsgp8cr" path="res://editor/controllers/editor_save_controller.gd" id="8_u3v7w"]
+[ext_resource type="Script" uid="uid://div8cel1k4aam" path="res://editor/controllers/editor_edit_controller.gd" id="9_mjlwm"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_ysqcj"]
 shader = ExtResource("2_37swi")
-shader_parameter/bg_color = Color(0.3651509, 0.3652386, 0.41632298, 1)
-shader_parameter/shape_color = Color(0.5810425, 0.5816935, 0.6569186, 1)
+shader_parameter/bg_color = Color(0.032792434, 0.03277399, 0.04409814, 1)
+shader_parameter/shape_color = Color(0.054213956, 0.054174535, 0.07433192, 1)
 shader_parameter/rect_size = Vector2(1920, 1080)
 shader_parameter/cell_size = 180.0
 shader_parameter/move_speed = 0.1
@@ -27,9 +31,9 @@ shader_parameter/square_roundness = 0.05
 shader_parameter/triangle_roundness = 0.025
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_37swi"]
-bg_color = Color(0, 0, 0, 1)
+bg_color = Color(0.014984831, 0, 0.018731039, 0.39215687)
 
-[node name="EditorScene" type="Control" unique_id=317898238 node_paths=PackedStringArray("chart_root", "chart_panel", "note_pivot", "bpm_lines", "song_slider", "current_time_label", "save_button", "delete_button", "hit_button", "trace_button", "left_button", "right_button", "spike_button", "title_line_edit", "artist_line_edit", "difficulty_line_edit", "source_line_edit", "tags_line_edit", "beat_division_slider", "beat_division_label", "add_timing_button", "timing_list_container", "timing_template", "skin_file_label", "skin_browser_button", "open_skin_editor_button")]
+[node name="EditorScene" type="Control" unique_id=317898238 node_paths=PackedStringArray("chart_root", "chart_panel", "note_pivot", "bpm_lines", "song_slider", "current_time_label", "save_button", "delete_button", "hit_button", "trace_button", "left_button", "right_button", "spike_button", "title_line_edit", "artist_line_edit", "difficulty_line_edit", "source_line_edit", "tags_line_edit", "beat_division_slider", "beat_division_label", "add_timing_button", "timing_list_container", "timing_template", "skin_file_label", "skin_browser_button", "open_skin_editor_button", "view_controller", "inspector_controller", "save_controller", "edit_controller")]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -40,7 +44,7 @@ script = ExtResource("1_tudub")
 chart_root = NodePath("Chart")
 chart_panel = NodePath("Chart/Panel")
 note_pivot = NodePath("Chart/TimePivot")
-bpm_lines = NodePath("Chart/BPMLines")
+bpm_lines = NodePath("Chart/Panel/BPMLines")
 song_slider = NodePath("SongSlider")
 current_time_label = NodePath("SongSlider/CurrentTime")
 save_button = NodePath("Object/Save")
@@ -63,6 +67,10 @@ timing_template = NodePath("Inspector/TabContainer/Timing/ScrollContainer/HBoxCo
 skin_file_label = NodePath("Inspector/TabContainer/Chart/ScrollContainer/Contents/skin_file_name")
 skin_browser_button = NodePath("Inspector/TabContainer/Chart/ScrollContainer/Contents/SkinBrowserButton")
 open_skin_editor_button = NodePath("Inspector/TabContainer/Chart/ScrollContainer/Contents/Button")
+view_controller = NodePath("Controllers/ViewController")
+inspector_controller = NodePath("Controllers/InspectorController")
+save_controller = NodePath("Controllers/SaveController")
+edit_controller = NodePath("Controllers/EditController")
 
 [node name="Background" type="ColorRect" parent="." unique_id=1588616375]
 material = SubResource("ShaderMaterial_ysqcj")
@@ -72,6 +80,41 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+
+[node name="Controllers" type="Node" parent="." unique_id=1327209880]
+
+[node name="ViewController" type="Node" parent="Controllers" unique_id=2077752679 node_paths=PackedStringArray("editor", "chart_root", "chart_panel", "note_pivot", "bpm_lines")]
+script = ExtResource("6_8vclr")
+editor = NodePath("../..")
+chart_root = NodePath("../../Chart")
+chart_panel = NodePath("../../Chart/Panel")
+note_pivot = NodePath("../../Chart/TimePivot")
+bpm_lines = NodePath("../../Chart/Panel/BPMLines")
+
+[node name="InspectorController" type="Node" parent="Controllers" unique_id=953762169 node_paths=PackedStringArray("editor", "title_line_edit", "artist_line_edit", "difficulty_line_edit", "source_line_edit", "tags_line_edit", "beat_division_slider", "beat_division_label", "add_timing_button", "timing_list_container", "timing_template", "skin_file_label", "skin_browser_button")]
+script = ExtResource("7_c2fm2")
+editor = NodePath("../..")
+title_line_edit = NodePath("../../Inspector/TabContainer/Chart/ScrollContainer/Contents/title")
+artist_line_edit = NodePath("../../Inspector/TabContainer/Chart/ScrollContainer/Contents/artist")
+difficulty_line_edit = NodePath("../../Inspector/TabContainer/Chart/ScrollContainer/Contents/difficulty")
+source_line_edit = NodePath("../../Inspector/TabContainer/Chart/ScrollContainer/Contents/source")
+tags_line_edit = NodePath("../../Inspector/TabContainer/Chart/ScrollContainer/Contents/tags")
+beat_division_slider = NodePath("../../Inspector/TabContainer/Timing/ScrollContainer/HBoxContainer/HSlider")
+beat_division_label = NodePath("../../Inspector/TabContainer/Timing/ScrollContainer/HBoxContainer/HBoxContainer/beat_division")
+add_timing_button = NodePath("../../Inspector/TabContainer/Timing/ScrollContainer/HBoxContainer/AddTiming")
+timing_list_container = NodePath("../../Inspector/TabContainer/Timing/ScrollContainer/HBoxContainer")
+timing_template = NodePath("../../Inspector/TabContainer/Timing/ScrollContainer/HBoxContainer/Timing")
+skin_file_label = NodePath("../../Inspector/TabContainer/Chart/ScrollContainer/Contents/skin_file_name")
+skin_browser_button = NodePath("../../Inspector/TabContainer/Chart/ScrollContainer/Contents/SkinBrowserButton")
+
+[node name="SaveController" type="Node" parent="Controllers" unique_id=1813602238 node_paths=PackedStringArray("editor", "save_button")]
+script = ExtResource("8_u3v7w")
+editor = NodePath("../..")
+save_button = NodePath("../../Object/Save")
+
+[node name="EditController" type="Node" parent="Controllers" unique_id=939770427 node_paths=PackedStringArray("editor")]
+script = ExtResource("9_mjlwm")
+editor = NodePath("../..")
 
 [node name="Inspector" type="PanelContainer" parent="." unique_id=792765145]
 layout_mode = 1
@@ -521,14 +564,16 @@ grow_vertical = 2
 mouse_filter = 1
 theme_override_styles/panel = SubResource("StyleBoxFlat_37swi")
 
-[node name="BPMLines" type="Control" parent="Chart" unique_id=758959830 node_paths=PackedStringArray("editor", "chart_panel")]
+[node name="BPMLines" type="Control" parent="Chart/Panel" unique_id=758959830 node_paths=PackedStringArray("editor", "chart_panel")]
 layout_mode = 1
+anchors_preset = 15
 anchor_right = 1.0
-anchor_bottom = 0.99953145
-offset_bottom = 0.47991943
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
 script = ExtResource("2_9wr6r")
-editor = NodePath("../..")
-chart_panel = NodePath("../Panel")
+editor = NodePath("../../..")
+chart_panel = NodePath("..")
 metadata/_edit_use_anchors_ = true
 
 [node name="TimePivot" type="Control" parent="Chart" unique_id=1264453362]
@@ -541,12 +586,13 @@ offset_top = -0.52008057
 offset_bottom = 1.4799194
 
 [node name="Line" type="ColorRect" parent="Chart/TimePivot" unique_id=145064810]
-custom_minimum_size = Vector2(0, 2)
+custom_minimum_size = Vector2(0, 6)
 layout_mode = 1
 anchors_preset = -1
 anchor_right = 1.0
 offset_bottom = 2.0
 grow_horizontal = 2
+color = Color(0.76862746, 0.9490196, 0.5058824, 0.5764706)
 metadata/_edit_use_anchors_ = true
 
 [node name="Object" type="VBoxContainer" parent="." unique_id=2054365102]
@@ -618,6 +664,7 @@ layout_mode = 2
 text = "Save Chart"
 
 [node name="Quit" type="Button" parent="Object" unique_id=1051398034]
+visible = false
 layout_mode = 2
 text = "Back to menu"
 

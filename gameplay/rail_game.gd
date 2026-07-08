@@ -1,7 +1,7 @@
 extends Node3D
 class_name GameRail
 
-const CLIP_SHADER := preload("res://resorces/shaders/rail_clip.gdshader")
+const CLIP_SHADER := preload("res://resources/shaders/rail_clip.gdshader")
 const DEFAULT_WIDTH := 1.2
 const DEFAULT_OUTLINE_SIZE := 0.1
 const CAP_SEGMENTS := 10
@@ -11,7 +11,7 @@ const DEFAULT_FILL_COLOR := Color(0.149, 0.121, 0.278, 1.0)
 const DEFAULT_OUTLINE_COLOR := Color(0.439, 0.357, 0.871, 1.0)
 const DEFAULT_ACCENT_COLOR := Color(0.561, 0.486, 0.988, 1.0)
 const IDLE_BRIGHTNESS := 0.3
-const STANDING_BRIGHTNESS := 1
+const STANDING_BRIGHTNESS := 1.0
 const FILL_DEPTH_CLIP_SCALE := 1.0
 const OUTLINE_DEPTH_CLIP_SCALE := 1.0
 
@@ -33,22 +33,25 @@ var is_standing := false:
 
 
 static func prebake_for_rails(rails: Array[Rail], rail_width: float = DEFAULT_WIDTH, rail_outline_size: float = DEFAULT_OUTLINE_SIZE) -> void:
-	for rail in rails:
-		prebake_for_rail(rail, rail_width, rail_outline_size)
+	for _rail in rails:
+		prebake_for_rail(_rail, rail_width, rail_outline_size)
 
 
-static func prebake_for_rail(rail: Rail, rail_width: float = DEFAULT_WIDTH, rail_outline_size: float = DEFAULT_OUTLINE_SIZE) -> void:
-	if rail == null or rail.points.size() < 2:
+static func prebake_for_rail(_rail: Rail, rail_width: float = DEFAULT_WIDTH, rail_outline_size: float = DEFAULT_OUTLINE_SIZE) -> void:
+	if _rail == null or _rail.points.size() < 2:
 		return
 
-	if rail.cached_fill_mesh != null and rail.cached_outline_mesh != null and is_equal_approx(rail.cached_render_width, rail_width) and is_equal_approx(rail.cached_outline_size, rail_outline_size):
+	if (_rail.cached_fill_mesh != null
+	and _rail.cached_outline_mesh != null
+	and is_equal_approx(_rail.cached_render_width, rail_width)
+	and is_equal_approx(_rail.cached_outline_size, rail_outline_size)):
 		return
 
-	var path := _sample_curve_points_for_rail(rail)
-	rail.cached_fill_mesh = _build_ribbon_mesh(path, rail_width)
-	rail.cached_outline_mesh = _build_ribbon_mesh(path, rail_width + (rail_outline_size * 2.0))
-	rail.cached_render_width = rail_width
-	rail.cached_outline_size = rail_outline_size
+	var path := _sample_curve_points_for_rail(_rail)
+	_rail.cached_fill_mesh = _build_ribbon_mesh(path, rail_width)
+	_rail.cached_outline_mesh = _build_ribbon_mesh(path, rail_width + (rail_outline_size * 2.0))
+	_rail.cached_render_width = rail_width
+	_rail.cached_outline_size = rail_outline_size
 
 
 func _ready() -> void:
@@ -132,15 +135,15 @@ func _update_material_position() -> void:
 		_outline_material.set_shader_parameter("rail_origin_z", position.z)
 
 
-static func _sample_curve_points_for_rail(rail: Rail) -> Array[Vector3]:
+static func _sample_curve_points_for_rail(_rail: Rail) -> Array[Vector3]:
 	var result: Array[Vector3] = []
 
-	if rail == null or rail.points.size() < 2:
+	if _rail == null or _rail.points.size() < 2:
 		return result
 
-	for i in range(rail.points.size() - 1):
-		var a: RailPoint = rail.points[i]
-		var b: RailPoint = rail.points[i + 1]
+	for i in range(_rail.points.size() - 1):
+		var a: RailPoint = _rail.points[i]
+		var b: RailPoint = _rail.points[i + 1]
 
 		var t0 := int(a.time)
 		var t1 := int(b.time)
@@ -149,18 +152,18 @@ static func _sample_curve_points_for_rail(rail: Rail) -> Array[Vector3]:
 
 		for j in range(steps):
 			var alpha := float(j) / float(steps)
-			var curved_alpha := rail._apply_curve(alpha, float(a.curve))
+			var curved_alpha := _rail._apply_curve(alpha, float(a.curve))
 			var x := GameplayPlayfield.normalized_x_to_world(lerp(float(a.x), float(b.x), curved_alpha))
 			var sampled_time := int(round(lerp(float(t0), float(t1), alpha)))
-			var z := GameplayPlayfield.local_z_from_start(rail.start_time, sampled_time)
+			var z := GameplayPlayfield.local_z_from_start(_rail.start_time, sampled_time)
 			result.append(Vector3(x, 0.0, z))
 
-	var last := rail.points[rail.points.size() - 1]
+	var last := _rail.points[_rail.points.size() - 1]
 	result.append(
 		Vector3(
 			GameplayPlayfield.normalized_x_to_world(float(last.x)),
 			0.0,
-			GameplayPlayfield.local_z_from_start(rail.start_time, int(last.time))
+			GameplayPlayfield.local_z_from_start(_rail.start_time, int(last.time))
 		)
 	)
 	return result

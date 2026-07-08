@@ -1,11 +1,11 @@
 [gd_scene format=3 uid="uid://c51ndn5ftq4wo"]
 
 [ext_resource type="Script" uid="uid://3hdl10yuw46u" path="res://scenes/mainmenu/menu_button_root.gd" id="1_1nit5"]
-[ext_resource type="FontFile" uid="uid://drcicje7q2t7x" path="res://resorces/fonts/Next Bravo.ttf" id="2_e2jnd"]
-[ext_resource type="StyleBox" uid="uid://cvsjh4b0mjet" path="res://resorces/themes/button_empty_stylebox.tres" id="3_b8tx0"]
-[ext_resource type="AudioStream" uid="uid://d3iw0ufj1v4w7" path="res://resorces/audio/buttons/click2.ogg" id="3_e2jnd"]
-[ext_resource type="Texture2D" uid="uid://dggi6xmwgmp00" path="res://resorces/icons/drum.svg" id="3_vehpq"]
-[ext_resource type="AudioStream" uid="uid://cyuw8dpw5to0o" path="res://resorces/audio/buttons/switch4.ogg" id="4_xy60t"]
+[ext_resource type="FontFile" uid="uid://drcicje7q2t7x" path="res://resources/fonts/Next Bravo.ttf" id="2_e2jnd"]
+[ext_resource type="StyleBox" uid="uid://cvsjh4b0mjet" path="res://resources/themes/button_empty_stylebox.tres" id="3_b8tx0"]
+[ext_resource type="AudioStream" uid="uid://d3iw0ufj1v4w7" path="res://resources/audio/buttons/click2.ogg" id="3_e2jnd"]
+[ext_resource type="Texture2D" uid="uid://dggi6xmwgmp00" path="res://resources/icons/drum.svg" id="3_vehpq"]
+[ext_resource type="AudioStream" uid="uid://cyuw8dpw5to0o" path="res://resources/audio/buttons/switch4.ogg" id="4_xy60t"]
 
 [sub_resource type="GDScript" id="GDScript_da4vi"]
 

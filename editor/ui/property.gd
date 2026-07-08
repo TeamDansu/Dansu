@@ -127,9 +127,9 @@ func _on_note_type_selected(index: int) -> void:
 	if int(editor.selection.selected_note.type) == new_type:
 		return
 	editor.push_history_snapshot()
-	editor.selection.selected_note.type = new_type
+	editor.selection.selected_note.type = new_type as Note.NoteType
 	if int(editor.selection.selected_note.type) != NOTE_TYPE_MOVE:
-		editor.selection.selected_note.dir = NOTE_DIR_NONE
+		editor.selection.selected_note.dir = NOTE_DIR_NONE as Note.Dir
 	editor.refresh_views()
 
 func _on_note_dir_selected(index: int) -> void:
@@ -140,7 +140,7 @@ func _on_note_dir_selected(index: int) -> void:
 	if int(editor.selection.selected_note.dir) == new_dir:
 		return
 	editor.push_history_snapshot()
-	editor.selection.selected_note.dir = new_dir
+	editor.selection.selected_note.dir = new_dir as Note.Dir
 	editor.refresh_views()
 
 func _on_note_hitsound_selected(index: int) -> void:

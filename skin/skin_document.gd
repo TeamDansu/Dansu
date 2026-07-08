@@ -8,13 +8,15 @@ var context = SkinEditorContextScript.new()
 var skin_data = PlayerSkinDataScript.new()
 var file_path := ""
 var directory_path := ""
+var sprite_directory_name := "sprite"
 var sprite_directory_path := ""
 var dirty := false
 
 func load_from_file(target_path: String, open_mode: int) -> bool:
 	file_path = target_path
 	directory_path = target_path.get_base_dir()
-	sprite_directory_path = directory_path.path_join("sprite")
+	sprite_directory_name = _resolve_sprite_directory_name(open_mode, directory_path)
+	sprite_directory_path = directory_path.path_join(sprite_directory_name)
 	context.skin_file_path = file_path
 	context.open_mode = open_mode
 	dirty = false
@@ -38,7 +40,8 @@ func load_from_file(target_path: String, open_mode: int) -> bool:
 func create_empty(open_mode: int, target_directory_path: String) -> void:
 	file_path = ""
 	directory_path = target_directory_path
-	sprite_directory_path = directory_path.path_join("sprite")
+	sprite_directory_name = _resolve_sprite_directory_name(open_mode, directory_path, true)
+	sprite_directory_path = directory_path.path_join(sprite_directory_name)
 	context.skin_file_path = ""
 	context.open_mode = open_mode
 	dirty = false
@@ -94,3 +97,12 @@ func get_next_animation_id() -> int:
 		if animation != null:
 			max_id = max(max_id, animation.id)
 	return max_id + 1
+
+func _resolve_sprite_directory_name(open_mode: int, target_directory_path: String, prefer_new_layout: bool = false) -> String:
+	if open_mode == SkinEditorContextScript.OpenMode.CHART:
+		return "sprites"
+	if prefer_new_layout and DirAccess.dir_exists_absolute(target_directory_path.path_join("sprites")):
+		return "sprites"
+	if DirAccess.dir_exists_absolute(target_directory_path.path_join("sprites")):
+		return "sprites"
+	return "sprite"

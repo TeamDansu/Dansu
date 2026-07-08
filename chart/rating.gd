@@ -8,11 +8,11 @@ const WEIGHT := 2.15
 const TYPE_OBSTACLE := 4
 
 static func calculate_rating() -> float:
-	if CM.notes.is_empty():
+	if CM.parsed_chart == null:
 		return 0.0
 
-	var notes: Array = CM.notes.duplicate()
-	var rails: Array = CM.rails.duplicate()
+	var notes: Array = CM.parsed_chart.get_notes()
+	var rails: Array = CM.parsed_chart.rails.duplicate()
 
 	if notes.is_empty() or rails.is_empty():
 		return 0.0

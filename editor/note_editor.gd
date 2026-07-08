@@ -7,10 +7,10 @@ const NOTE_TYPE_TRACE := 3
 const NOTE_TYPE_SPIKE := 4
 const NOTE_DRAW_SIZE := Vector2(50, 20)
 
-@export var hit_texture: Texture2D = preload("res://resorces/textures/editor/editor_hit.tres")
-@export var trace_texture: Texture2D = preload("res://resorces/textures/editor/editor_trace.tres")
-@export var move_texture: Texture2D = preload("res://resorces/textures/editor/editor_move.png")
-@export var spike_texture: Texture2D = preload("res://resorces/textures/editor/editor_spike.png")
+@export var hit_texture: Texture2D = preload("res://resources/textures/editor/editor_hit.tres")
+@export var trace_texture: Texture2D = preload("res://resources/textures/editor/editor_trace.tres")
+@export var move_texture: Texture2D = preload("res://resources/textures/editor/editor_move.png")
+@export var spike_texture: Texture2D = preload("res://resources/textures/editor/editor_spike.png")
 
 var note: Note = null
 var rail: Rail = null

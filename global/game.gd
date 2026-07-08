@@ -1,7 +1,12 @@
 extends Node
 
 enum GameStage { Loading, Main, Play, Edit, Browse }
+enum MainMenuState { Home, SongSelect }
+
+signal main_menu_state_changed(state: MainMenuState)
+
 var stage = GameStage.Loading
+var main_menu_state := MainMenuState.Home
 const CHART_FILE_VERSION = 1
 var current_time := 0.0
 var last_result_score: Score = null
@@ -50,3 +55,16 @@ func get_color_from_rating(value: float,fade: bool = false) -> Color:
 			if value >= a and value < b:
 				return color_map[a]
 	return color_map[keys[0]]
+
+
+func play_selected_chart() -> void:
+	if CM.parse_selected_chart():
+		Transition.transition_to("res://scenes/gameplay/gameplay.tscn",1.0)
+
+
+func set_main_menu_state(value: MainMenuState) -> void:
+	if main_menu_state == value:
+		return
+
+	main_menu_state = value
+	main_menu_state_changed.emit(main_menu_state)

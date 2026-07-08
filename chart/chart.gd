@@ -7,6 +7,9 @@ const DEFAULT_HITSOUND_TRACE := 2
 const DEFAULT_HITSOUND_SPIKE := 3
 const DEFAULT_HITSOUND_LONGNOTE_RELEASE := 4
 const DEFAULT_HITSOUND_SLOT_COUNT := 5
+const CHART_SKINS_DIR_NAME := "skins"
+const CHART_SKIN_JSON_NAME := "skin.json"
+const CHART_SKIN_SPRITES_DIR_NAME := "sprites"
 
 func _init() -> void:
 	timings = []
@@ -20,10 +23,27 @@ var file_name: String = ""
 var is_built_in := false
 var chart_set: ChartSet = null
 
-
 var skin_path: String:
 	get:
-		return FileSystem.chart_path.path_join(folder_name).path_join(file_skin)
+		if file_skin == "":
+			return ""
+		return skin_directory_path.path_join(CHART_SKIN_JSON_NAME)
+
+var skin_directory_path: String:
+	get:
+		if file_skin == "":
+			return ""
+		return skin_root_path.path_join(file_skin)
+
+var skin_root_path: String:
+	get:
+		return folder_path.path_join(CHART_SKINS_DIR_NAME)
+
+var legacy_skin_path: String:
+	get:
+		if file_skin == "":
+			return ""
+		return folder_path.path_join(file_skin)
 
 var file_path: String:
 	get:
@@ -118,3 +138,11 @@ func get_default_hitsound_slot_for_note(note: Note) -> int:
 			return DEFAULT_HITSOUND_SPIKE
 		_:
 			return DEFAULT_HITSOUND_HIT
+
+func build_uuid() -> void:
+	var hex_chars = "0123456789abcdef"
+	uuid = ""
+	for i in range(32):
+		uuid += hex_chars[randi() % 16]
+		if i in [7, 11, 15, 19]:
+			uuid += "-"
