@@ -18,8 +18,8 @@ config/name="dansu"
 run/main_scene="uid://yw5raylop0p"
 config/features=PackedStringArray("4.6", "Forward Plus")
 boot_splash/bg_color=Color(0, 0, 0, 1)
-boot_splash/image="uid://cw8cihgunxcv6"
-config/icon="res://icon.svg"
+boot_splash/show_image=false
+config/icon="uid://cw8cihgunxcv6"
 
 [audio]
 
@@ -71,7 +71,6 @@ shortcut_enter_editor={
 [internationalization]
 
 locale/translation_remaps={}
-locale/translations=PackedStringArray("res://locale.csv")
 
 [physics]
 

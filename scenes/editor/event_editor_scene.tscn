@@ -1,0 +1,250 @@
+[gd_scene load_steps=12 format=3]
+
+[ext_resource type="Script" path="res://editor/event_editor.gd" id="1_editor"]
+[ext_resource type="Script" path="res://editor/controllers/editor_event_controller.gd" id="2_controller"]
+[ext_resource type="Script" path="res://editor/event_editor_preview.gd" id="3_preview"]
+[ext_resource type="PackedScene" path="res://scenes/editor/event_editor_panel.tscn" id="4_timeline"]
+[ext_resource type="Theme" path="res://resources/themes/editor_mainmenu_theme.tres" id="5_theme"]
+[ext_resource type="Shader" path="res://resources/shaders/bg.gdshader" id="6_bg"]
+[ext_resource type="Shader" path="res://resources/shaders/liquid.gdshader" id="7_liquid"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_background"]
+shader = ExtResource("6_bg")
+shader_parameter/bg_color = Color(0.0627451, 0.0627451, 0.078431375, 1)
+shader_parameter/shape_color = Color(0.080000006, 0.080000006, 0.1, 1)
+shader_parameter/rect_size = Vector2(1920, 1080)
+shader_parameter/cell_size = 180.0
+shader_parameter/move_speed = 0.5
+shader_parameter/cycle_speed = 0.2
+shader_parameter/transition_ratio = 0.12
+shader_parameter/softness = 0.0
+shader_parameter/circle_size = 0.3
+shader_parameter/square_size = 0.2
+shader_parameter/triangle_size = 0.3
+shader_parameter/square_roundness = 0.05
+shader_parameter/triangle_roundness = 0.025
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_wave"]
+shader = ExtResource("7_liquid")
+shader_parameter/water_color = Color(0.4392157, 0.35686275, 0.87058824, 1)
+shader_parameter/water_height = 0.3
+shader_parameter/amplitude = 0.1
+shader_parameter/frequency = 2.0
+shader_parameter/speed = 0.9
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_top"]
+bg_color = Color(0.05490196, 0.05882353, 0.08627451, 0.94)
+border_width_bottom = 1
+border_color = Color(0.47058824, 0.40392157, 0.8784314, 0.32)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_stage"]
+bg_color = Color(0.05490196, 0.05882353, 0.08627451, 0.9)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.47058824, 0.40392157, 0.8784314, 0.36)
+corner_radius_top_left = 22
+corner_radius_top_right = 22
+corner_radius_bottom_right = 22
+corner_radius_bottom_left = 22
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_inspector"]
+bg_color = Color(0.05490196, 0.05882353, 0.08627451, 0.96)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.47058824, 0.40392157, 0.8784314, 0.44)
+corner_radius_top_left = 24
+corner_radius_top_right = 24
+corner_radius_bottom_right = 24
+corner_radius_bottom_left = 24
+
+[node name="EventEditor" type="Control" node_paths=PackedStringArray("chart_root", "event_controller", "back_button", "save_button", "play_button", "chart_name_label", "time_label", "status_label", "preview")]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme = ExtResource("5_theme")
+script = ExtResource("1_editor")
+chart_root = NodePath("PreviewPanel")
+event_controller = NodePath("Controllers/EventController")
+back_button = NodePath("TopBar/Margin/Row/Back")
+save_button = NodePath("TopBar/Margin/Row/Save")
+play_button = NodePath("TopBar/Margin/Row/Play")
+chart_name_label = NodePath("TopBar/Margin/Row/ChartName")
+time_label = NodePath("TopBar/Margin/Row/Time")
+status_label = NodePath("TopBar/Margin/Row/Status")
+preview = NodePath("PreviewPanel/Preview")
+
+[node name="Background" type="ColorRect" parent="."]
+material = SubResource("ShaderMaterial_background")
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="WaveFront" type="ColorRect" parent="."]
+material = SubResource("ShaderMaterial_wave")
+layout_mode = 1
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = -112.0
+grow_horizontal = 2
+grow_vertical = 0
+mouse_filter = 2
+
+[node name="PreviewPanel" type="PanelContainer" parent="."]
+layout_mode = 1
+anchor_left = 0.02
+anchor_top = 0.07
+anchor_right = 0.76
+anchor_bottom = 0.5
+offset_right = -3.0
+offset_bottom = -3.0
+theme_override_styles/panel = SubResource("StyleBoxFlat_stage")
+
+[node name="Preview" type="Control" parent="PreviewPanel" node_paths=PackedStringArray("event_editor")]
+layout_mode = 2
+mouse_filter = 2
+script = ExtResource("3_preview")
+event_editor = NodePath("../..")
+
+[node name="EventDock" parent="." instance=ExtResource("4_timeline")]
+layout_mode = 1
+anchor_left = 0.02
+anchor_top = 0.52
+anchor_right = 0.76
+anchor_bottom = 0.98
+offset_right = -3.0
+offset_bottom = -3.0
+
+[node name="Inspector" type="PanelContainer" parent="."]
+layout_mode = 1
+anchor_left = 0.775
+anchor_top = 0.07
+anchor_right = 0.985
+anchor_bottom = 0.98
+theme_override_styles/panel = SubResource("StyleBoxFlat_inspector")
+
+[node name="Tabs" type="TabContainer" parent="Inspector"]
+layout_mode = 2
+
+[node name="Events" type="TabBar" parent="Inspector/Tabs"]
+layout_mode = 2
+
+[node name="ScrollContainer" type="ScrollContainer" parent="Inspector/Tabs/Events"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Margin" type="MarginContainer" parent="Inspector/Tabs/Events/ScrollContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/margin_left = 12
+theme_override_constants/margin_top = 12
+theme_override_constants/margin_right = 12
+theme_override_constants/margin_bottom = 18
+
+[node name="Content" type="VBoxContainer" parent="Inspector/Tabs/Events/ScrollContainer/Margin"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 8
+
+[node name="TopBar" type="PanelContainer" parent="."]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_bottom = 58.0
+grow_horizontal = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_top")
+
+[node name="Margin" type="MarginContainer" parent="TopBar"]
+layout_mode = 2
+theme_override_constants/margin_left = 18
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_right = 18
+theme_override_constants/margin_bottom = 10
+
+[node name="Row" type="HBoxContainer" parent="TopBar/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="Back" type="Button" parent="TopBar/Margin/Row"]
+layout_mode = 2
+text = "← Chart Editor"
+
+[node name="Title" type="Label" parent="TopBar/Margin/Row"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.92, 0.94, 0.98, 1)
+theme_override_font_sizes/font_size = 24
+text = "EVENT STAGE"
+vertical_alignment = 1
+
+[node name="ChartName" type="Label" parent="TopBar/Margin/Row"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.55, 0.6, 0.69, 1)
+text = "Chart"
+vertical_alignment = 1
+
+[node name="Spacer" type="Control" parent="TopBar/Margin/Row"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Status" type="Label" parent="TopBar/Margin/Row"]
+custom_minimum_size = Vector2(100, 0)
+layout_mode = 2
+horizontal_alignment = 2
+vertical_alignment = 1
+
+[node name="Play" type="Button" parent="TopBar/Margin/Row"]
+custom_minimum_size = Vector2(76, 0)
+layout_mode = 2
+text = "Play"
+
+[node name="Time" type="Label" parent="TopBar/Margin/Row"]
+custom_minimum_size = Vector2(205, 0)
+layout_mode = 2
+text = "0:00/0:00 (0ms)"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Save" type="Button" parent="TopBar/Margin/Row"]
+custom_minimum_size = Vector2(100, 0)
+layout_mode = 2
+text = "Save Chart"
+
+[node name="Controllers" type="Node" parent="."]
+
+[node name="EventController" type="Node" parent="Controllers" node_paths=PackedStringArray("editor", "event_dock", "timeline_view", "add_camera_button", "add_overlay_button", "add_overlay_layer_button", "add_theme_button", "add_skin_button", "zoom_slider", "follow_button", "collapse_button", "status_label", "inspector_tabs", "event_inspector_tab", "inspector_content")]
+script = ExtResource("2_controller")
+editor = NodePath("../..")
+event_dock = NodePath("../../EventDock")
+timeline_view = NodePath("../../EventDock/Margin/Layout/Timeline")
+add_camera_button = NodePath("../../EventDock/Margin/Layout/Toolbar/AddCamera")
+add_overlay_button = NodePath("../../EventDock/Margin/Layout/Toolbar/AddOverlay")
+add_overlay_layer_button = NodePath("../../EventDock/Margin/Layout/Toolbar/AddOverlayLayer")
+add_theme_button = NodePath("../../EventDock/Margin/Layout/Toolbar/AddTheme")
+add_skin_button = NodePath("../../EventDock/Margin/Layout/Toolbar/AddSkin")
+zoom_slider = NodePath("../../EventDock/Margin/Layout/Toolbar/Zoom")
+follow_button = NodePath("../../EventDock/Margin/Layout/Toolbar/Follow")
+collapse_button = NodePath("../../EventDock/Margin/Layout/Toolbar/Collapse")
+status_label = NodePath("../../EventDock/Margin/Layout/Status")
+inspector_tabs = NodePath("../../Inspector/Tabs")
+event_inspector_tab = NodePath("../../Inspector/Tabs/Events")
+inspector_content = NodePath("../../Inspector/Tabs/Events/ScrollContainer/Margin/Content")
+expanded_dock_top = 0.52
+collapsed_dock_top = 0.9
+expanded_stage_bottom = 0.5
+collapsed_stage_bottom = 0.88

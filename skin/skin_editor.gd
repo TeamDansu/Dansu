@@ -4,6 +4,7 @@ class_name SkinEditor
 const EDITOR_SCENE_PATH := "res://scenes/editor/editor_scene.tscn"
 const EFFECT_OPTIONS := ["none", "groove", "spin"]
 const PREVIEW_SCALE_DIVISOR := 4.0
+const UIFocusUtils = preload("res://global/ui_focus_utils.gd")
 const SkinDocumentScript = preload("res://skin/skin_document.gd")
 const SkinEditorContextScript = preload("res://skin/skin_editor_context.gd")
 const SkinSerializationScript = preload("res://skin/skin_serialization.gd")
@@ -177,6 +178,7 @@ func _refresh_all() -> void:
 	_apply_preview_scale()
 	_refresh_preview()
 	_syncing = false
+	UIFocusUtils.disable_focus_recursive(self)
 
 func _refresh_metadata_ui() -> void:
 	name_line_edit.text = document.skin_data.skin_name

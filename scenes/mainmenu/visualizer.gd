@@ -73,17 +73,15 @@ func update_mesh() -> void:
 
 		var h = heights[i]
 
-		var transform := Transform2D.IDENTITY
+		var _transform := Transform2D.IDENTITY
 
-		# 가로폭
-		transform.x = Vector2(bar_width, 0)
+		_transform.x = Vector2(bar_width, 0)
 
-		# 세로 높이
-		transform.y = Vector2(0, -h - 20)
+		_transform.y = Vector2(0, -h - 20)
 
-		transform.origin = Vector2(
+		_transform.origin = Vector2(
 			i * (bar_width + spacing),
 			0
 		) + Vector2(bar_width * 0.5, 0)
 
-		mm.set_instance_transform_2d(i, transform)
+		mm.set_instance_transform_2d(i, _transform)

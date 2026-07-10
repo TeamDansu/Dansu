@@ -25,8 +25,9 @@ static func parse_meta(chart: Chart) -> bool:
 func parse_object(chart: Chart) -> ParseResult:
 	var result := ParseResult.new()
 	var file := FileAccess.open(chart.file_path, FileAccess.READ)
+	var message: String
 	if file == null:
-		var message := "Failed to open chart file: %s" % chart.file_path
+		message = "Failed to open chart file: %s" % chart.file_path
 		Notification.notice(message, Notification.Type.ERROR)
 		return result.set_error(message)
 
@@ -38,6 +39,6 @@ func parse_object(chart: Chart) -> ParseResult:
 	if parser != null:
 		return result.set_success(parser.parse(file, chart))
 
-	var message := "Unsupported chart version ! : %s" % version
+	message = "Unsupported chart version ! : %s" % version
 	Notification.notice(message, Notification.Type.ERROR)
 	return result.set_error(message)

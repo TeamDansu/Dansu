@@ -5,6 +5,7 @@
 [ext_resource type="Script" uid="uid://cfpsx7jd38jr4" path="res://editor/ui/sfx_panel.gd" id="1_yxg55"]
 [ext_resource type="Script" uid="uid://tbp77g1a1cni" path="res://editor/editor_bpm_lines.gd" id="2_9wr6r"]
 [ext_resource type="Shader" uid="uid://cflu32au5woaj" path="res://resources/shaders/bg.gdshader" id="2_37swi"]
+[ext_resource type="Theme" uid="uid://d3ctsqw4vkokp" path="res://resources/themes/editor_mainmenu_theme.tres" id="2_theme"]
 [ext_resource type="PackedScene" uid="uid://bu0j8qugn442u" path="res://scenes/editor/ui/inspector/point.tscn" id="3_1ne32"]
 [ext_resource type="Texture2D" uid="uid://dvnjnnyr3ulxr" path="res://resources/textures/white-circle.svg" id="3_ysqcj"]
 [ext_resource type="PackedScene" uid="uid://bg8obfjf1d3ei" path="res://scenes/editor/ui/inspector/timing.tscn" id="4_8or05"]
@@ -16,11 +17,11 @@
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_ysqcj"]
 shader = ExtResource("2_37swi")
-shader_parameter/bg_color = Color(0.032792434, 0.03277399, 0.04409814, 1)
-shader_parameter/shape_color = Color(0.054213956, 0.054174535, 0.07433192, 1)
+shader_parameter/bg_color = Color(0.0627451, 0.0627451, 0.078431375, 1)
+shader_parameter/shape_color = Color(0.080000006, 0.080000006, 0.1, 1)
 shader_parameter/rect_size = Vector2(1920, 1080)
 shader_parameter/cell_size = 180.0
-shader_parameter/move_speed = 0.1
+shader_parameter/move_speed = 0.5
 shader_parameter/cycle_speed = 0.2
 shader_parameter/transition_ratio = 0.12
 shader_parameter/softness = 0.0
@@ -30,16 +31,28 @@ shader_parameter/triangle_size = 0.3
 shader_parameter/square_roundness = 0.05
 shader_parameter/triangle_roundness = 0.025
 
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_37swi"]
-bg_color = Color(0.014984831, 0, 0.018731039, 0.39215687)
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_epy5m"]
+content_margin_left = 10.0
+content_margin_top = 10.0
+content_margin_right = 10.0
+content_margin_bottom = 10.0
 
-[node name="EditorScene" type="Control" unique_id=317898238 node_paths=PackedStringArray("chart_root", "chart_panel", "note_pivot", "bpm_lines", "song_slider", "current_time_label", "save_button", "delete_button", "hit_button", "trace_button", "left_button", "right_button", "spike_button", "title_line_edit", "artist_line_edit", "difficulty_line_edit", "source_line_edit", "tags_line_edit", "beat_division_slider", "beat_division_label", "add_timing_button", "timing_list_container", "timing_template", "skin_file_label", "skin_browser_button", "open_skin_editor_button", "view_controller", "inspector_controller", "save_controller", "edit_controller")]
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_37swi"]
+bg_color = Color(0.05490196, 0.05882353, 0.08627451, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.47058824, 0.40392157, 0.8784314, 0.34)
+
+[node name="EditorScene" type="Control" unique_id=317898238 node_paths=PackedStringArray("chart_root", "chart_panel", "note_pivot", "bpm_lines", "song_slider", "current_time_label", "save_button", "delete_button", "hit_button", "trace_button", "left_button", "right_button", "spike_button", "title_line_edit", "artist_line_edit", "difficulty_line_edit", "source_line_edit", "tags_line_edit", "beat_division_slider", "beat_division_label", "add_timing_button", "timing_list_container", "timing_template", "skin_file_label", "skin_browser_button", "open_skin_editor_button", "open_event_editor_button", "view_controller", "inspector_controller", "save_controller", "edit_controller")]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+theme = ExtResource("2_theme")
 script = ExtResource("1_tudub")
 chart_root = NodePath("Chart")
 chart_panel = NodePath("Chart/Panel")
@@ -47,7 +60,7 @@ note_pivot = NodePath("Chart/TimePivot")
 bpm_lines = NodePath("Chart/Panel/BPMLines")
 song_slider = NodePath("SongSlider")
 current_time_label = NodePath("SongSlider/CurrentTime")
-save_button = NodePath("Object/Save")
+save_button = NodePath("Inspector/TabContainer/Chart/ScrollContainer/Contents/Save")
 delete_button = NodePath("Object/Delete")
 hit_button = NodePath("Object/Hit")
 trace_button = NodePath("Object/Trace")
@@ -67,6 +80,7 @@ timing_template = NodePath("Inspector/TabContainer/Timing/ScrollContainer/HBoxCo
 skin_file_label = NodePath("Inspector/TabContainer/Chart/ScrollContainer/Contents/skin_file_name")
 skin_browser_button = NodePath("Inspector/TabContainer/Chart/ScrollContainer/Contents/SkinBrowserButton")
 open_skin_editor_button = NodePath("Inspector/TabContainer/Chart/ScrollContainer/Contents/Button")
+open_event_editor_button = NodePath("Inspector/TabContainer/Chart/ScrollContainer/Contents/EventEditorButton")
 view_controller = NodePath("Controllers/ViewController")
 inspector_controller = NodePath("Controllers/InspectorController")
 save_controller = NodePath("Controllers/SaveController")
@@ -115,7 +129,7 @@ audio_browser_button = NodePath("../../Inspector/TabContainer/Chart/ScrollContai
 [node name="SaveController" type="Node" parent="Controllers" unique_id=1813602238 node_paths=PackedStringArray("editor", "save_button")]
 script = ExtResource("8_u3v7w")
 editor = NodePath("../..")
-save_button = NodePath("../../Object/Save")
+save_button = NodePath("../../Inspector/TabContainer/Chart/ScrollContainer/Contents/Save")
 
 [node name="EditController" type="Node" parent="Controllers" unique_id=939770427 node_paths=PackedStringArray("editor")]
 script = ExtResource("9_mjlwm")
@@ -124,15 +138,19 @@ editor = NodePath("../..")
 [node name="Inspector" type="PanelContainer" parent="." unique_id=792765145]
 layout_mode = 1
 anchors_preset = -1
-anchor_left = 0.7911042
+anchor_left = 0.94166666
 anchor_right = 1.0
-anchor_bottom = 0.94814813
-offset_left = 0.079956055
+anchor_bottom = 1.0
+offset_left = -392.0
+offset_top = 24.0
+offset_right = -24.0
+offset_bottom = -84.0
 pivot_offset = Vector2(430, 0)
 metadata/_edit_use_anchors_ = true
 
 [node name="TabContainer" type="TabContainer" parent="Inspector" unique_id=1073871457]
 layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxEmpty_epy5m")
 current_tab = 0
 
 [node name="Chart" type="TabBar" parent="Inspector/TabContainer" unique_id=65841320]
@@ -144,14 +162,19 @@ layout_mode = 1
 anchors_preset = -1
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_top = 1.0
+offset_left = 12.0
+offset_top = 10.0
+offset_right = -12.0
+offset_bottom = -12.0
 
 [node name="Contents" type="VBoxContainer" parent="Inspector/TabContainer/Chart/ScrollContainer" unique_id=27965570]
 layout_mode = 2
 size_flags_horizontal = 3
+theme_override_constants/separation = 8
 
 [node name="Header" type="HBoxContainer" parent="Inspector/TabContainer/Chart/ScrollContainer/Contents" unique_id=1290609303]
 layout_mode = 2
+theme_override_constants/separation = 12
 
 [node name="CoverTexture" type="TextureRect" parent="Inspector/TabContainer/Chart/ScrollContainer/Contents/Header" unique_id=887230808]
 unique_name_in_owner = true
@@ -194,7 +217,6 @@ horizontal_alignment = 1
 [node name="title" type="LineEdit" parent="Inspector/TabContainer/Chart/ScrollContainer/Contents" unique_id=1474887788]
 unique_name_in_owner = true
 layout_mode = 2
-theme_override_font_sizes/font_size = 14
 placeholder_text = "song name"
 alignment = 1
 
@@ -206,7 +228,6 @@ horizontal_alignment = 1
 [node name="artist" type="LineEdit" parent="Inspector/TabContainer/Chart/ScrollContainer/Contents" unique_id=748049689]
 unique_name_in_owner = true
 layout_mode = 2
-theme_override_font_sizes/font_size = 14
 placeholder_text = "artist name"
 alignment = 1
 
@@ -218,7 +239,6 @@ horizontal_alignment = 1
 [node name="difficulty" type="LineEdit" parent="Inspector/TabContainer/Chart/ScrollContainer/Contents" unique_id=1577139298]
 unique_name_in_owner = true
 layout_mode = 2
-theme_override_font_sizes/font_size = 14
 placeholder_text = "hard"
 alignment = 1
 
@@ -230,7 +250,6 @@ horizontal_alignment = 1
 [node name="source" type="LineEdit" parent="Inspector/TabContainer/Chart/ScrollContainer/Contents" unique_id=234651857]
 unique_name_in_owner = true
 layout_mode = 2
-theme_override_font_sizes/font_size = 14
 placeholder_text = "other game"
 alignment = 1
 
@@ -242,7 +261,6 @@ horizontal_alignment = 1
 [node name="tags" type="LineEdit" parent="Inspector/TabContainer/Chart/ScrollContainer/Contents" unique_id=177184767]
 unique_name_in_owner = true
 layout_mode = 2
-theme_override_font_sizes/font_size = 14
 placeholder_text = "ost game tech peak tricky stemina long"
 alignment = 1
 
@@ -264,6 +282,14 @@ from browser"
 [node name="Button" type="Button" parent="Inspector/TabContainer/Chart/ScrollContainer/Contents" unique_id=922132136]
 layout_mode = 2
 text = "open skin editor"
+
+[node name="EventEditorButton" type="Button" parent="Inspector/TabContainer/Chart/ScrollContainer/Contents" unique_id=1919991377]
+layout_mode = 2
+text = "open event editor"
+
+[node name="Save" type="Button" parent="Inspector/TabContainer/Chart/ScrollContainer/Contents" unique_id=1977570636]
+layout_mode = 2
+text = "Save Chart"
 
 [node name="Property" type="TabBar" parent="Inspector/TabContainer" unique_id=826723775 node_paths=PackedStringArray("editor", "note_tab", "rail_tab", "note_time_lineedit", "note_type_option", "note_length_lineedit", "note_animation_option", "note_hitsound_option", "note_dir_option", "point_position_slider", "point_curve_slider", "point_time_lineedit")]
 visible = false
@@ -288,6 +314,10 @@ layout_mode = 1
 anchors_preset = -1
 anchor_right = 1.0
 anchor_bottom = 1.0
+offset_left = 12.0
+offset_top = 10.0
+offset_right = -12.0
+offset_bottom = -12.0
 
 [node name="MarginContainer" type="MarginContainer" parent="Inspector/TabContainer/Property/ScrollContainer" unique_id=1040505119]
 layout_mode = 2
@@ -426,6 +456,10 @@ layout_mode = 1
 anchors_preset = -1
 anchor_right = 1.0
 anchor_bottom = 1.0
+offset_left = 12.0
+offset_top = 10.0
+offset_right = -12.0
+offset_bottom = -12.0
 
 [node name="HBoxContainer" type="VBoxContainer" parent="Inspector/TabContainer/Timing/ScrollContainer" unique_id=13395794]
 layout_mode = 2
@@ -476,6 +510,10 @@ layout_mode = 1
 anchors_preset = -1
 anchor_right = 1.0
 anchor_bottom = 1.0
+offset_left = 12.0
+offset_top = 10.0
+offset_right = -12.0
+offset_bottom = -12.0
 
 [node name="VBoxContainer" type="VBoxContainer" parent="Inspector/TabContainer/SFX/ScrollContainer" unique_id=805109826]
 layout_mode = 2
@@ -548,18 +586,20 @@ text = "Add new sfx"
 layout_mode = 2
 
 [node name="Chart" type="Control" parent="." unique_id=342643612]
+clip_contents = true
 layout_mode = 1
-anchor_left = 0.33143753
-anchor_right = 0.6694375
-anchor_bottom = 0.9480001
-offset_left = 0.6399536
-offset_right = -0.32006836
-offset_bottom = 0.15991211
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 576.0
+offset_top = 24.0
+offset_right = -640.0
+offset_bottom = -84.0
+grow_horizontal = 2
+grow_vertical = 2
 mouse_filter = 1
-metadata/_edit_use_anchors_ = true
 
 [node name="Panel" type="Panel" parent="Chart" unique_id=154676679]
-clip_contents = true
 layout_mode = 1
 anchors_preset = -1
 anchor_right = 1.0
@@ -603,19 +643,21 @@ metadata/_edit_use_anchors_ = true
 [node name="Object" type="VBoxContainer" parent="." unique_id=2054365102]
 layout_mode = 1
 anchors_preset = -1
-anchor_left = 0.001
-anchor_top = 0.5
-anchor_right = 0.001
-anchor_bottom = 0.5
-offset_left = 4.08
-offset_top = -345.0
-offset_right = 110.08
-offset_bottom = 343.0
+anchor_bottom = 1.0
+offset_left = 24.0
+offset_top = 250.0
+offset_right = 136.0
+offset_bottom = -120.0
+theme_override_constants/separation = 6
 alignment = 1
 
 [node name="Label" type="Label" parent="Object" unique_id=1191092861]
 layout_mode = 2
 text = "Notes"
+
+[node name="Hit2" type="Button" parent="Object" unique_id=66446060]
+layout_mode = 2
+text = "Rail (R)"
 
 [node name="Hit" type="Button" parent="Object" unique_id=823023364]
 layout_mode = 2
@@ -661,13 +703,6 @@ text = "Undo"
 layout_mode = 2
 text = "Redo"
 
-[node name="HSeparator" type="HSeparator" parent="Object" unique_id=1899653637]
-layout_mode = 2
-
-[node name="Save" type="Button" parent="Object" unique_id=1977570636]
-layout_mode = 2
-text = "Save Chart"
-
 [node name="Quit" type="Button" parent="Object" unique_id=1051398034]
 visible = false
 layout_mode = 2
@@ -677,30 +712,33 @@ text = "Back to menu"
 layout_mode = 1
 anchors_preset = -1
 anchor_top = 1.0
-anchor_right = 1.0024167
+anchor_right = 1.0
 anchor_bottom = 1.0
 offset_left = 24.0
-offset_top = -40.0
-offset_right = -28.640137
+offset_top = -48.0
+offset_right = -24.0
+offset_bottom = -20.0
 metadata/_edit_use_anchors_ = true
 
 [node name="CurrentTime" type="Label" parent="SongSlider" unique_id=114104395]
 layout_mode = 1
-anchors_preset = 7
+anchors_preset = -1
 anchor_left = 0.5
-anchor_top = 1.0
+anchor_top = 1.7140001
 anchor_right = 0.5
-anchor_bottom = 1.0
-offset_left = -77.0
-offset_top = -53.0
-offset_right = 77.0
-offset_bottom = -30.0
+anchor_bottom = 1.7140001
+offset_left = -80.0
+offset_top = -45.992004
+offset_right = 74.0
+offset_bottom = -21.992004
 grow_horizontal = 2
 grow_vertical = 0
 text = "1:20/3:20(62,000ms)"
 
 [node name="Label" type="Label" parent="." unique_id=160094082]
-layout_mode = 0
-offset_right = 40.0
-offset_bottom = 23.0
+layout_mode = 1
+offset_left = 24.0
+offset_top = 24.0
+offset_right = 64.0
+offset_bottom = 47.0
 text = "fps:"

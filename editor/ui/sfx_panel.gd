@@ -1,6 +1,8 @@
 extends TabBar
 class_name EditorSFXPanel
 
+const UIFocusUtils = preload("res://global/ui_focus_utils.gd")
+
 @export var editor: Editor
 @export var hit_option: OptionButton
 @export var move_option: OptionButton
@@ -36,6 +38,7 @@ func _create_file_dialog() -> void:
 	_file_dialog.filters = PackedStringArray(["*.wav ; WAV Audio"])
 	_file_dialog.file_selected.connect(_on_file_selected)
 	add_child(_file_dialog)
+	UIFocusUtils.disable_focus_recursive(_file_dialog)
 
 func _refresh() -> void:
 	if editor == null:
@@ -74,6 +77,7 @@ func _refresh_custom_hitsounds() -> void:
 		label.text = hitsound.get_display_name()
 		remove_button.pressed.connect(_on_remove_hitsound_pressed.bind(hitsound.id))
 		list_container.add_child(row)
+		UIFocusUtils.disable_focus_recursive(row)
 
 func _on_default_selected(index: int, slot: int, option_button: OptionButton) -> void:
 	if _syncing or editor == null:

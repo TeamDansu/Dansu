@@ -3,10 +3,37 @@
 [ext_resource type="Script" uid="uid://cok8t52rpdwr5" path="res://skin/skin_editor.gd" id="1_1bx3f"]
 [ext_resource type="PackedScene" uid="uid://c0f1pv7v7l8io" path="res://scenes/skineditor/animation_button.tscn" id="1_xwaek"]
 [ext_resource type="PackedScene" uid="uid://3rgo3pf21gx1" path="res://scenes/skineditor/frame.tscn" id="2_6eirq"]
+[ext_resource type="Theme" path="res://resources/themes/editor_mainmenu_theme.tres" id="3_theme"]
 [ext_resource type="PackedScene" uid="uid://txbv3tuwtel0" path="res://scenes/skineditor/sprite_image.tscn" id="4_6eirq"]
 [ext_resource type="Texture2D" uid="uid://n48htgfia26x" path="res://resources/skins/danshe/sprite/danshe_dance_2.png" id="4_byoka"]
 [ext_resource type="Texture2D" uid="uid://qfbvykpfreya" path="res://resources/skins/danshe/sprite/danshe_dance_1.png" id="4_hbx7w"]
 [ext_resource type="Texture2D" uid="uid://caegtu8bhulxq" path="res://resources/skins/danshe/sprite/danshe_idle.png" id="5_3574f"]
+[ext_resource type="Shader" path="res://resources/shaders/bg.gdshader" id="6_bg"]
+[ext_resource type="Shader" path="res://resources/shaders/liquid.gdshader" id="7_liquid"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_background"]
+shader = ExtResource("6_bg")
+shader_parameter/bg_color = Color(0.0627451, 0.0627451, 0.078431375, 1)
+shader_parameter/shape_color = Color(0.080000006, 0.080000006, 0.1, 1)
+shader_parameter/rect_size = Vector2(1920, 1080)
+shader_parameter/cell_size = 180.0
+shader_parameter/move_speed = 0.5
+shader_parameter/cycle_speed = 0.2
+shader_parameter/transition_ratio = 0.12
+shader_parameter/softness = 0.0
+shader_parameter/circle_size = 0.3
+shader_parameter/square_size = 0.2
+shader_parameter/triangle_size = 0.3
+shader_parameter/square_roundness = 0.05
+shader_parameter/triangle_roundness = 0.025
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_wave"]
+shader = ExtResource("7_liquid")
+shader_parameter/water_color = Color(0.4392157, 0.35686275, 0.87058824, 1)
+shader_parameter/water_height = 0.3
+shader_parameter/amplitude = 0.1
+shader_parameter/frequency = 2.0
+shader_parameter/speed = 0.9
 
 [node name="SkinEditor" type="Control" unique_id=1593651549 node_paths=PackedStringArray("name_line_edit", "idle_option", "left_option", "right_option", "scale_bar", "hits_option", "hits_add_new_button", "skin_contents", "new_animation_button", "animation_list_container", "animation_template", "frames_container", "frame_template", "delete_frame_button", "calculate_scale_button", "onion_skin_button", "preview_play_button", "fps_line_edit", "effect_option", "save_button", "back_to_menu_button", "back_to_chart_button", "import_sprite_button", "sprite_list_container", "sprite_template", "preview_sprite", "preview_onion_prev", "preview_onion_next")]
 layout_mode = 3
@@ -15,6 +42,7 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+theme = ExtResource("3_theme")
 script = ExtResource("1_1bx3f")
 name_line_edit = NodePath("Inspector/TabContainer/Skin/ScrollContainer/Contents/name")
 idle_option = NodePath("Inspector/TabContainer/Skin/ScrollContainer/Contents/idle")
@@ -44,6 +72,28 @@ sprite_template = NodePath("SpritesPanel/MarginContainer/ScrollContainer/VBoxCon
 preview_sprite = NodePath("Sprite")
 preview_onion_prev = NodePath("SpriteOnionPrev")
 preview_onion_next = NodePath("SpriteOnionNext")
+
+[node name="Background" type="ColorRect" parent="."]
+material = SubResource("ShaderMaterial_background")
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="WaveFront" type="ColorRect" parent="."]
+material = SubResource("ShaderMaterial_wave")
+layout_mode = 1
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = -112.0
+grow_horizontal = 2
+grow_vertical = 0
+mouse_filter = 2
 
 [node name="Inspector" type="PanelContainer" parent="." unique_id=1602893852]
 layout_mode = 1

@@ -39,7 +39,7 @@ func transition_to(scene_path: String, duration: float = 0.45) -> void:
 
 func return_to_menu(duration: float = 1.0) -> void:
 	if _is_transitioning:
-		return
+		return 
 
 	await _play_transition_in(duration)
 

@@ -72,7 +72,7 @@ func _write_events(file: FileAccess, events: Array[ChartEvent]) -> void:
 	file.store_line("@EVENTS")
 	file.store_line("# camera:id,time,duration")
 	file.store_line("# [offset,follow_character,x,y,zoom,e:ease]")
-	file.store_line("# overlay:id,time,duration")
+	file.store_line("# overlay:id,time,duration,l:layer,a:anchor")
 	file.store_line("# [offset,x,y,scale_x,scale_y,rotation,s:sprite,o:opacity,e:ease]")
 	file.store_line("# theme:id,time,duration")
 	file.store_line("# [offset,bg_color,bg_color_2,rail_color,e:ease]")
@@ -111,7 +111,15 @@ func _write_camera_event(file: FileAccess, event: CameraEvent) -> void:
 	file.store_line("")
 
 func _write_overlay_event(file: FileAccess, event: OverlayEvent) -> void:
-	file.store_line("overlay:%s,%d,%d" % [event.id.strip_edges(), event.time, event.duration])
+	var header_tokens: Array[String] = [event.id.strip_edges(), str(event.time), str(event.duration)]
+	if event.layer != 0:
+		header_tokens.append("l:%d" % event.layer)
+	if event.anchor != "center":
+		if OverlayEventFrame.is_valid_anchor(event.anchor):
+			header_tokens.append("a:%s" % event.anchor)
+		else:
+			push_warning("Replaced invalid overlay anchor with center: %s" % event.anchor)
+	file.store_line("overlay:%s" % ",".join(header_tokens))
 	event.sort_frames()
 	for frame in event.frames:
 		if frame == null:

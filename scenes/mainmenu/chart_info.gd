@@ -109,7 +109,7 @@ func _process(delta: float) -> void:
 	if panel_style != null:
 		panel_style.shadow_offset = panel_style.shadow_offset.lerp(target_shadow_offset, visual_weight)
 		panel_style.shadow_color = panel_style.shadow_color.lerp(target_shadow_color, hover_weight)
-		panel_style.shadow_size = lerpf(panel_style.shadow_size, target_shadow_size, hover_weight)
+		panel_style.shadow_size = int(lerpf(panel_style.shadow_size, target_shadow_size, hover_weight))
 
 	if not hovered and _is_visual_resting():
 		_snap_to_rest_state()
@@ -190,7 +190,7 @@ func _setup_stylebox() -> void:
 
 	panel_style = style.duplicate()
 	panel_style.shadow_color = SHADOW_REST_COLOR
-	panel_style.shadow_size = 0.0
+	panel_style.shadow_size = 0
 	panel_style.shadow_offset = SHADOW_BASE_OFFSET
 	add_theme_stylebox_override("panel", panel_style)
 
@@ -388,4 +388,4 @@ func _snap_to_rest_state() -> void:
 	if panel_style != null:
 		panel_style.shadow_offset = SHADOW_BASE_OFFSET
 		panel_style.shadow_color = SHADOW_REST_COLOR
-		panel_style.shadow_size = 0.0
+		panel_style.shadow_size = 0

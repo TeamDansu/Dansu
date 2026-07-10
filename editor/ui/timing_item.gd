@@ -1,6 +1,8 @@
 extends PanelContainer
 class_name EditorTimingItem
 
+const UIFocusUtils = preload("res://global/ui_focus_utils.gd")
+
 signal changed(item)
 signal remove_requested(item)
 signal change_started(item)
@@ -18,6 +20,7 @@ func _ready() -> void:
 	time_line_edit.text_submitted.connect(_commit_time)
 	time_line_edit.focus_exited.connect(_commit_current_time)
 	remove_button.pressed.connect(_request_remove)
+	UIFocusUtils.disable_focus_recursive(self)
 
 func bind(timing_value: Timing) -> void:
 	timing = timing_value

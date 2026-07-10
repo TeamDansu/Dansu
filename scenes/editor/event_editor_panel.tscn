@@ -1,0 +1,110 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://editor/event_editor_timeline.gd" id="1_timeline"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_panel"]
+bg_color = Color(0.05490196, 0.05882353, 0.08627451, 0.94)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.47058824, 0.40392157, 0.8784314, 0.38)
+corner_radius_top_left = 18
+corner_radius_top_right = 18
+corner_radius_bottom_right = 18
+corner_radius_bottom_left = 18
+
+[node name="EventDock" type="PanelContainer"]
+theme_override_styles/panel = SubResource("StyleBoxFlat_panel")
+
+[node name="Margin" type="MarginContainer" parent="."]
+layout_mode = 2
+theme_override_constants/margin_left = 8
+theme_override_constants/margin_top = 6
+theme_override_constants/margin_right = 8
+theme_override_constants/margin_bottom = 6
+
+[node name="Layout" type="VBoxContainer" parent="Margin"]
+layout_mode = 2
+theme_override_constants/separation = 5
+
+[node name="Toolbar" type="HBoxContainer" parent="Margin/Layout"]
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="Title" type="Label" parent="Margin/Layout/Toolbar"]
+custom_minimum_size = Vector2(118, 0)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.94, 0.95, 0.99, 1)
+theme_override_font_sizes/font_size = 18
+text = "EVENT TIMELINE"
+
+[node name="AddCamera" type="Button" parent="Margin/Layout/Toolbar"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "+ Camera"
+
+[node name="AddTheme" type="Button" parent="Margin/Layout/Toolbar"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "+ Theme"
+
+[node name="AddSkin" type="Button" parent="Margin/Layout/Toolbar"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "+ Skin"
+
+[node name="AddOverlay" type="Button" parent="Margin/Layout/Toolbar"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "+ Overlay"
+
+[node name="AddOverlayLayer" type="Button" parent="Margin/Layout/Toolbar"]
+unique_name_in_owner = true
+layout_mode = 2
+tooltip_text = "Add and select a new overlay layer"
+text = "+ Layer"
+
+[node name="Spacer" type="Control" parent="Margin/Layout/Toolbar"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="ZoomLabel" type="Label" parent="Margin/Layout/Toolbar"]
+layout_mode = 2
+text = "Zoom"
+vertical_alignment = 1
+
+[node name="Zoom" type="HSlider" parent="Margin/Layout/Toolbar"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(130, 0)
+layout_mode = 2
+min_value = 0.015
+max_value = 0.4
+step = 0.005
+value = 0.08
+
+[node name="Follow" type="Button" parent="Margin/Layout/Toolbar"]
+unique_name_in_owner = true
+layout_mode = 2
+toggle_mode = true
+button_pressed = true
+text = "Follow"
+
+[node name="Collapse" type="Button" parent="Margin/Layout/Toolbar"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Collapse"
+
+[node name="Timeline" type="Control" parent="Margin/Layout"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 182)
+layout_mode = 2
+size_flags_vertical = 3
+script = ExtResource("1_timeline")
+
+[node name="Status" type="Label" parent="Margin/Layout"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.54, 0.59, 0.68, 1)
+theme_override_font_sizes/font_size = 11
+text = "Drag ruler to scrub · Double-click a lane to create · Shift+Wheel layers · Ctrl+Wheel zoom · Middle-drag pan"

@@ -75,7 +75,7 @@ func _process(delta):
 		Transition.transition_to("res://scenes/editor/editor_scene.tscn",1)
 
 
-func _input(event: InputEvent) -> void:
+func _input(_event: InputEvent) -> void:
 	if not is_exiting:
 		return
 

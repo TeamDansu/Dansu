@@ -5,6 +5,8 @@ signal selection_changed()
 signal hitsounds_changed()
 
 const SkinEditorRouterScript = preload("res://skin/skin_editor_router.gd")
+const UIFocusUtils = preload("res://global/ui_focus_utils.gd")
+const EVENT_EDITOR_SCENE_PATH := "res://scenes/editor/event_editor_scene.tscn"
 const PIXELS_PER_MS := 1
 const TRANSPORT_UI_UPDATE_USEC := 33333
 const MAX_HISTORY_STEPS := 128
@@ -35,6 +37,7 @@ const MAX_HISTORY_STEPS := 128
 @export var skin_file_label: Label
 @export var skin_browser_button: Button
 @export var open_skin_editor_button: Button
+@export var open_event_editor_button: Button
 @export var view_controller: EditorViewController
 @export var inspector_controller: EditorInspectorController
 @export var save_controller: EditorSaveController
@@ -84,6 +87,7 @@ func _ready() -> void:
 	_update_beat_division_ui()
 	_refresh_views()
 	_update_save_button_state()
+	UIFocusUtils.disable_focus_recursive(self)
 
 func _process(_delta: float) -> void:
 	$Label.text = str(Engine.get_frames_per_second())
@@ -109,6 +113,8 @@ func _input(event: InputEvent) -> void:
 		_point_drag_history_pending = false
 
 	if event is InputEventMouseButton:
+		if event.pressed and event.button_index == MOUSE_BUTTON_LEFT and _is_text_input_focused() and _is_mouse_inside_chart():
+			UIFocusUtils.release_text_input_focus(get_viewport())
 		if not _is_text_input_focused():
 			_handle_mouse_button(event)
 		return
@@ -196,6 +202,8 @@ func _connect_ui() -> void:
 		skin_browser_button.pressed.connect(_on_skin_browser_pressed)
 	if open_skin_editor_button != null:
 		open_skin_editor_button.pressed.connect(_open_skin_editor)
+	if open_event_editor_button != null:
+		open_event_editor_button.pressed.connect(_open_event_editor)
 
 func _create_dialogs() -> void:
 	if inspector_controller != null:
@@ -303,6 +311,13 @@ func _open_skin_editor() -> void:
 		return
 	CM.selected_chart = chart
 	SkinEditorRouterScript.open_chart_skin_editor(chart)
+
+func _open_event_editor() -> void:
+	if chart == null:
+		return
+	CM.selected_chart = chart
+	Game.reopen_editor_without_chart_reload = true
+	Transition.transition_to(EVENT_EDITOR_SCENE_PATH, 0.45)
 
 func _on_skin_browser_pressed() -> void:
 	if inspector_controller != null:

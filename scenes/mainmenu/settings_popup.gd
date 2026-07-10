@@ -305,14 +305,14 @@ func _refresh_max_fps_display() -> void:
 func _on_window_mode_selected(index: int) -> void:
 	if _is_syncing:
 		return
-	Config.window_mode = window_mode_option.get_item_id(index)
+	Config.window_mode = window_mode_option.get_item_id(index) as DisplayServer.WindowMode
 	_persist()
 
 
 func _on_vsync_selected(index: int) -> void:
 	if _is_syncing:
 		return
-	Config.vsync_mode = vsync_option.get_item_id(index)
+	Config.vsync_mode = vsync_option.get_item_id(index) as DisplayServer.VSyncMode
 	_persist()
 
 
@@ -341,7 +341,7 @@ func _on_taa_toggled(enabled: bool) -> void:
 func _on_msaa_selected(index: int) -> void:
 	if _is_syncing:
 		return
-	Config.msaa = msaa_option.get_item_id(index)
+	Config.msaa = msaa_option.get_item_id(index) as Viewport.MSAA
 	_persist()
 
 

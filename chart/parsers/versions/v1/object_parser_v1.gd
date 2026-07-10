@@ -74,7 +74,10 @@ func _parse_event_line(line: String, current_event: ChartEvent, parsed_chart: Pa
 	elif current_event is OverlayEvent:
 		var overlay_frame := _parse_overlay_frame(line)
 		if overlay_frame != null:
-			(current_event as OverlayEvent).frames.append(overlay_frame)
+			var overlay_event := current_event as OverlayEvent
+			overlay_event.frames.append(overlay_frame)
+			if overlay_event.anchor == "center" and overlay_frame.anchor != "center":
+				overlay_event.anchor = overlay_frame.anchor
 	elif current_event is ThemeEvent:
 		var theme_frame := _parse_theme_frame(line)
 		if theme_frame != null:
@@ -96,6 +99,20 @@ func _parse_overlay_event(line: String) -> OverlayEvent:
 		return null
 	var event := OverlayEvent.new()
 	_assign_clip_header(event, values)
+	var parts := line.trim_prefix("overlay:").split(",", false)
+	for index in range(3, parts.size()):
+		var token := _parse_optional_token(parts[index])
+		match String(token.get("key", "")):
+			"l":
+				var layer_text := String(token.get("value", ""))
+				if layer_text.is_valid_int():
+					event.layer = maxi(0, int(layer_text))
+			"a":
+				var anchor := String(token.get("value", ""))
+				if OverlayEventFrame.is_valid_anchor(anchor):
+					event.anchor = anchor
+				else:
+					push_error("FILE : WRONG OVERLAY ANCHOR PRESET : %s" % anchor)
 	return event
 
 func _parse_theme_event(line: String) -> ThemeEvent:
@@ -126,7 +143,7 @@ func _parse_skin_event(line: String) -> SkinEvent:
 
 func _parse_clip_header(line: String, prefix: String) -> Dictionary:
 	var parts := line.trim_prefix(prefix).split(",", false)
-	if parts.size() != 3:
+	if parts.size() < 3:
 		push_error("FILE : WRONG EVENT HEADER FORMAT : %s" % line)
 		return {}
 	var event_id := parts[0].strip_edges()
@@ -177,9 +194,26 @@ func _parse_overlay_frame(line: String) -> OverlayEventFrame:
 	frame.position = Vector2(float(parts[1]), float(parts[2]))
 	frame.scale = Vector2(float(parts[3]), float(parts[4]))
 	frame.rotation = float(parts[5])
-	for index in range(6, parts.size()):
+	var optional_start := 6
+	if parts.size() > 6 and not parts[6].contains(":"):
+		if parts.size() < 8 or not _are_valid_floats(parts, 6, 8):
+			push_error("FILE : WRONG OVERLAY FRAME ANCHOR FORMAT : %s" % line)
+			return null
+		var legacy_anchor := Vector2(
+			clampf(float(parts[6]), 0.0, 1.0),
+			clampf(float(parts[7]), 0.0, 1.0)
+		)
+		frame.anchor = OverlayEventFrame.vector_to_anchor(legacy_anchor)
+		optional_start = 8
+	for index in range(optional_start, parts.size()):
 		var token := _parse_optional_token(parts[index])
 		match String(token.get("key", "")):
+			"a":
+				var anchor := String(token.get("value", ""))
+				if OverlayEventFrame.is_valid_anchor(anchor):
+					frame.anchor = anchor
+				else:
+					push_error("FILE : WRONG OVERLAY ANCHOR PRESET : %s" % anchor)
 			"s":
 				var sprite := String(token.get("value", ""))
 				if EventResourceRef.is_valid(sprite):

@@ -46,6 +46,12 @@ static func restore(editor: Editor, snapshot: Dictionary) -> void:
 static func same_snapshot(a: Dictionary, b: Dictionary) -> bool:
 	return var_to_str(a) == var_to_str(b)
 
+static func capture_events_data(events: Array[ChartEvent]) -> Array[Dictionary]:
+	return _capture_events(events)
+
+static func restore_events_data(data: Array) -> Array[ChartEvent]:
+	return _restore_events(data)
+
 static func _capture_chart(chart: Chart) -> Dictionary:
 	if chart == null:
 		return {}
@@ -198,6 +204,8 @@ static func _capture_events(events: Array[ChartEvent]) -> Array[Dictionary]:
 				})
 		elif event is OverlayEvent:
 			event_data["type"] = "overlay"
+			event_data["layer"] = (event as OverlayEvent).layer
+			event_data["anchor"] = (event as OverlayEvent).anchor
 			for frame in (event as OverlayEvent).frames:
 				if frame == null:
 					continue
@@ -249,17 +257,26 @@ static func _restore_events(data: Array) -> Array[ChartEvent]:
 				event = camera
 			"overlay":
 				var overlay := OverlayEvent.new()
+				overlay.layer = int(event_data.get("layer", 0))
 				for frame_data in event_data.get("frames", []):
 					var frame := OverlayEventFrame.new()
 					frame.time = int(frame_data.get("time", 0))
 					frame.ease = String(frame_data.get("ease", ""))
 					frame.position = frame_data.get("position", Vector2.ZERO)
+					var anchor_value = frame_data.get("anchor", "center")
+					var frame_anchor := String(anchor_value) if anchor_value is String \
+						else OverlayEventFrame.vector_to_anchor(anchor_value as Vector2)
 					frame.scale = frame_data.get("scale", Vector2.ONE)
 					frame.rotation = float(frame_data.get("rotation", 0.0))
 					frame.sprite = String(frame_data.get("sprite", ""))
 					frame.opacity = float(frame_data.get("opacity", 1.0))
 					frame.has_opacity = bool(frame_data.get("has_opacity", false))
 					overlay.frames.append(frame)
+					if overlay.anchor == "center" and frame_anchor != "center":
+						overlay.anchor = frame_anchor
+				var overlay_anchor := String(event_data.get("anchor", overlay.anchor))
+				if OverlayEventFrame.is_valid_anchor(overlay_anchor):
+					overlay.anchor = overlay_anchor
 				event = overlay
 			"theme":
 				var theme := ThemeEvent.new()
@@ -285,6 +302,17 @@ static func _restore_events(data: Array) -> Array[ChartEvent]:
 	return result
 
 static func _capture_selection(selection: ChartEditorSelection) -> Dictionary:
+	if selection != null and selection.selected_event != null:
+		var event_index := -1
+		if CM.parsed_chart != null:
+			event_index = CM.parsed_chart.events.find(selection.selected_event)
+		return {
+			"kind": "event",
+			"event_index": event_index,
+			"event_id": selection.selected_event.id,
+			"event_time": selection.selected_event.time,
+			"frame_index": selection.selected_event_frame_index,
+		}
 	if selection == null or selection.selected_rail == null:
 		return {"kind": "clear"}
 	var data := {
@@ -305,6 +333,29 @@ static func _restore_selection(editor: Editor, data: Dictionary) -> void:
 	var kind := String(data.get("kind", "clear"))
 	if kind == "clear":
 		editor.selection.clear()
+		return
+	if kind == "event":
+		if CM.parsed_chart == null:
+			editor.selection.clear()
+			return
+		var target_event: ChartEvent = null
+		var event_index := int(data.get("event_index", -1))
+		if event_index >= 0 and event_index < CM.parsed_chart.events.size():
+			target_event = CM.parsed_chart.events[event_index]
+		if target_event == null \
+				or target_event.id != String(data.get("event_id", "")) \
+				or target_event.time != int(data.get("event_time", target_event.time)):
+			target_event = null
+			for event in CM.parsed_chart.events:
+				if event != null \
+						and event.id == String(data.get("event_id", "")) \
+						and event.time == int(data.get("event_time", event.time)):
+					target_event = event
+					break
+		if target_event == null:
+			editor.selection.clear()
+			return
+		editor.selection.select_event(target_event, int(data.get("frame_index", -1)))
 		return
 	var rail_id := int(data.get("rail_id", -1))
 	var target_rail: Rail = null

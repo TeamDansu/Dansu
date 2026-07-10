@@ -1,6 +1,8 @@
 extends ChartEvent
 class_name OverlayEvent
 
+var layer: int = 0
+var anchor: String = "center"
 var frames: Array[OverlayEventFrame] = []
 
 func _init() -> void:

@@ -7,11 +7,11 @@ const BUILTIN_SPRITE_BASE_PATH := "res://resources/events/sprites"
 const BUILTIN_SKIN_BASE_PATH := "res://resources/events/skins"
 const INVALID_FILE_NAME_CHARACTERS := ["/", "\\", ":", "*", "?", "\"", "<", ">", "|", ","]
 
-static func is_builtin(reference: String) -> bool:
-	return reference.strip_edges().begins_with(BUILTIN_PREFIX)
+static func is_builtin(_reference: String) -> bool:
+	return _reference.strip_edges().begins_with(BUILTIN_PREFIX)
 
-static func is_valid(reference: String) -> bool:
-	var file_name := reference.strip_edges()
+static func is_valid(_reference: String) -> bool:
+	var file_name := _reference.strip_edges()
 	if file_name.begins_with(BUILTIN_PREFIX):
 		file_name = file_name.trim_prefix(BUILTIN_PREFIX)
 	if file_name.is_empty() or file_name == "." or file_name == "..":
@@ -21,8 +21,8 @@ static func is_valid(reference: String) -> bool:
 			return false
 	return true
 
-static func resolve(chart: Chart, reference: String, builtin_base_path: String) -> String:
-	var normalized := reference.strip_edges()
+static func resolve(chart: Chart, _reference: String, builtin_base_path: String) -> String:
+	var normalized := _reference.strip_edges()
 	if not is_valid(normalized):
 		return ""
 	if is_builtin(normalized):
@@ -31,8 +31,8 @@ static func resolve(chart: Chart, reference: String, builtin_base_path: String) 
 		return ""
 	return chart.folder_path.path_join(CHART_DIRECTORY_NAME).path_join(normalized)
 
-static func resolve_sprite(chart: Chart, reference: String) -> String:
-	return resolve(chart, reference, BUILTIN_SPRITE_BASE_PATH)
+static func resolve_sprite(chart: Chart, _reference: String) -> String:
+	return resolve(chart, _reference, BUILTIN_SPRITE_BASE_PATH)
 
-static func resolve_skin(chart: Chart, reference: String) -> String:
-	return resolve(chart, reference, BUILTIN_SKIN_BASE_PATH)
+static func resolve_skin(chart: Chart, _reference: String) -> String:
+	return resolve(chart, _reference, BUILTIN_SKIN_BASE_PATH)
