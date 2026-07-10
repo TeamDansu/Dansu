@@ -1,13 +1,14 @@
 extends ObjectParser
 class_name ObjectParserV1
 
-enum { OBJECT, HITSOUNDS }
+enum { OBJECT, HITSOUNDS, EVENTS }
 
 func parse(file: FileAccess, chart: Chart) -> ParsedChart:
 	var parsed_chart := ParsedChart.new(chart)
 	parsed_chart.hitsounds.append_array(HitSound.load_builtin_hitsounds())
 	var mode := -1
 	var current_rail: Rail = null
+	var current_event: ChartEvent = null
 	if chart != null:
 		chart.reset_default_hitsounds()
 
@@ -17,11 +18,14 @@ func parse(file: FileAccess, chart: Chart) -> ParsedChart:
 			continue
 
 		if line.begins_with("@"):
+			current_event = null
 			match line.replace(" ", ""):
 				"@HITSOUNDS":
 					mode = HITSOUNDS
 				"@OBJECT":
 					mode = OBJECT
+				"@EVENTS":
+					mode = EVENTS
 			continue
 
 		match mode:
@@ -29,8 +33,211 @@ func parse(file: FileAccess, chart: Chart) -> ParsedChart:
 				current_rail = _parse_rail_line(line, current_rail, parsed_chart)
 			HITSOUNDS:
 				_parse_hitsound_line(chart, line, parsed_chart)
+			EVENTS:
+				current_event = _parse_event_line(line, current_event, parsed_chart)
 
+	parsed_chart.sort_events()
 	return parsed_chart
+
+func _parse_event_line(line: String, current_event: ChartEvent, parsed_chart: ParsedChart) -> ChartEvent:
+	if line == "end":
+		return null
+
+	if line.begins_with("camera:"):
+		var camera := _parse_camera_event(line)
+		if camera != null:
+			parsed_chart.events.append(camera)
+		return camera
+	if line.begins_with("overlay:"):
+		var overlay := _parse_overlay_event(line)
+		if overlay != null:
+			parsed_chart.events.append(overlay)
+		return overlay
+	if line.begins_with("theme:"):
+		var theme := _parse_theme_event(line)
+		if theme != null:
+			parsed_chart.events.append(theme)
+		return theme
+	if line.begins_with("skin:"):
+		var skin := _parse_skin_event(line)
+		if skin != null:
+			parsed_chart.events.append(skin)
+		return null
+
+	if current_event == null or not line.begins_with("[") or not line.ends_with("]"):
+		return current_event
+
+	if current_event is CameraEvent:
+		var camera_frame := _parse_camera_frame(line)
+		if camera_frame != null:
+			(current_event as CameraEvent).frames.append(camera_frame)
+	elif current_event is OverlayEvent:
+		var overlay_frame := _parse_overlay_frame(line)
+		if overlay_frame != null:
+			(current_event as OverlayEvent).frames.append(overlay_frame)
+	elif current_event is ThemeEvent:
+		var theme_frame := _parse_theme_frame(line)
+		if theme_frame != null:
+			(current_event as ThemeEvent).frames.append(theme_frame)
+
+	return current_event
+
+func _parse_camera_event(line: String) -> CameraEvent:
+	var values := _parse_clip_header(line, "camera:")
+	if values.is_empty():
+		return null
+	var event := CameraEvent.new()
+	_assign_clip_header(event, values)
+	return event
+
+func _parse_overlay_event(line: String) -> OverlayEvent:
+	var values := _parse_clip_header(line, "overlay:")
+	if values.is_empty():
+		return null
+	var event := OverlayEvent.new()
+	_assign_clip_header(event, values)
+	return event
+
+func _parse_theme_event(line: String) -> ThemeEvent:
+	var values := _parse_clip_header(line, "theme:")
+	if values.is_empty():
+		return null
+	var event := ThemeEvent.new()
+	_assign_clip_header(event, values)
+	return event
+
+func _parse_skin_event(line: String) -> SkinEvent:
+	var parts := line.trim_prefix("skin:").split(",", false)
+	if parts.size() != 3:
+		push_error("FILE : WRONG SKIN EVENT FORMAT : %s" % line)
+		return null
+	var event_id := parts[0].strip_edges()
+	var time_text := parts[1].strip_edges()
+	var skin_json := parts[2].strip_edges()
+	if event_id.is_empty() or not time_text.is_valid_int() or not EventResourceRef.is_valid(skin_json):
+		push_error("FILE : WRONG SKIN EVENT FORMAT : %s" % line)
+		return null
+	var event := SkinEvent.new()
+	event.id = event_id
+	event.time = int(time_text)
+	event.duration = 0
+	event.skin_json = skin_json
+	return event
+
+func _parse_clip_header(line: String, prefix: String) -> Dictionary:
+	var parts := line.trim_prefix(prefix).split(",", false)
+	if parts.size() != 3:
+		push_error("FILE : WRONG EVENT HEADER FORMAT : %s" % line)
+		return {}
+	var event_id := parts[0].strip_edges()
+	var time_text := parts[1].strip_edges()
+	var duration_text := parts[2].strip_edges()
+	if event_id.is_empty() or not time_text.is_valid_int() or not duration_text.is_valid_int():
+		push_error("FILE : WRONG EVENT HEADER FORMAT : %s" % line)
+		return {}
+	return {
+		"id": event_id,
+		"time": int(time_text),
+		"duration": int(duration_text),
+	}
+
+func _assign_clip_header(event: ChartEvent, values: Dictionary) -> void:
+	event.id = String(values["id"])
+	event.time = int(values["time"])
+	event.duration = int(values["duration"])
+
+func _parse_camera_frame(line: String) -> CameraEventFrame:
+	var parts := _parse_frame_parts(line)
+	if parts.size() < 5:
+		push_error("FILE : WRONG CAMERA FRAME FORMAT : %s" % line)
+		return null
+	var follow_text := parts[1].strip_edges().to_lower()
+	if not parts[0].strip_edges().is_valid_int() \
+			or follow_text not in ["0", "1", "false", "true"] \
+			or not _are_valid_floats(parts, 2, 5):
+		push_error("FILE : WRONG CAMERA FRAME FORMAT : %s" % line)
+		return null
+
+	var frame := CameraEventFrame.new()
+	frame.time = int(parts[0].strip_edges())
+	frame.follow_character = follow_text == "1" or follow_text == "true"
+	frame.position = Vector2(float(parts[2]), float(parts[3]))
+	frame.zoom = float(parts[4])
+	frame.ease = _parse_ease(parts, 5)
+	return frame
+
+func _parse_overlay_frame(line: String) -> OverlayEventFrame:
+	var parts := _parse_frame_parts(line)
+	if parts.size() < 6 or not parts[0].strip_edges().is_valid_int() or not _are_valid_floats(parts, 1, 6):
+		push_error("FILE : WRONG OVERLAY FRAME FORMAT : %s" % line)
+		return null
+
+	var frame := OverlayEventFrame.new()
+	frame.time = int(parts[0].strip_edges())
+	frame.position = Vector2(float(parts[1]), float(parts[2]))
+	frame.scale = Vector2(float(parts[3]), float(parts[4]))
+	frame.rotation = float(parts[5])
+	for index in range(6, parts.size()):
+		var token := _parse_optional_token(parts[index])
+		match String(token.get("key", "")):
+			"s":
+				var sprite := String(token.get("value", ""))
+				if EventResourceRef.is_valid(sprite):
+					frame.sprite = sprite
+				else:
+					push_error("FILE : WRONG EVENT RESOURCE REFERENCE : %s" % sprite)
+			"o":
+				var opacity_text := String(token.get("value", ""))
+				if opacity_text.is_valid_float():
+					frame.opacity = float(opacity_text)
+					frame.has_opacity = true
+			"e":
+				frame.ease = String(token.get("value", ""))
+	return frame
+
+func _parse_theme_frame(line: String) -> ThemeEventFrame:
+	var parts := _parse_frame_parts(line)
+	if parts.size() < 4 or not parts[0].strip_edges().is_valid_int():
+		push_error("FILE : WRONG THEME FRAME FORMAT : %s" % line)
+		return null
+	for index in range(1, 4):
+		if not Color.html_is_valid(parts[index].strip_edges()):
+			push_error("FILE : WRONG THEME FRAME COLOR : %s" % line)
+			return null
+
+	var frame := ThemeEventFrame.new()
+	frame.time = int(parts[0].strip_edges())
+	frame.bg_color = Color.from_string(parts[1].strip_edges(), Color.BLACK)
+	frame.bg_color_2 = Color.from_string(parts[2].strip_edges(), Color.BLACK)
+	frame.rail_color = Color.from_string(parts[3].strip_edges(), Color.WHITE)
+	frame.ease = _parse_ease(parts, 4)
+	return frame
+
+func _parse_frame_parts(line: String) -> PackedStringArray:
+	return line.substr(1, line.length() - 2).split(",", false)
+
+func _are_valid_floats(parts: PackedStringArray, from_index: int, to_index: int) -> bool:
+	for index in range(from_index, to_index):
+		if not parts[index].strip_edges().is_valid_float():
+			return false
+	return true
+
+func _parse_ease(parts: PackedStringArray, from_index: int) -> String:
+	for index in range(from_index, parts.size()):
+		var token := _parse_optional_token(parts[index])
+		if String(token.get("key", "")) == "e":
+			return String(token.get("value", ""))
+	return ""
+
+func _parse_optional_token(text: String) -> Dictionary:
+	var token := text.strip_edges()
+	var separator_index := token.find(":")
+	if separator_index <= 0:
+		return {}
+	return {
+		"key": token.substr(0, separator_index).strip_edges(),
+		"value": token.substr(separator_index + 1).strip_edges(),
+	}
 
 func _parse_note_line(line: String) -> Note:
 	var parts := line.split(",", false)

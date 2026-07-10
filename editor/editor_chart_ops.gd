@@ -26,6 +26,7 @@ static func sort_chart_objects() -> void:
 			continue
 		rail.sort_points()
 		rail.sort_notes()
+	CM.parsed_chart.sort_events()
 
 static func next_rail_id() -> int:
 	var used_ids: Dictionary = {}

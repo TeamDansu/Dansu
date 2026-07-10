@@ -8,6 +8,7 @@ static func capture(editor: Editor) -> Dictionary:
 		"timings": _capture_timings(editor.chart),
 		"hitsounds": _capture_hitsounds(parsed_chart.hitsounds),
 		"rails": _capture_rails(parsed_chart.rails),
+		"events": _capture_events(parsed_chart.events),
 		"selection": _capture_selection(editor.selection),
 		"current_time": Game.current_time,
 		"beat_division": editor.timeline.beat_division if editor.timeline != null else 4,
@@ -24,6 +25,8 @@ static func restore(editor: Editor, snapshot: Dictionary) -> void:
 	CM.parsed_chart = ParsedChart.new(editor.chart)
 	CM.parsed_chart.hitsounds = _restore_hitsounds(editor.chart, snapshot.get("hitsounds", []))
 	CM.parsed_chart.rails = _restore_rails(snapshot.get("rails", []))
+	CM.parsed_chart.events = _restore_events(snapshot.get("events", []))
+	CM.parsed_chart.sort_events()
 	editor.timeline = EditorTimeline.new(editor.chart, editor.transport.stream_length_sec)
 	editor.timeline.beat_division = int(snapshot.get("beat_division", 4))
 	editor.transport.timeline = editor.timeline
@@ -168,6 +171,117 @@ static func _restore_rails(data: Array) -> Array[Rail]:
 		rail.sort_points()
 		rail.sort_notes()
 		result.append(rail)
+	return result
+
+static func _capture_events(events: Array[ChartEvent]) -> Array[Dictionary]:
+	var result: Array[Dictionary] = []
+	for event in events:
+		if event == null:
+			continue
+		var event_data := {
+			"id": event.id,
+			"time": event.time,
+			"duration": event.duration,
+			"frames": [],
+		}
+		if event is CameraEvent:
+			event_data["type"] = "camera"
+			for frame in (event as CameraEvent).frames:
+				if frame == null:
+					continue
+				event_data["frames"].append({
+					"time": frame.time,
+					"ease": frame.ease,
+					"follow_character": frame.follow_character,
+					"position": frame.position,
+					"zoom": frame.zoom,
+				})
+		elif event is OverlayEvent:
+			event_data["type"] = "overlay"
+			for frame in (event as OverlayEvent).frames:
+				if frame == null:
+					continue
+				event_data["frames"].append({
+					"time": frame.time,
+					"ease": frame.ease,
+					"position": frame.position,
+					"scale": frame.scale,
+					"rotation": frame.rotation,
+					"sprite": frame.sprite,
+					"opacity": frame.opacity,
+					"has_opacity": frame.has_opacity,
+				})
+		elif event is ThemeEvent:
+			event_data["type"] = "theme"
+			for frame in (event as ThemeEvent).frames:
+				if frame == null:
+					continue
+				event_data["frames"].append({
+					"time": frame.time,
+					"ease": frame.ease,
+					"bg_color": frame.bg_color,
+					"bg_color_2": frame.bg_color_2,
+					"rail_color": frame.rail_color,
+				})
+		elif event is SkinEvent:
+			event_data["type"] = "skin"
+			event_data["skin_json"] = (event as SkinEvent).skin_json
+		else:
+			continue
+		result.append(event_data)
+	return result
+
+static func _restore_events(data: Array) -> Array[ChartEvent]:
+	var result: Array[ChartEvent] = []
+	for event_data in data:
+		var event: ChartEvent = null
+		match String(event_data.get("type", "")):
+			"camera":
+				var camera := CameraEvent.new()
+				for frame_data in event_data.get("frames", []):
+					var frame := CameraEventFrame.new()
+					frame.time = int(frame_data.get("time", 0))
+					frame.ease = String(frame_data.get("ease", ""))
+					frame.follow_character = bool(frame_data.get("follow_character", false))
+					frame.position = frame_data.get("position", Vector2.ZERO)
+					frame.zoom = float(frame_data.get("zoom", 1.0))
+					camera.frames.append(frame)
+				event = camera
+			"overlay":
+				var overlay := OverlayEvent.new()
+				for frame_data in event_data.get("frames", []):
+					var frame := OverlayEventFrame.new()
+					frame.time = int(frame_data.get("time", 0))
+					frame.ease = String(frame_data.get("ease", ""))
+					frame.position = frame_data.get("position", Vector2.ZERO)
+					frame.scale = frame_data.get("scale", Vector2.ONE)
+					frame.rotation = float(frame_data.get("rotation", 0.0))
+					frame.sprite = String(frame_data.get("sprite", ""))
+					frame.opacity = float(frame_data.get("opacity", 1.0))
+					frame.has_opacity = bool(frame_data.get("has_opacity", false))
+					overlay.frames.append(frame)
+				event = overlay
+			"theme":
+				var theme := ThemeEvent.new()
+				for frame_data in event_data.get("frames", []):
+					var frame := ThemeEventFrame.new()
+					frame.time = int(frame_data.get("time", 0))
+					frame.ease = String(frame_data.get("ease", ""))
+					frame.bg_color = frame_data.get("bg_color", Color.BLACK)
+					frame.bg_color_2 = frame_data.get("bg_color_2", Color.BLACK)
+					frame.rail_color = frame_data.get("rail_color", Color.WHITE)
+					theme.frames.append(frame)
+				event = theme
+			"skin":
+				var skin := SkinEvent.new()
+				skin.skin_json = String(event_data.get("skin_json", ""))
+				event = skin
+		if event == null:
+			continue
+		event.id = String(event_data.get("id", ""))
+		event.time = int(event_data.get("time", 0))
+		event.duration = int(event_data.get("duration", 0))
+		result.append(event)
 	return result
 
 static func _capture_selection(selection: ChartEditorSelection) -> Dictionary:

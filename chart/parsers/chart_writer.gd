@@ -18,6 +18,8 @@ func write_chart(parsed_chart: ParsedChart) -> bool:
 	_write_metadata(file, chart)
 	_write_timings(file, chart)
 	_write_hitsounds(file, parsed_chart)
+	parsed_chart.sort_events()
+	_write_events(file, parsed_chart.events)
 	_write_rails(file, parsed_chart.rails)
 	file.flush()
 	return true
@@ -65,6 +67,110 @@ func _write_hitsounds(file: FileAccess, parsed_chart: ParsedChart) -> void:
 		file.store_line("%d:%s" % [hitsound.id, _safe_string(hitsound.file_name)])
 	file.store_line("defaults:%s" % ",".join(_default_hitsound_texts(chart)))
 	file.store_line("")
+
+func _write_events(file: FileAccess, events: Array[ChartEvent]) -> void:
+	file.store_line("@EVENTS")
+	file.store_line("# camera:id,time,duration")
+	file.store_line("# [offset,follow_character,x,y,zoom,e:ease]")
+	file.store_line("# overlay:id,time,duration")
+	file.store_line("# [offset,x,y,scale_x,scale_y,rotation,s:sprite,o:opacity,e:ease]")
+	file.store_line("# theme:id,time,duration")
+	file.store_line("# [offset,bg_color,bg_color_2,rail_color,e:ease]")
+	file.store_line("# skin:id,time,skin_json")
+
+	for event in events:
+		if event == null or not _is_valid_event_id(event.id):
+			continue
+		if event is CameraEvent:
+			_write_camera_event(file, event as CameraEvent)
+		elif event is OverlayEvent:
+			_write_overlay_event(file, event as OverlayEvent)
+		elif event is ThemeEvent:
+			_write_theme_event(file, event as ThemeEvent)
+		elif event is SkinEvent:
+			_write_skin_event(file, event as SkinEvent)
+
+	file.store_line("")
+
+func _write_camera_event(file: FileAccess, event: CameraEvent) -> void:
+	file.store_line("camera:%s,%d,%d" % [event.id.strip_edges(), event.time, event.duration])
+	event.sort_frames()
+	for frame in event.frames:
+		if frame == null:
+			continue
+		var tokens: Array[String] = [
+			str(frame.time),
+			"1" if frame.follow_character else "0",
+			_float_to_text(frame.position.x),
+			_float_to_text(frame.position.y),
+			_float_to_text(frame.zoom),
+		]
+		_append_ease(tokens, frame.ease)
+		file.store_line("[%s]" % ",".join(tokens))
+	file.store_line("end")
+	file.store_line("")
+
+func _write_overlay_event(file: FileAccess, event: OverlayEvent) -> void:
+	file.store_line("overlay:%s,%d,%d" % [event.id.strip_edges(), event.time, event.duration])
+	event.sort_frames()
+	for frame in event.frames:
+		if frame == null:
+			continue
+		var tokens: Array[String] = [
+			str(frame.time),
+			_float_to_text(frame.position.x),
+			_float_to_text(frame.position.y),
+			_float_to_text(frame.scale.x),
+			_float_to_text(frame.scale.y),
+			_float_to_text(frame.rotation),
+		]
+		if not frame.sprite.is_empty():
+			if EventResourceRef.is_valid(frame.sprite):
+				tokens.append("s:%s" % frame.sprite.strip_edges())
+			else:
+				push_warning("Skipped invalid event resource reference: %s" % frame.sprite)
+		if frame.has_opacity:
+			tokens.append("o:%s" % _float_to_text(frame.opacity))
+		_append_ease(tokens, frame.ease)
+		file.store_line("[%s]" % ",".join(tokens))
+	file.store_line("end")
+	file.store_line("")
+
+func _write_theme_event(file: FileAccess, event: ThemeEvent) -> void:
+	file.store_line("theme:%s,%d,%d" % [event.id.strip_edges(), event.time, event.duration])
+	event.sort_frames()
+	for frame in event.frames:
+		if frame == null:
+			continue
+		var tokens: Array[String] = [
+			str(frame.time),
+			_color_to_text(frame.bg_color),
+			_color_to_text(frame.bg_color_2),
+			_color_to_text(frame.rail_color),
+		]
+		_append_ease(tokens, frame.ease)
+		file.store_line("[%s]" % ",".join(tokens))
+	file.store_line("end")
+	file.store_line("")
+
+func _write_skin_event(file: FileAccess, event: SkinEvent) -> void:
+	if not EventResourceRef.is_valid(event.skin_json):
+		push_warning("Skipped invalid skin event resource reference: %s" % event.skin_json)
+		return
+	file.store_line("skin:%s,%d,%s" % [event.id.strip_edges(), event.time, event.skin_json.strip_edges()])
+	file.store_line("")
+
+func _append_ease(tokens: Array[String], ease: String) -> void:
+	var value := ease.strip_edges()
+	if not value.is_empty() and not value.contains(",") and not value.contains("\n") and not value.contains("\r"):
+		tokens.append("e:%s" % value)
+
+func _is_valid_event_id(event_id: String) -> bool:
+	var value := event_id.strip_edges()
+	return not value.is_empty() and not value.contains(",") and not value.contains("\n") and not value.contains("\r")
+
+func _color_to_text(color: Color) -> String:
+	return "#" + color.to_html(not is_equal_approx(color.a, 1.0))
 
 func _write_rails(file: FileAccess, rails: Array[Rail]) -> void:
 	file.store_line("@OBJECT")
