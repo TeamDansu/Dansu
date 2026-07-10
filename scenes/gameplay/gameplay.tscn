@@ -144,9 +144,6 @@ effectplayer = NodePath("../../AnimationPlayer")
 [node name="AnimationPlayer" type="AnimationPlayer" parent="." unique_id=297134405]
 libraries/ = SubResource("AnimationLibrary_ct7aa")
 
-[node name="Particles" type="Node3D" parent="." unique_id=753023239]
-transform = Transform3D(1, 0, 0, 0, 1, -2.9802322e-08, 0, 2.9802322e-08, 1, 0, 0, 0)
-
 [node name="PlayArea" type="Node3D" parent="." unique_id=1670040184]
 transform = Transform3D(1, 0, 0, 0, 0.8660252, -0.49999988, 0, 0.49999988, 0.8660252, 0, 0, 0)
 

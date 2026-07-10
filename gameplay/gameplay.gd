@@ -10,7 +10,7 @@ const COMBO_POP_DURATION_IN := 0.08
 const COMBO_POP_DURATION_OUT := 0.14
 const JUDGE_POPUP_OFFSET := Vector3(0.0, 2.0, 0.0)
 const SONG_FADE_START_AFTER_LAST_NOTE_MS := 1000.0
-const RESULT_DELAY_AFTER_LAST_NOTE_MS := 5000.0
+const RESULT_DELAY_AFTER_LAST_NOTE_MS := 2000.0
 const SONG_FADE_DB_PER_SECOND := 30.0
 
 class SpawnableNote:
@@ -206,7 +206,6 @@ func _process(delta: float) -> void:
 		if now_usec >= play_call_time_usec:
 			songplayer.play()
 			is_song_playing = true
-
 	_update_current_time()
 	_spawn_objects()
 	_process_gameplay_input()

@@ -1195,10 +1195,11 @@ layout_mode = 0
 offset_left = 1608.0
 offset_right = 1914.0
 offset_bottom = 23.0
-text = "indev 2026.07 ⓒ h4yase"
+text = "indev 2026.07 ⓒ Team Dansu"
 horizontal_alignment = 2
 
 [node name="SettingsPopup" parent="." unique_id=1336381579 instance=ExtResource("25_settings")]
+visible = false
 layout_mode = 1
 
 [node name="ExitOverlay" type="ColorRect" parent="." unique_id=985512643]
@@ -1242,7 +1243,9 @@ bg_color = Color(0.105882354, 0.09019608, 0.16470589, 1)
 
 [node name="Bye" type="AudioStreamPlayer" parent="." unique_id=316893624]
 stream = ExtResource("28_vhubh")
-volume_db = 8.0
+volume_db = 6.5
+bus = &"SFX"
 
 [node name="Switch7" type="AudioStreamPlayer" parent="." unique_id=1039771558]
 stream = ExtResource("29_ckwsv")
+bus = &"SFX"

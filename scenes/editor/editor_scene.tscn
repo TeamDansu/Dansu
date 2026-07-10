@@ -91,7 +91,7 @@ chart_panel = NodePath("../../Chart/Panel")
 note_pivot = NodePath("../../Chart/TimePivot")
 bpm_lines = NodePath("../../Chart/Panel/BPMLines")
 
-[node name="InspectorController" type="Node" parent="Controllers" unique_id=953762169 node_paths=PackedStringArray("editor", "title_line_edit", "artist_line_edit", "difficulty_line_edit", "source_line_edit", "tags_line_edit", "beat_division_slider", "beat_division_label", "add_timing_button", "timing_list_container", "timing_template", "skin_file_label", "skin_browser_button")]
+[node name="InspectorController" type="Node" parent="Controllers" unique_id=953762169 node_paths=PackedStringArray("editor", "title_line_edit", "artist_line_edit", "difficulty_line_edit", "source_line_edit", "tags_line_edit", "beat_division_slider", "beat_division_label", "add_timing_button", "timing_list_container", "timing_template", "skin_file_label", "skin_browser_button", "cover_texture_rect", "cover_file_label", "audio_file_label", "cover_browser_button", "audio_browser_button")]
 script = ExtResource("7_c2fm2")
 editor = NodePath("../..")
 title_line_edit = NodePath("../../Inspector/TabContainer/Chart/ScrollContainer/Contents/title")
@@ -106,6 +106,11 @@ timing_list_container = NodePath("../../Inspector/TabContainer/Timing/ScrollCont
 timing_template = NodePath("../../Inspector/TabContainer/Timing/ScrollContainer/HBoxContainer/Timing")
 skin_file_label = NodePath("../../Inspector/TabContainer/Chart/ScrollContainer/Contents/skin_file_name")
 skin_browser_button = NodePath("../../Inspector/TabContainer/Chart/ScrollContainer/Contents/SkinBrowserButton")
+cover_texture_rect = NodePath("../../Inspector/TabContainer/Chart/ScrollContainer/Contents/Header/CoverTexture")
+cover_file_label = NodePath("../../Inspector/TabContainer/Chart/ScrollContainer/Contents/Header/Detail/file_cover_art")
+audio_file_label = NodePath("../../Inspector/TabContainer/Chart/ScrollContainer/Contents/Header/Detail/file_audio")
+cover_browser_button = NodePath("../../Inspector/TabContainer/Chart/ScrollContainer/Contents/Header/Detail/CoverBrowserButton")
+audio_browser_button = NodePath("../../Inspector/TabContainer/Chart/ScrollContainer/Contents/Header/Detail/AudioBrowserButton")
 
 [node name="SaveController" type="Node" parent="Controllers" unique_id=1813602238 node_paths=PackedStringArray("editor", "save_button")]
 script = ExtResource("8_u3v7w")

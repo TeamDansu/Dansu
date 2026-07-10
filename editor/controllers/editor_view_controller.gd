@@ -2,7 +2,6 @@ extends Node
 class_name EditorViewController
 
 const PIXELS_PER_MS := 1.0
-
 @export var editor: Editor
 @export var chart_root: Control
 @export var chart_panel: Control
@@ -17,15 +16,10 @@ var note_scene := preload("res://scenes/editor/editor_note.tscn")
 
 var rail_views: Dictionary = {}
 var note_views: Dictionary = {}
-
-var _view_layout_dirty := true
-var _last_panel_size := Vector2.ZERO
+var _layout_dirty := true
+var _last_panel_size := Vector2(-1.0, -1.0)
 var _last_judge_y := INF
-var _last_view_time := INF
-var _last_selection_rail: Rail = null
-var _last_selection_note: Note = null
-var _last_selection_point_index := -2
-var _last_note_passthrough := false
+var _last_current_time := INF
 
 func prepare_layers() -> void:
 	if chart_panel == null:
@@ -53,17 +47,17 @@ func configure_chart_input() -> void:
 			node.mouse_filter = Control.MOUSE_FILTER_IGNORE
 
 func mark_layout_dirty() -> void:
-	_view_layout_dirty = true
+	_layout_dirty = true
 
 func refresh_views() -> void:
 	clear_layers()
 	rail_views.clear()
 	note_views.clear()
+	_layout_dirty = true
 
 	if editor == null or editor.transport == null or CM.parsed_chart == null:
 		if editor != null and editor.transport != null:
 			editor.transport.rebuild_playback_notes()
-		_view_layout_dirty = true
 		sync_layouts()
 		return
 
@@ -88,7 +82,6 @@ func refresh_views() -> void:
 			note_views[note] = note_view
 
 	editor.transport.rebuild_playback_notes()
-	_view_layout_dirty = true
 	sync_layouts()
 
 func clear_layers() -> void:
@@ -105,41 +98,31 @@ func sync_layouts() -> void:
 
 	var panel_size := chart_panel.size
 	var judge_y := note_pivot.position.y - chart_panel.position.y
+	var current_time := Game.current_time
+
+	if not _layout_dirty \
+	and _last_panel_size == panel_size \
+	and is_equal_approx(_last_judge_y, judge_y) \
+	and is_equal_approx(_last_current_time, current_time):
+		return
+
+	_layout_dirty = false
+	_last_panel_size = panel_size
+	_last_judge_y = judge_y
+	_last_current_time = current_time
 
 	if rail_layer != null and rail_layer.size != panel_size:
 		rail_layer.size = panel_size
 	if note_layer != null and note_layer.size != panel_size:
 		note_layer.size = panel_size
 
-	var layout_changed := (
-		_view_layout_dirty
-		or panel_size != _last_panel_size
-		or not is_equal_approx(judge_y, _last_judge_y)
-		or not is_equal_approx(Game.current_time, _last_view_time)
-		or editor.selection.selected_rail != _last_selection_rail
-		or editor.selection.selected_note != _last_selection_note
-		or editor.selection.selected_point_index != _last_selection_point_index
-		or editor.note_passthrough != _last_note_passthrough
-	)
-	if not layout_changed:
-		return
-
-	_last_panel_size = panel_size
-	_last_judge_y = judge_y
-	_last_view_time = Game.current_time
-	_last_selection_rail = editor.selection.selected_rail
-	_last_selection_note = editor.selection.selected_note
-	_last_selection_point_index = editor.selection.selected_point_index
-	_last_note_passthrough = editor.note_passthrough
-	_view_layout_dirty = false
-
 	for rail_view in rail_views.values():
-		rail_view.sync_layout(panel_size, judge_y, PIXELS_PER_MS, Game.current_time)
+		rail_view.sync_layout(panel_size, judge_y, PIXELS_PER_MS, current_time)
 		rail_view.set_selection_state(editor.selection.selected_rail == rail_view.rail, editor.selection.selected_point_index)
 
 	for note in note_views.keys():
 		var note_view: EditorNote = note_views[note]
-		note_view.sync_layout(panel_size, judge_y, PIXELS_PER_MS, Game.current_time)
+		note_view.sync_layout(panel_size, judge_y, PIXELS_PER_MS, current_time)
 		note_view.set_selected(editor.selection.selected_note == note)
 
 	editor._update_time_ui(false)
@@ -147,7 +130,6 @@ func sync_layouts() -> void:
 func set_note_passthrough(enabled: bool) -> void:
 	for note_view in note_views.values():
 		note_view.set_passthrough(enabled)
-	_view_layout_dirty = true
 
 func find_note_at(global_mouse_pos: Vector2) -> Dictionary:
 	for note in note_views.keys():
@@ -203,4 +185,5 @@ func drag_selected_point(global_mouse_pos: Vector2) -> void:
 	point.time = next_time
 	editor.selection.selected_rail.sort_points()
 	editor.selection.selected_point_index = editor.selection.selected_rail.points.find(point)
-	refresh_views()
+	mark_layout_dirty()
+	sync_layouts()

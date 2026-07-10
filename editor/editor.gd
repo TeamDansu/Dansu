@@ -206,6 +206,8 @@ func _create_dialogs() -> void:
 func _refresh_views() -> void:
 	if view_controller != null:
 		view_controller.refresh_views()
+	if bpm_lines != null:
+		bpm_lines.queue_redraw()
 
 func _clear_layers() -> void:
 	if view_controller != null:

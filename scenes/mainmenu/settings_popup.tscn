@@ -3,11 +3,11 @@
 [ext_resource type="Script" uid="uid://bdvrn6h8gcqal" path="res://scenes/mainmenu/settings_popup.gd" id="1"]
 [ext_resource type="FontFile" uid="uid://drcicje7q2t7x" path="res://resources/fonts/Next Bravo.ttf" id="2"]
 [ext_resource type="FontFile" uid="uid://cay31gip2omwr" path="res://resources/fonts/BebasNeue-Regular.ttf" id="3"]
-[ext_resource type="Texture2D" uid="uid://dnbui2wkl4v1h" path="res://resources/icons/bolt.svg" id="4"]
 [ext_resource type="Texture2D" uid="uid://c2uou5wxlsrtf" path="res://resources/icons/chevron-left.svg" id="4_oxefu"]
 [ext_resource type="Texture2D" uid="uid://carktd8pd048o" path="res://resources/icons/checkbox-checked.svg" id="5_checkbox_checked"]
 [ext_resource type="Texture2D" uid="uid://cxpljh46m1aii" path="res://resources/icons/checkbox-unchecked.svg" id="6_checkbox_unchecked"]
 [ext_resource type="Texture2D" uid="uid://s10h37holudd" path="res://resources/icons/slider-grabber-empty.svg" id="7_slider_grabber_empty"]
+[ext_resource type="Shader" uid="uid://qbfnricvyktb" path="res://resources/shaders/wave.gdshader" id="9_r4ceb"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_button_hover"]
 content_margin_left = 20.0
@@ -159,12 +159,12 @@ PopupMenu/font_sizes/font_size = 20
 PopupMenu/fonts/font = ExtResource("3")
 PopupMenu/fonts/font_separator = ExtResource("3")
 PopupMenu/styles/panel = SubResource("StyleBoxFlat_popup")
-Slider/styles/grabber_area = SubResource("StyleBoxFlat_slider_fill")
-Slider/styles/grabber_area_highlight = SubResource("StyleBoxFlat_slider_fill")
-Slider/styles/slider = SubResource("StyleBoxFlat_slider")
 Slider/icons/grabber = ExtResource("7_slider_grabber_empty")
 Slider/icons/grabber_disabled = ExtResource("7_slider_grabber_empty")
 Slider/icons/grabber_highlight = ExtResource("7_slider_grabber_empty")
+Slider/styles/grabber_area = SubResource("StyleBoxFlat_slider_fill")
+Slider/styles/grabber_area_highlight = SubResource("StyleBoxFlat_slider_fill")
+Slider/styles/slider = SubResource("StyleBoxFlat_slider")
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_panel"]
 bg_color = Color(0.05490196, 0.05882353, 0.08627451, 0.97)
@@ -210,6 +210,12 @@ content_margin_bottom = 10.0
 bg_color = Color(0.08627451, 0.09019608, 0.14509805, 0)
 border_width_bottom = 1
 border_color = Color(0.38039216, 0.32941177, 0.6862745, 0.45)
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_dqten"]
+shader = ExtResource("9_r4ceb")
+shader_parameter/height = 3.0
+shader_parameter/frequency = 20.0
+shader_parameter/speed = 3.0
 
 [node name="SettingsPopup" type="Control" unique_id=1093484558]
 layout_mode = 3
@@ -266,12 +272,6 @@ theme_override_constants/separation = 16
 [node name="Control" type="Control" parent="Panel/Margin/VBox/Header" unique_id=1793578259]
 custom_minimum_size = Vector2(10, 0)
 layout_mode = 2
-
-[node name="Icon" type="TextureRect" parent="Panel/Margin/VBox/Header" unique_id=128797603]
-layout_mode = 2
-texture = ExtResource("4")
-expand_mode = 2
-stretch_mode = 5
 
 [node name="Heading" type="VBoxContainer" parent="Panel/Margin/VBox/Header" unique_id=831531131]
 layout_mode = 2
@@ -938,3 +938,20 @@ placeholder_text = "https://dansu.h4ya.net/api/v1"
 
 [node name="Footer" type="HBoxContainer" parent="Panel/Margin/VBox" unique_id=1198502315]
 layout_mode = 2
+
+[node name="Control" type="Control" parent="Panel" unique_id=147501835]
+layout_mode = 2
+mouse_filter = 2
+mouse_force_pass_scroll_events = false
+
+[node name="Label" type="Label" parent="Panel/Control" unique_id=1896161360]
+material = SubResource("ShaderMaterial_dqten")
+layout_mode = 0
+offset_left = 40.0
+offset_top = 17.0
+offset_right = 247.0
+offset_bottom = 69.0
+theme_override_colors/font_color = Color(0.39215687, 0.3372549, 0.7176471, 1)
+theme_override_fonts/font = ExtResource("2")
+theme_override_font_sizes/font_size = 52
+text = "OPTIONS"

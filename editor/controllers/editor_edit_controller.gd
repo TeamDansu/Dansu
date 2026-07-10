@@ -154,13 +154,17 @@ func adjust_selected_object(is_positive: bool) -> void:
 		editor._push_history_snapshot()
 		var delta := 50 if is_positive else -50
 		editor.selection.selected_note.length = max(0, editor.selection.selected_note.length + delta)
-		editor._refresh_views()
+		if editor.view_controller != null:
+			editor.view_controller.mark_layout_dirty()
+		editor._sync_view_layouts()
 		return
 	if editor.selection.has_point():
 		editor._push_history_snapshot()
 		var point := editor.selection.get_point()
 		point.curve = clamp(point.curve + (0.1 if is_positive else -0.1), -1.0, 1.0)
-		editor._refresh_views()
+		if editor.view_controller != null:
+			editor.view_controller.mark_layout_dirty()
+		editor._sync_view_layouts()
 
 func move_selected_rail(direction: float) -> void:
 	if editor == null or editor.selection.selected_rail == null:

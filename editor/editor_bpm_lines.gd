@@ -5,9 +5,10 @@ class_name EditorBPMLines
 @export var chart_panel: Control
 
 var _last_position := Vector2(INF, INF)
-var _last_size := Vector2.ZERO
-var _last_time := INF
-var _last_pixels_per_ms := INF
+var _last_size := Vector2(-1.0, -1.0)
+var _last_current_time := INF
+var _last_judge_y := INF
+var _last_beat_division := -1
 
 func _process(_delta: float) -> void:
 	if chart_panel == null:
@@ -15,18 +16,34 @@ func _process(_delta: float) -> void:
 
 	var next_position := Vector2.ZERO if get_parent() == chart_panel else chart_panel.position
 	var next_size := chart_panel.size
-	var next_time := Game.current_time
-	var next_pixels_per_ms := editor.get_pixels_per_ms() if editor != null else 0.0
-	if position == next_position and size == next_size and is_equal_approx(_last_time, next_time) and is_equal_approx(_last_pixels_per_ms, next_pixels_per_ms):
-		return
+	var current_time := Game.current_time
+	var judge_y := editor.get_judge_y() if editor != null else 0.0
+	var beat_division := editor.timeline.beat_division if editor != null and editor.timeline != null else -1
+	var needs_redraw := false
 
-	position = next_position
-	size = next_size
-	_last_position = next_position
-	_last_size = next_size
-	_last_time = next_time
-	_last_pixels_per_ms = next_pixels_per_ms
-	queue_redraw()
+	if position != next_position:
+		position = next_position
+	if size != next_size:
+		size = next_size
+
+	if _last_position != next_position:
+		_last_position = next_position
+		needs_redraw = true
+	if _last_size != next_size:
+		_last_size = next_size
+		needs_redraw = true
+	if not is_equal_approx(_last_current_time, current_time):
+		_last_current_time = current_time
+		needs_redraw = true
+	if not is_equal_approx(_last_judge_y, judge_y):
+		_last_judge_y = judge_y
+		needs_redraw = true
+	if _last_beat_division != beat_division:
+		_last_beat_division = beat_division
+		needs_redraw = true
+
+	if needs_redraw:
+		queue_redraw()
 
 func _draw() -> void:
 	if editor == null or editor.timeline == null:

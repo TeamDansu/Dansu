@@ -15,6 +15,17 @@ const STANDING_BRIGHTNESS := 1.0
 const FILL_DEPTH_CLIP_SCALE := 1.0
 const OUTLINE_DEPTH_CLIP_SCALE := 1.0
 
+class RailMeshCacheEntry:
+	extends RefCounted
+
+	var rail: Rail
+	var rail_width := 0.0
+	var rail_outline_size := 0.0
+	var fill_mesh: ArrayMesh = null
+	var outline_mesh: ArrayMesh = null
+
+static var _mesh_cache: Array[RailMeshCacheEntry] = []
+
 var rail: Rail
 
 @export var note_container: Node3D
@@ -41,17 +52,18 @@ static func prebake_for_rail(_rail: Rail, rail_width: float = DEFAULT_WIDTH, rai
 	if _rail == null or _rail.points.size() < 2:
 		return
 
-	if (_rail.cached_fill_mesh != null
-	and _rail.cached_outline_mesh != null
-	and is_equal_approx(_rail.cached_render_width, rail_width)
-	and is_equal_approx(_rail.cached_outline_size, rail_outline_size)):
+	var existing_entry := _find_cached_mesh_entry(_rail, rail_width, rail_outline_size)
+	if existing_entry != null:
 		return
 
 	var path := _sample_curve_points_for_rail(_rail)
-	_rail.cached_fill_mesh = _build_ribbon_mesh(path, rail_width)
-	_rail.cached_outline_mesh = _build_ribbon_mesh(path, rail_width + (rail_outline_size * 2.0))
-	_rail.cached_render_width = rail_width
-	_rail.cached_outline_size = rail_outline_size
+	var new_entry := RailMeshCacheEntry.new()
+	new_entry.rail = _rail
+	new_entry.rail_width = rail_width
+	new_entry.rail_outline_size = rail_outline_size
+	new_entry.fill_mesh = _build_ribbon_mesh(path, rail_width)
+	new_entry.outline_mesh = _build_ribbon_mesh(path, rail_width + (rail_outline_size * 2.0))
+	_mesh_cache.append(new_entry)
 
 
 func _ready() -> void:
@@ -92,9 +104,10 @@ func _apply_prebaked_meshes() -> void:
 		return
 
 	prebake_for_rail(rail, width, outline_size)
-	mesh_instance.mesh = rail.cached_fill_mesh
+	var cached_entry := _find_cached_mesh_entry(rail, width, outline_size)
+	mesh_instance.mesh = cached_entry.fill_mesh if cached_entry != null else null
 	if outline_mesh_instance != null:
-		outline_mesh_instance.mesh = rail.cached_outline_mesh
+		outline_mesh_instance.mesh = cached_entry.outline_mesh if cached_entry != null else null
 
 
 func _apply_materials() -> void:
@@ -167,6 +180,20 @@ static func _sample_curve_points_for_rail(_rail: Rail) -> Array[Vector3]:
 		)
 	)
 	return result
+
+
+static func _find_cached_mesh_entry(_rail: Rail, rail_width: float, rail_outline_size: float) -> RailMeshCacheEntry:
+	for entry in _mesh_cache:
+		if entry == null:
+			continue
+		if entry.rail != _rail:
+			continue
+		if not is_equal_approx(entry.rail_width, rail_width):
+			continue
+		if not is_equal_approx(entry.rail_outline_size, rail_outline_size):
+			continue
+		return entry
+	return null
 
 
 static func _build_ribbon_mesh(path: Array[Vector3], rail_width: float) -> ArrayMesh:

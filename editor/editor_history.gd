@@ -17,6 +17,9 @@ static func restore(editor: Editor, snapshot: Dictionary) -> void:
 	if editor == null or editor.chart == null:
 		return
 	_restore_chart(editor.chart, snapshot.get("chart", {}))
+	editor.chart.cover_image = null
+	editor.transport.chart = editor.chart
+	editor.transport.load_stream()
 	editor.chart.timings = _restore_timings(snapshot.get("timings", []))
 	CM.parsed_chart = ParsedChart.new(editor.chart)
 	CM.parsed_chart.hitsounds = _restore_hitsounds(editor.chart, snapshot.get("hitsounds", []))

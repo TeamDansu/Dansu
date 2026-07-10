@@ -16,11 +16,19 @@ const SkinSerializationScript = preload("res://skin/skin_serialization.gd")
 @export var timing_template: Node
 @export var skin_file_label: Label
 @export var skin_browser_button: Button
+@export var cover_texture_rect: TextureRect
+@export var cover_file_label: Label
+@export var audio_file_label: Label
+@export var cover_browser_button: Button
+@export var audio_browser_button: Button
 
 var timing_scene := preload("res://scenes/editor/ui/inspector/timing.tscn")
 var timing_items: Array[EditorTimingItem] = []
 var _syncing_metadata := false
 var _skin_file_dialog: FileDialog
+var _cover_file_dialog: FileDialog
+var _audio_file_dialog: FileDialog
+var _default_cover_texture: Texture2D
 
 func create_dialogs() -> void:
 	_skin_file_dialog = FileDialog.new()
@@ -29,6 +37,32 @@ func create_dialogs() -> void:
 	_skin_file_dialog.filters = PackedStringArray(["*.json ; Skin JSON"])
 	_skin_file_dialog.file_selected.connect(_on_skin_file_selected)
 	add_child(_skin_file_dialog)
+
+	_cover_file_dialog = FileDialog.new()
+	_cover_file_dialog.access = FileDialog.ACCESS_FILESYSTEM
+	_cover_file_dialog.file_mode = FileDialog.FILE_MODE_OPEN_FILE
+	_cover_file_dialog.filters = PackedStringArray(["*.png,*.jpg,*.jpeg,*.webp ; Cover Image"])
+	_cover_file_dialog.file_selected.connect(_on_cover_file_selected)
+	add_child(_cover_file_dialog)
+
+	_audio_file_dialog = FileDialog.new()
+	_audio_file_dialog.access = FileDialog.ACCESS_FILESYSTEM
+	_audio_file_dialog.file_mode = FileDialog.FILE_MODE_OPEN_FILE
+	_audio_file_dialog.filters = PackedStringArray(["*.mp3,*.ogg,*.wav ; Audio File"])
+	_audio_file_dialog.file_selected.connect(_on_audio_file_selected)
+	add_child(_audio_file_dialog)
+
+	if cover_browser_button != null:
+		cover_browser_button.pressed.connect(open_cover_browser)
+	if audio_browser_button != null:
+		audio_browser_button.pressed.connect(open_audio_browser)
+	if cover_texture_rect != null:
+		_default_cover_texture = cover_texture_rect.texture
+	if CoverLoader != null:
+		if not CoverLoader.cover_loaded.is_connected(_on_cover_loaded):
+			CoverLoader.cover_loaded.connect(_on_cover_loaded)
+		if not CoverLoader.cover_failed.is_connected(_on_cover_failed):
+			CoverLoader.cover_failed.connect(_on_cover_failed)
 
 func is_syncing_metadata() -> bool:
 	return _syncing_metadata
@@ -44,11 +78,31 @@ func refresh_metadata_fields() -> void:
 	tags_line_edit.text = editor.chart.tags
 	_syncing_metadata = false
 	update_skin_file_ui()
+	update_media_ui()
 
 func update_skin_file_ui() -> void:
 	if skin_file_label == null or editor == null or editor.chart == null:
 		return
 	skin_file_label.text = editor.chart.file_skin if editor.chart.file_skin != "" else "(no linked skin file)"
+
+func update_media_ui() -> void:
+	if editor == null or editor.chart == null:
+		return
+	if cover_file_label != null:
+		cover_file_label.text = editor.chart.file_cover_art if not editor.chart.file_cover_art.is_empty() else "(no linked cover art)"
+	if audio_file_label != null:
+		audio_file_label.text = editor.chart.file_audio if not editor.chart.file_audio.is_empty() else "(no linked audio file)"
+	_update_cover_preview()
+
+func _update_cover_preview() -> void:
+	if cover_texture_rect == null or editor == null or editor.chart == null:
+		return
+	if editor.chart.cover_image != null:
+		cover_texture_rect.texture = editor.chart.cover_image
+		return
+	cover_texture_rect.texture = _default_cover_texture
+	if not editor.chart.file_cover_art.is_empty():
+		CoverLoader.request_cover(editor.chart)
 
 func rebuild_timing_ui() -> void:
 	if editor == null or editor.chart == null or editor.timeline == null:
@@ -193,3 +247,77 @@ func _on_skin_file_selected(path: String) -> void:
 		return
 	editor.chart.file_skin = skin_directory_path.get_file()
 	update_skin_file_ui()
+
+func open_cover_browser() -> void:
+	if editor == null or editor.chart == null or _cover_file_dialog == null:
+		return
+	var chart_folder_path := ProjectSettings.globalize_path(editor.chart.folder_path)
+	_cover_file_dialog.root_subfolder = chart_folder_path
+	_cover_file_dialog.current_dir = chart_folder_path
+	if not editor.chart.file_cover_art.is_empty():
+		_cover_file_dialog.current_path = ProjectSettings.globalize_path(editor.chart.get_cover_path())
+	_cover_file_dialog.popup_centered_ratio(0.7)
+
+func open_audio_browser() -> void:
+	if editor == null or editor.chart == null or _audio_file_dialog == null:
+		return
+	var chart_folder_path := ProjectSettings.globalize_path(editor.chart.folder_path)
+	_audio_file_dialog.root_subfolder = chart_folder_path
+	_audio_file_dialog.current_dir = chart_folder_path
+	if not editor.chart.file_audio.is_empty():
+		_audio_file_dialog.current_path = ProjectSettings.globalize_path(editor.chart.folder_path.path_join(editor.chart.file_audio))
+	_audio_file_dialog.popup_centered_ratio(0.7)
+
+func _on_cover_file_selected(path: String) -> void:
+	var relative_path := _get_chart_relative_path(path)
+	if relative_path.is_empty() or editor == null or editor.chart == null:
+		return
+	editor._push_history_snapshot()
+	editor.chart.file_cover_art = relative_path
+	editor.chart.cover_image = null
+	update_media_ui()
+	editor._update_save_button_state()
+
+func _on_audio_file_selected(path: String) -> void:
+	var relative_path := _get_chart_relative_path(path)
+	if relative_path.is_empty() or editor == null or editor.chart == null:
+		return
+	editor._push_history_snapshot()
+	editor.chart.file_audio = relative_path
+	update_media_ui()
+	if editor.transport != null:
+		editor.transport.chart = editor.chart
+		editor.transport.load_stream()
+	if editor.timeline != null and editor.transport != null:
+		editor.timeline = EditorTimeline.new(editor.chart, editor.transport.stream_length_sec)
+		editor.transport.timeline = editor.timeline
+		Game.current_time = editor.timeline.clamp_time(Game.current_time)
+		editor._update_slider_range()
+	if editor.view_controller != null:
+		editor.view_controller.mark_layout_dirty()
+	editor._update_time_ui(true)
+	editor._update_save_button_state()
+
+func _on_cover_loaded(chart: Chart, texture: Texture2D) -> void:
+	if editor == null or editor.chart == null or chart != editor.chart or texture == null:
+		return
+	if cover_texture_rect != null and cover_texture_rect.texture != texture:
+		cover_texture_rect.texture = texture
+
+func _on_cover_failed(chart: Chart) -> void:
+	if editor == null or editor.chart == null or chart != editor.chart:
+		return
+	if cover_texture_rect != null:
+		cover_texture_rect.texture = _default_cover_texture
+
+func _get_chart_relative_path(path: String) -> String:
+	if editor == null or editor.chart == null:
+		return ""
+	var selected_path := path.simplify_path().replace("\\", "/")
+	var chart_folder_path := ProjectSettings.globalize_path(editor.chart.folder_path).simplify_path().replace("\\", "/")
+	var folder_prefix := chart_folder_path + "/"
+	var selected_path_lower := selected_path.to_lower()
+	var folder_prefix_lower := folder_prefix.to_lower()
+	if not selected_path_lower.begins_with(folder_prefix_lower):
+		return ""
+	return selected_path.substr(folder_prefix.length()).replace("\\", "/")

@@ -13,45 +13,40 @@ var _sampled_points := PackedVector2Array()
 var _point_handles: Array = []
 var _selected := false
 var _selected_point_index := -1
-var _last_visible := true
-var _last_panel_size := Vector2(-1, -1)
-var _last_judge_y := INF
-var _last_pixels_per_ms := INF
-var _last_current_time := INF
+var _rail_geometry_signature := ""
 
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	texture = null
 
 func sync_layout(panel_size: Vector2, judge_y: float, pixels_per_ms: float, current_time: float) -> void:
+	var layout_changed := _panel_size != panel_size \
+		or not is_equal_approx(_judge_y, judge_y) \
+		or not is_equal_approx(_pixels_per_ms, pixels_per_ms) \
+		or not is_equal_approx(_current_time, current_time)
+	var geometry_signature := _build_rail_geometry_signature()
+	var geometry_changed := _rail_geometry_signature != geometry_signature
 	var should_be_visible := _is_visible_in_view(panel_size, judge_y, pixels_per_ms, current_time)
 	if visible != should_be_visible:
 		visible = should_be_visible
+		layout_changed = true
 	if not should_be_visible:
-		_last_visible = false
-		return
-
-	var layout_changed := _last_visible != should_be_visible
-	layout_changed = layout_changed or _last_panel_size != panel_size
-	layout_changed = layout_changed or not is_equal_approx(_last_judge_y, judge_y)
-	layout_changed = layout_changed or not is_equal_approx(_last_pixels_per_ms, pixels_per_ms)
-	layout_changed = layout_changed or not is_equal_approx(_last_current_time, current_time)
-	if not layout_changed:
+		_rail_geometry_signature = geometry_signature
 		return
 
 	_panel_size = panel_size
 	_judge_y = judge_y
 	_pixels_per_ms = pixels_per_ms
 	_current_time = current_time
-	position = Vector2.ZERO
-	size = panel_size
-	_last_visible = should_be_visible
-	_last_panel_size = panel_size
-	_last_judge_y = judge_y
-	_last_pixels_per_ms = pixels_per_ms
-	_last_current_time = current_time
-	_update_point_handles()
-	queue_redraw()
+	_rail_geometry_signature = geometry_signature
+	if position != Vector2.ZERO:
+		position = Vector2.ZERO
+	if size != panel_size:
+		size = panel_size
+		layout_changed = true
+	if layout_changed or geometry_changed:
+		_update_point_handles()
+		queue_redraw()
 
 func set_selection_state(is_selected: bool, selected_point_index: int) -> void:
 	if _selected == is_selected and _selected_point_index == selected_point_index:
@@ -186,3 +181,11 @@ func _is_visible_in_view(panel_size: Vector2, judge_y: float, pixels_per_ms: flo
 	var view_start := minf(visible_bottom, visible_top)
 	var view_end := maxf(visible_bottom, visible_top)
 	return rail.end_time >= view_start and rail.start_time <= view_end
+
+func _build_rail_geometry_signature() -> String:
+	if rail == null:
+		return ""
+	var parts: Array[String] = [str(rail.points.size())]
+	for point: RailPoint in rail.points:
+		parts.append("%s:%s:%s" % [point.time, point.x, point.curve])
+	return "|".join(parts)

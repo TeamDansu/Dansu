@@ -22,31 +22,33 @@ var _current_time := 0.0
 var _selected := false
 var _passthrough := false
 var _head_rect := Rect2()
-var _layout_initialized := false
 
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	texture = null
 
 func sync_layout(panel_size: Vector2, judge_y: float, pixels_per_ms: float, current_time: float) -> void:
-	var layout_changed := not _layout_initialized
-	layout_changed = layout_changed or _panel_size != panel_size
-	layout_changed = layout_changed or not is_equal_approx(_judge_y, judge_y)
-	layout_changed = layout_changed or not is_equal_approx(_pixels_per_ms, pixels_per_ms)
-	layout_changed = layout_changed or not is_equal_approx(_current_time, current_time)
+	var layout_changed := _panel_size != panel_size \
+		or not is_equal_approx(_judge_y, judge_y) \
+		or not is_equal_approx(_pixels_per_ms, pixels_per_ms) \
+		or not is_equal_approx(_current_time, current_time)
 	_panel_size = panel_size
 	_judge_y = judge_y
 	_pixels_per_ms = pixels_per_ms
 	_current_time = current_time
-	_layout_initialized = true
 	var should_be_visible := _is_visible_in_view()
 	if visible != should_be_visible:
 		visible = should_be_visible
+		layout_changed = true
 	if not should_be_visible:
 		return
-	if layout_changed:
+
+	if position != Vector2.ZERO:
 		position = Vector2.ZERO
+	if size != panel_size:
 		size = panel_size
+		layout_changed = true
+	if layout_changed:
 		queue_redraw()
 
 func set_selected(is_selected: bool) -> void:
