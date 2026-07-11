@@ -55,7 +55,7 @@ func add_note_result(note: Note, judgement: int, gap: float) -> void:
 	if judgement == NONE and max_points <= 0.0:
 		return
 	
-	if [Note.NoteType.HIT,Note.NoteType.MOVE].has(note.type):
+	if [Note.NoteType.HIT,Note.NoteType.MOVE].has(note.type) and judgement != MISS:
 		signed_timings.append(gap)
 		print("gap: " + str(gap), " avg: " + str(avg_signed_timings))
 	max_score += max_points

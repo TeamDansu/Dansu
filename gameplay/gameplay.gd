@@ -605,7 +605,10 @@ func _process_note_result(note: Note, judgement: int, gap: float) -> void:
 	if judgement != Score.MISS and judgement != Score.NONE and note.type != Note.NoteType.MOVE:
 		player.play_hit_animation(note)
 
-	_play_note_sfx(note)
+	if judgement == Score.MISS:
+		_play_miss_sfx()
+	elif judgement != Score.NONE:
+		_play_note_sfx(note)
 
 	var note_node: GameNote = spawned_note_nodes.get(note)
 	if note_node != null:
@@ -641,6 +644,12 @@ func _rebuild_hitsound_cache() -> void:
 
 func _play_note_sfx(note: Note) -> void:
 	var stream := _resolve_note_sfx_stream(note)
+	if stream == null:
+		return
+	_play_stream_sfx(stream)
+
+func _play_miss_sfx() -> void:
+	var stream: AudioStream = null
 	if stream == null:
 		return
 	_play_stream_sfx(stream)

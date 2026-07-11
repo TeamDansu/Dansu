@@ -4,6 +4,7 @@
 [ext_resource type="Script" uid="uid://b40g7sb3k05x2" path="res://scenes/gameplay/camera_3d.gd" id="2_0w2j2"]
 [ext_resource type="Script" uid="uid://htxxtrys50xl" path="res://gameplay/player.gd" id="2_q64rj"]
 [ext_resource type="Script" uid="uid://3sywjcfkoeok" path="res://skin/skin_sprite.gd" id="4_gh441"]
+[ext_resource type="Script" uid="uid://bbdx5bqe5jpho" path="res://scenes/gameplay/shadow.gd" id="4_i6m2i"]
 [ext_resource type="Texture2D" uid="uid://qfbvykpfreya" path="res://resources/skins/danshe/sprite/danshe_dance_1.png" id="4_q64rj"]
 [ext_resource type="FontFile" uid="uid://drcicje7q2t7x" path="res://resources/fonts/Next Bravo.ttf" id="6_0w2j2"]
 [ext_resource type="Shader" uid="uid://qbfnricvyktb" path="res://resources/shaders/wave.gdshader" id="6_gh441"]
@@ -34,6 +35,16 @@ glow_enabled = true
 fog_light_color = Color(0, 0, 0, 1)
 fog_light_energy = 0.0
 fog_sky_affect = 0.0
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_player_shadow"]
+transparency = 1
+shading_mode = 0
+albedo_color = Color(0.023529412, 0.019607844, 0.05490196, 0.5137255)
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_player_shadow"]
+material = SubResource("StandardMaterial3D_player_shadow")
+height = 0.015
+radial_segments = 48
 
 [sub_resource type="Animation" id="Animation_00tan"]
 length = 0.001
@@ -127,6 +138,14 @@ player = NodePath("../Player")
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=151517771]
 environment = SubResource("Environment_0w2j2")
+
+[node name="Shadow" type="MeshInstance3D" parent="." unique_id=287039653 node_paths=PackedStringArray("player")]
+transform = Transform3D(1.2, 0, 0, 0, 0.90326446, -0.1775, 0, 0.5215, 0.307439, 0, 0.025, 0)
+cast_shadow = 0
+mesh = SubResource("CylinderMesh_player_shadow")
+skeleton = NodePath("../Player")
+script = ExtResource("4_i6m2i")
+player = NodePath("../Player")
 
 [node name="Player" type="Node3D" parent="." unique_id=480149074]
 script = ExtResource("2_q64rj")

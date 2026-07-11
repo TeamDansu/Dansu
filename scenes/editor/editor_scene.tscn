@@ -37,6 +37,9 @@ content_margin_top = 10.0
 content_margin_right = 10.0
 content_margin_bottom = 10.0
 
+[sub_resource type="StyleBoxLine" id="StyleBoxLine_t60lc"]
+color = Color(0.4509804, 0.3882353, 0.84313726, 1)
+
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_37swi"]
 bg_color = Color(0.05490196, 0.05882353, 0.08627451, 1)
 border_width_left = 2
@@ -151,9 +154,11 @@ metadata/_edit_use_anchors_ = true
 [node name="TabContainer" type="TabContainer" parent="Inspector" unique_id=1073871457]
 layout_mode = 2
 theme_override_styles/panel = SubResource("StyleBoxEmpty_epy5m")
-current_tab = 0
+current_tab = 1
+tab_focus_mode = 1
 
 [node name="Chart" type="TabBar" parent="Inspector/TabContainer" unique_id=65841320]
+visible = false
 layout_mode = 2
 metadata/_tab_index = 0
 
@@ -276,8 +281,7 @@ horizontal_alignment = 1
 
 [node name="SkinBrowserButton" type="Button" parent="Inspector/TabContainer/Chart/ScrollContainer/Contents" unique_id=1963833186]
 layout_mode = 2
-text = "select skin
-from browser"
+text = "select skin from browser"
 
 [node name="Button" type="Button" parent="Inspector/TabContainer/Chart/ScrollContainer/Contents" unique_id=922132136]
 layout_mode = 2
@@ -292,7 +296,6 @@ layout_mode = 2
 text = "Save Chart"
 
 [node name="Property" type="TabBar" parent="Inspector/TabContainer" unique_id=826723775 node_paths=PackedStringArray("editor", "note_tab", "rail_tab", "note_time_lineedit", "note_type_option", "note_length_lineedit", "note_animation_option", "note_hitsound_option", "note_dir_option", "point_position_slider", "point_curve_slider", "point_time_lineedit")]
-visible = false
 layout_mode = 2
 script = ExtResource("1_ryhys")
 editor = NodePath("../../..")
@@ -432,6 +435,8 @@ text = "Rail"
 
 [node name="HSeparator" type="HSeparator" parent="Inspector/TabContainer/Property/ScrollContainer/MarginContainer/HBoxContainer/Rail" unique_id=1703293512]
 layout_mode = 2
+theme_override_constants/separation = 10
+theme_override_styles/separator = SubResource("StyleBoxLine_t60lc")
 
 [node name="PanelContainer" type="PanelContainer" parent="Inspector/TabContainer/Property/ScrollContainer/MarginContainer/HBoxContainer/Rail" unique_id=773364680]
 layout_mode = 2
@@ -634,10 +639,12 @@ offset_bottom = 1.4799194
 custom_minimum_size = Vector2(0, 6)
 layout_mode = 1
 anchors_preset = -1
+anchor_top = -1.473999
 anchor_right = 1.0
+anchor_bottom = 1.526001
 offset_bottom = 2.0
 grow_horizontal = 2
-color = Color(0.76862746, 0.9490196, 0.5058824, 0.5764706)
+color = Color(0.8013385, 0.5339694, 0.75596744, 0.5764706)
 metadata/_edit_use_anchors_ = true
 
 [node name="Object" type="VBoxContainer" parent="." unique_id=2054365102]

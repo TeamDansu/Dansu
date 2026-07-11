@@ -15,7 +15,7 @@ func _ready() -> void:
 	_setup_transition_layer()
 
 
-func transition_to(scene_path: String, duration: float = 0.45) -> void:
+func transition_to(scene_path: String, duration: float = 1.0) -> void:
 	if scene_path == MAIN_MENU_SCENE_PATH:
 		await return_to_menu(duration)
 		return
@@ -37,7 +37,7 @@ func transition_to(scene_path: String, duration: float = 0.45) -> void:
 	await _play_transition_out(duration)
 
 
-func return_to_menu(duration: float = 1.0) -> void:
+func return_to_menu(duration: float = 2.0) -> void:
 	if _is_transitioning:
 		return 
 
