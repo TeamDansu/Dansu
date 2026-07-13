@@ -164,9 +164,15 @@ var ignore_chart_skin: bool:
 
 var custom_skin_path: String:
 	get:
-		return config.get_value(SECTION_GAMEPLAY,"custom_skin_path","")
+		var value := str(config.get_value(SECTION_GAMEPLAY, "custom_skin_path", ""))
+		if value.get_extension().to_lower() == "json":
+			return value.get_base_dir()
+		return value
 	set(value):
-		config.set_value(SECTION_GAMEPLAY,"custom_skin_path",value)
+		var next_value := str(value).strip_edges()
+		if next_value.get_extension().to_lower() == "json":
+			next_value = next_value.get_base_dir()
+		config.set_value(SECTION_GAMEPLAY, "custom_skin_path", next_value)
 
 var note_speed: float:
 	get:

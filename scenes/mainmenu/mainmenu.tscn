@@ -3,7 +3,6 @@
 [ext_resource type="Shader" uid="uid://cflu32au5woaj" path="res://resources/shaders/bg.gdshader" id="1_br2e8"]
 [ext_resource type="Script" uid="uid://c3oh0iofhcct7" path="res://scenes/mainmenu/mainmenu.gd" id="1_jyltf"]
 [ext_resource type="Script" uid="uid://gw4u2exwyrwf" path="res://scenes/mainmenu/menu_animations.gd" id="2_rhsxn"]
-[ext_resource type="Texture2D" uid="uid://blji51614hnb4" path="res://mockup/mockup_character.png" id="3_da4vi"]
 [ext_resource type="PackedScene" uid="uid://c51ndn5ftq4wo" path="res://scenes/mainmenu/menubutton.tscn" id="4_da4vi"]
 [ext_resource type="FontFile" uid="uid://drcicje7q2t7x" path="res://resources/fonts/Next Bravo.ttf" id="4_ridl2"]
 [ext_resource type="Texture2D" uid="uid://cw8cihgunxcv6" path="res://icon.svg" id="5_x46xa"]
@@ -12,6 +11,7 @@
 [ext_resource type="Script" uid="uid://by3ih1cu6lh5s" path="res://scenes/mainmenu/visualizer.gd" id="7_wnqqh"]
 [ext_resource type="Script" uid="uid://djhm3b0hsswb5" path="res://scenes/mainmenu/menu_audio.gd" id="9_x46xa"]
 [ext_resource type="Script" uid="uid://b0f8fo72g82lr" path="res://scenes/mainmenu/pivot.gd" id="10_6yf2l"]
+[ext_resource type="Texture2D" uid="uid://bwxj6yd12wsry" path="res://mockup/c9f41619-9bd4-4862-b65d-3f8a8f9a8ba9_1-Photoroom.png" id="10_ckwsv"]
 [ext_resource type="Shader" uid="uid://qbfnricvyktb" path="res://resources/shaders/wave.gdshader" id="10_jyltf"]
 [ext_resource type="Script" uid="uid://dvjmrd7igbpip" path="res://scenes/mainmenu/difficulty_select.gd" id="11_1w8yq"]
 [ext_resource type="Script" uid="uid://n4yyyajfnst0" path="res://scenes/mainmenu/chart_info.gd" id="11_ll1i1"]
@@ -608,9 +608,9 @@ script = ExtResource("10_6yf2l")
 [node name="Character" type="Sprite2D" parent="CharacterPivot" unique_id=447620180]
 modulate = Color(0.8058232, 0.7965808, 0.97266215, 1)
 position = Vector2(900, 630)
-rotation = -0.069813155
+rotation = -0.06981315
 scale = Vector2(0.81759554, 0.8175957)
-texture = ExtResource("3_da4vi")
+texture = ExtResource("10_ckwsv")
 
 [node name="ChartInfo" type="Control" parent="." unique_id=403222565]
 layout_mode = 1

@@ -32,3 +32,15 @@ static func open_chart_skin_editor(chart) -> void:
 	Game.skin_editor_request = context
 	Game.reopen_editor_without_chart_reload = true
 	Transition.transition_to(SKIN_EDITOR_SCENE_PATH, 0.45)
+
+static func open_new_chart_skin_editor(chart) -> void:
+	if chart == null:
+		return
+
+	var context = SkinEditorContextScript.new()
+	context.open_mode = SkinEditorContextScript.OpenMode.CHART
+	context.return_target = SkinEditorContextScript.ReturnTarget.EDITOR
+	context.chart_folder_path = ProjectSettings.globalize_path(chart.folder_path)
+	Game.skin_editor_request = context
+	Game.reopen_editor_without_chart_reload = true
+	Transition.transition_to(SKIN_EDITOR_SCENE_PATH, 0.45)

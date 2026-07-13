@@ -3,13 +3,13 @@
 [ext_resource type="Script" uid="uid://cok8t52rpdwr5" path="res://skin/skin_editor.gd" id="1_1bx3f"]
 [ext_resource type="PackedScene" uid="uid://c0f1pv7v7l8io" path="res://scenes/skineditor/animation_button.tscn" id="1_xwaek"]
 [ext_resource type="PackedScene" uid="uid://3rgo3pf21gx1" path="res://scenes/skineditor/frame.tscn" id="2_6eirq"]
-[ext_resource type="Theme" path="res://resources/themes/editor_mainmenu_theme.tres" id="3_theme"]
+[ext_resource type="Theme" uid="uid://d3ctsqw4vkokp" path="res://resources/themes/editor_mainmenu_theme.tres" id="3_theme"]
 [ext_resource type="PackedScene" uid="uid://txbv3tuwtel0" path="res://scenes/skineditor/sprite_image.tscn" id="4_6eirq"]
 [ext_resource type="Texture2D" uid="uid://n48htgfia26x" path="res://resources/skins/danshe/sprite/danshe_dance_2.png" id="4_byoka"]
 [ext_resource type="Texture2D" uid="uid://qfbvykpfreya" path="res://resources/skins/danshe/sprite/danshe_dance_1.png" id="4_hbx7w"]
 [ext_resource type="Texture2D" uid="uid://caegtu8bhulxq" path="res://resources/skins/danshe/sprite/danshe_idle.png" id="5_3574f"]
-[ext_resource type="Shader" path="res://resources/shaders/bg.gdshader" id="6_bg"]
-[ext_resource type="Shader" path="res://resources/shaders/liquid.gdshader" id="7_liquid"]
+[ext_resource type="Shader" uid="uid://cflu32au5woaj" path="res://resources/shaders/bg.gdshader" id="6_bg"]
+[ext_resource type="Shader" uid="uid://cnchsob31pe3k" path="res://resources/shaders/liquid.gdshader" id="7_liquid"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_background"]
 shader = ExtResource("6_bg")
@@ -32,8 +32,12 @@ shader = ExtResource("7_liquid")
 shader_parameter/water_color = Color(0.4392157, 0.35686275, 0.87058824, 1)
 shader_parameter/water_height = 0.3
 shader_parameter/amplitude = 0.1
-shader_parameter/frequency = 2.0
 shader_parameter/speed = 0.9
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_top"]
+bg_color = Color(0.05490196, 0.05882353, 0.08627451, 0.94)
+border_width_bottom = 1
+border_color = Color(0.47058824, 0.40392157, 0.8784314, 0.32)
 
 [node name="SkinEditor" type="Control" unique_id=1593651549 node_paths=PackedStringArray("name_line_edit", "idle_option", "left_option", "right_option", "scale_bar", "hits_option", "hits_add_new_button", "skin_contents", "new_animation_button", "animation_list_container", "animation_template", "frames_container", "frame_template", "delete_frame_button", "calculate_scale_button", "onion_skin_button", "preview_play_button", "fps_line_edit", "effect_option", "save_button", "back_to_menu_button", "back_to_chart_button", "import_sprite_button", "sprite_list_container", "sprite_template", "preview_sprite", "preview_onion_prev", "preview_onion_next")]
 layout_mode = 3
@@ -63,9 +67,9 @@ onion_skin_button = NodePath("FramesPanel/MarginContainer/VBoxContainer/HBoxCont
 preview_play_button = NodePath("FramesPanel/MarginContainer/VBoxContainer/HBoxContainer/PlayPreview")
 fps_line_edit = NodePath("FramesPanel/MarginContainer/VBoxContainer/HBoxContainer/fps")
 effect_option = NodePath("FramesPanel/MarginContainer/VBoxContainer/HBoxContainer/effect")
-save_button = NodePath("FramesPanel/MarginContainer/VBoxContainer/HBoxContainer/Button")
-back_to_menu_button = NodePath("FramesPanel/MarginContainer/VBoxContainer/HBoxContainer/Button2")
-back_to_chart_button = NodePath("FramesPanel/MarginContainer/VBoxContainer/HBoxContainer/Button3")
+save_button = NodePath("TopBar/Margin/Row/Save")
+back_to_menu_button = NodePath("TopBar/Margin/Row/BackToMenu")
+back_to_chart_button = NodePath("TopBar/Margin/Row/BackToChart")
 import_sprite_button = NodePath("SpritesPanel/MarginContainer/ScrollContainer/VBoxContainer/ImportSpriteImage")
 sprite_list_container = NodePath("SpritesPanel/MarginContainer/ScrollContainer/VBoxContainer/GridContainer")
 sprite_template = NodePath("SpritesPanel/MarginContainer/ScrollContainer/VBoxContainer/GridContainer/SpriteImage")
@@ -73,7 +77,7 @@ preview_sprite = NodePath("Sprite")
 preview_onion_prev = NodePath("SpriteOnionPrev")
 preview_onion_next = NodePath("SpriteOnionNext")
 
-[node name="Background" type="ColorRect" parent="."]
+[node name="Background" type="ColorRect" parent="." unique_id=883904287]
 material = SubResource("ShaderMaterial_background")
 layout_mode = 1
 anchors_preset = 15
@@ -83,7 +87,7 @@ grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
 
-[node name="WaveFront" type="ColorRect" parent="."]
+[node name="WaveFront" type="ColorRect" parent="." unique_id=1281707973]
 material = SubResource("ShaderMaterial_wave")
 layout_mode = 1
 anchors_preset = 12
@@ -95,13 +99,52 @@ grow_horizontal = 2
 grow_vertical = 0
 mouse_filter = 2
 
+[node name="TopBar" type="PanelContainer" parent="." unique_id=2029148826]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_bottom = 58.0
+grow_horizontal = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_top")
+
+[node name="Margin" type="MarginContainer" parent="TopBar" unique_id=1804557621]
+layout_mode = 2
+theme_override_constants/margin_left = 18
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_right = 18
+theme_override_constants/margin_bottom = 10
+
+[node name="Row" type="HBoxContainer" parent="TopBar/Margin" unique_id=1109787247]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="BackToMenu" type="Button" parent="TopBar/Margin/Row" unique_id=1651710621]
+visible = false
+layout_mode = 2
+text = "Back to menu"
+
+[node name="BackToChart" type="Button" parent="TopBar/Margin/Row" unique_id=879595120]
+visible = false
+layout_mode = 2
+text = "Back to chart"
+
+[node name="Spacer" type="Control" parent="TopBar/Margin/Row" unique_id=1778590122]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Save" type="Button" parent="TopBar/Margin/Row" unique_id=2016360290]
+custom_minimum_size = Vector2(100, 0)
+layout_mode = 2
+text = "Save skin file"
+
 [node name="Inspector" type="PanelContainer" parent="." unique_id=1602893852]
 layout_mode = 1
 anchors_preset = -1
 anchor_left = 0.7911042
 anchor_right = 1.0
-anchor_bottom = 0.837037
+anchor_bottom = 0.7740741
 offset_left = 0.079956055
+offset_top = 70.0
 pivot_offset = Vector2(430, 0)
 metadata/_edit_use_anchors_ = true
 
@@ -209,7 +252,7 @@ anchors_preset = -1
 anchor_top = 0.83000004
 anchor_right = 1.0
 anchor_bottom = 1.0070001
-offset_top = 7.5999756
+offset_top = -56.400024
 offset_bottom = -7.5600586
 
 [node name="MarginContainer" type="MarginContainer" parent="FramesPanel" unique_id=1994497269]
@@ -263,20 +306,6 @@ layout_mode = 2
 layout_mode = 2
 size_flags_horizontal = 3
 
-[node name="Button" type="Button" parent="FramesPanel/MarginContainer/VBoxContainer/HBoxContainer" unique_id=1809977780]
-layout_mode = 2
-text = "save skin file"
-
-[node name="Button2" type="Button" parent="FramesPanel/MarginContainer/VBoxContainer/HBoxContainer" unique_id=620721141]
-visible = false
-layout_mode = 2
-text = "back to menu"
-
-[node name="Button3" type="Button" parent="FramesPanel/MarginContainer/VBoxContainer/HBoxContainer" unique_id=1815946524]
-visible = false
-layout_mode = 2
-text = "back to chart"
-
 [node name="ScrollContainer" type="ScrollContainer" parent="FramesPanel/MarginContainer/VBoxContainer" unique_id=1096305131]
 clip_contents = false
 layout_mode = 2
@@ -295,9 +324,9 @@ expand_mode = 2
 [node name="SpritesPanel" type="PanelContainer" parent="." unique_id=449119778]
 layout_mode = 1
 anchors_preset = -1
-anchor_right = 0.096
-anchor_bottom = 0.83470374
-offset_top = 1.0
+anchor_right = 0.118395835
+anchor_bottom = 0.7726667
+offset_top = 70.0
 offset_right = -0.32000732
 offset_bottom = 0.5199585
 metadata/_edit_use_anchors_ = true
@@ -314,6 +343,7 @@ layout_mode = 2
 
 [node name="VBoxContainer" type="VBoxContainer" parent="SpritesPanel/MarginContainer/ScrollContainer" unique_id=663961290]
 layout_mode = 2
+alignment = 1
 
 [node name="ImportSpriteImage" type="Button" parent="SpritesPanel/MarginContainer/ScrollContainer/VBoxContainer" unique_id=1399224635]
 layout_mode = 2

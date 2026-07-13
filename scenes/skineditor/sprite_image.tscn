@@ -1,7 +1,7 @@
 [gd_scene format=3 uid="uid://txbv3tuwtel0"]
 
-[ext_resource type="Script" uid="uid://ctohnvsr275ai" path="res://scenes/skineditor/sprite_image.gd" id="1_suuvg"]
 [ext_resource type="Texture2D" uid="uid://n48htgfia26x" path="res://resources/skins/danshe/sprite/danshe_dance_2.png" id="1_4gqg5"]
+[ext_resource type="Script" uid="uid://ctohnvsr275ai" path="res://scenes/skineditor/sprite_image.gd" id="1_suuvg"]
 
 [node name="SpriteImage" type="VBoxContainer" unique_id=414158218 node_paths=PackedStringArray("file_name_label", "texture_rect")]
 alignment = 1

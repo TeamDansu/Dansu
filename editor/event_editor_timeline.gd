@@ -1,7 +1,6 @@
 extends Control
 class_name EditorEventTimeline
 
-const UIFocusUtils = preload("res://global/ui_focus_utils.gd")
 const LABEL_WIDTH := 112.0
 const RULER_HEIGHT := 30.0
 const LANE_HEIGHT := 38.0
@@ -255,6 +254,11 @@ func _handle_mouse_button(mouse_event: InputEventMouseButton) -> void:
 
 	var event_hit := _find_event_at(mouse_event.position)
 	if event_hit != null:
+		if mouse_event.double_click and not event_hit is SkinEvent:
+			controller.select_event(event_hit)
+			controller.add_frame_to_event(event_hit, int(round(clicked_time)))
+			accept_event()
+			return
 		controller.select_event(event_hit)
 		_drag_event = event_hit
 		_drag_frame = null

@@ -53,6 +53,8 @@ var _preview_replace_hovered := false
 var _onion_enabled := false
 var _hit_option_rows: Array[OptionButton] = []
 var _syncing := false
+var _unsaved_exit_dialog: ConfirmationDialog
+var _pending_return_target := ""
 
 func _ready() -> void:
 	_configure_templates()
@@ -68,6 +70,13 @@ func _process(delta: float) -> void:
 	_update_preview_animation(delta)
 
 func _input(event: InputEvent) -> void:
+	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_ESCAPE:
+		if _unsaved_exit_dialog != null and _unsaved_exit_dialog.visible:
+			return
+		_return_to_default_target()
+		get_viewport().set_input_as_handled()
+		return
+
 	if event is InputEventMouseMotion:
 		_update_drag_feedback(get_global_mouse_position())
 	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and not event.pressed:
@@ -85,11 +94,13 @@ func _create_dialogs() -> void:
 	_import_dialog = FileDialog.new()
 	_import_dialog.access = FileDialog.ACCESS_FILESYSTEM
 	_import_dialog.file_mode = FileDialog.FILE_MODE_OPEN_FILES
+	_import_dialog.use_native_dialog = true
 	_import_dialog.filters = PackedStringArray([
 		"*.png ; PNG Image"
 	])
 	_import_dialog.files_selected.connect(_on_sprite_files_selected)
 	add_child(_import_dialog)
+	_create_unsaved_exit_dialog()
 
 func _create_drag_preview() -> void:
 	_drag_preview = TextureRect.new()
@@ -791,15 +802,15 @@ func _get_frame_items() -> Array:
 			items.append(child)
 	return items
 
-func _on_save_pressed() -> void:
+func _on_save_pressed() -> bool:
 	if document.skin_data.animations.is_empty():
-		return
+		return false
 	SkinValidationScript.ensure_unique_animation_ids(document.skin_data)
 	SkinValidationScript.cleanup_player_slots(document.skin_data)
 	if document.skin_data.idle == null and not document.skin_data.animations.is_empty():
 		document.skin_data.idle = document.skin_data.animations[0]
 	if document.skin_data.idle == null:
-		return
+		return false
 
 	var old_path = document.file_path
 	var old_reference_name = document.context.referenced_skin_file_name
@@ -812,7 +823,7 @@ func _on_save_pressed() -> void:
 		if document.context.open_mode == SkinEditorContextScript.OpenMode.CHART:
 			preferred_name = old_reference_name
 		else:
-			preferred_name = old_path.get_basename().get_file()
+			preferred_name = old_path.get_base_dir().get_file()
 	preferred_name = preferred_name.validate_filename()
 	if preferred_name == "":
 		preferred_name = "skin"
@@ -823,18 +834,17 @@ func _on_save_pressed() -> void:
 		if old_path == "" or current_skin_name != preferred_name:
 			target_path = SkinSerializationScript.make_unique_chart_skin_file_path(document.context.chart_folder_path, preferred_name)
 	else:
-		var old_file_name = old_path.get_file()
-		var desired_path = document.directory_path.path_join("%s.json" % preferred_name)
-		if desired_path.get_file() != old_file_name:
-			target_path = SkinSerializationScript.make_unique_skin_file_path(document.directory_path, preferred_name)
+		var current_skin_name = document.directory_path.get_file()
+		if old_path == "" or old_path.get_file() != SkinSerializationScript.CHART_SKIN_JSON_NAME or current_skin_name != preferred_name:
+			target_path = SkinSerializationScript.make_unique_skin_file_path(document.directory_path.get_base_dir(), preferred_name)
 
 	var saved_path := SkinSerializationScript.save_skin_document(document, target_path)
 	if saved_path == "":
-		return
+		return false
 
 	var saved_reference_name := saved_path.get_base_dir().get_file() if document.context.open_mode == SkinEditorContextScript.OpenMode.CHART else saved_path.get_file()
 	if document.context.open_mode == SkinEditorContextScript.OpenMode.CUSTOM:
-		Config.custom_skin_path = ProjectSettings.localize_path(saved_path)
+		Config.custom_skin_path = ProjectSettings.localize_path(saved_path.get_base_dir())
 		Config.save_config()
 	else:
 		if document.context.chart_folder_path != "" and old_reference_name != "":
@@ -856,11 +866,68 @@ func _on_save_pressed() -> void:
 		SkinSerializationScript.delete_obsolete_skin_path(old_path, saved_path)
 
 	_refresh_all()
+	return true
 
 func _return_to_menu() -> void:
+	if _has_unsaved_changes():
+		_show_unsaved_exit_dialog("menu")
+		return
+	_return_to_menu_now()
+
+func _return_to_chart() -> void:
+	if _has_unsaved_changes():
+		_show_unsaved_exit_dialog("chart")
+		return
+	_return_to_chart_now()
+
+func _return_to_default_target() -> void:
+	if document.context.return_target == SkinEditorContextScript.ReturnTarget.EDITOR:
+		_return_to_chart()
+	else:
+		_return_to_menu()
+
+func _return_to_menu_now() -> void:
 	Game.reopen_editor_without_chart_reload = false
 	Transition.return_to_menu(0.45)
 
-func _return_to_chart() -> void:
+func _return_to_chart_now() -> void:
 	Game.reopen_editor_without_chart_reload = true
 	Transition.transition_to(EDITOR_SCENE_PATH, 0.45)
+
+func _has_unsaved_changes() -> bool:
+	return document != null and document.dirty
+
+func _create_unsaved_exit_dialog() -> void:
+	_unsaved_exit_dialog = ConfirmationDialog.new()
+	_unsaved_exit_dialog.title = "Unsaved changes"
+	_unsaved_exit_dialog.dialog_text = "Save skin changes before leaving?"
+	_unsaved_exit_dialog.ok_button_text = "Save and leave"
+	_unsaved_exit_dialog.cancel_button_text = "Cancel"
+	_unsaved_exit_dialog.exclusive = true
+	_unsaved_exit_dialog.confirmed.connect(_on_unsaved_exit_save_confirmed)
+	_unsaved_exit_dialog.custom_action.connect(_on_unsaved_exit_custom_action)
+	_unsaved_exit_dialog.add_button("Leave without saving", false, "discard")
+	add_child(_unsaved_exit_dialog)
+
+func _show_unsaved_exit_dialog(return_target: String) -> void:
+	_pending_return_target = return_target
+	if _unsaved_exit_dialog == null:
+		_return_to_pending_target()
+		return
+	_unsaved_exit_dialog.get_ok_button().disabled = document == null or document.skin_data.animations.is_empty()
+	_unsaved_exit_dialog.popup_centered()
+
+func _on_unsaved_exit_save_confirmed() -> void:
+	if _on_save_pressed():
+		_return_to_pending_target()
+
+func _on_unsaved_exit_custom_action(action: StringName) -> void:
+	if action == &"discard":
+		_return_to_pending_target()
+
+func _return_to_pending_target() -> void:
+	match _pending_return_target:
+		"chart":
+			_return_to_chart_now()
+		_:
+			_return_to_menu_now()

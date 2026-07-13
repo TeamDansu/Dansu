@@ -8,9 +8,9 @@ const BAD_TEXTURE := preload("res://resources/textures/judges/nah.png")
 const MISS_TEXTURE := preload("res://resources/textures/judges/miss.png")
 const JUST_PLUS_TEXTURE := preload("res://resources/textures/judges/just_plus.png")
 
-const HOLD_DURATION := 0.1
-const FADE_DURATION := 0.2
-const RISE_SPEED := 0.35
+const HOLD_DURATION := 0.2
+const FADE_DURATION := 0.1
+const RISE_SPEED := 1.0
 
 var judgement := Score.NONE
 var _hold_remaining := HOLD_DURATION

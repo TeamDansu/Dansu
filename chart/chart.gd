@@ -39,12 +39,6 @@ var skin_root_path: String:
 	get:
 		return folder_path.path_join(CHART_SKINS_DIR_NAME)
 
-var legacy_skin_path: String:
-	get:
-		if file_skin == "":
-			return ""
-		return folder_path.path_join(file_skin)
-
 var file_path: String:
 	get:
 		return FileSystem.chart_path.path_join(folder_name).path_join(file_name)

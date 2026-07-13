@@ -1,8 +1,6 @@
 extends TabBar
 class_name EditorSFXPanel
 
-const UIFocusUtils = preload("res://global/ui_focus_utils.gd")
-
 @export var editor: Editor
 @export var hit_option: OptionButton
 @export var move_option: OptionButton
@@ -35,6 +33,7 @@ func _create_file_dialog() -> void:
 	_file_dialog = FileDialog.new()
 	_file_dialog.file_mode = FileDialog.FILE_MODE_OPEN_FILE
 	_file_dialog.access = FileDialog.ACCESS_FILESYSTEM
+	_file_dialog.use_native_dialog = true
 	_file_dialog.filters = PackedStringArray(["*.wav ; WAV Audio"])
 	_file_dialog.file_selected.connect(_on_file_selected)
 	add_child(_file_dialog)

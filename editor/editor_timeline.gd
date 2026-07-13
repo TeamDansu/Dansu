@@ -1,8 +1,8 @@
 extends RefCounted
 class_name EditorTimeline
 
-const MIN_TIME := -1000
-const TAIL_PADDING := 3000
+const DEFAULT_MIN_TIME := -1000
+const DEFAULT_TAIL_PADDING := 3000
 
 var chart: Chart = null
 
@@ -10,13 +10,22 @@ var beat_division: int = 4:
 	set(value):
 		beat_division = max(1, value)
 
+var _min_time_ms: int = DEFAULT_MIN_TIME
 var _song_length_ms: int = 0
 var _song_length_sec: float = 0.0
+var _tail_padding_ms: int = DEFAULT_TAIL_PADDING
 
-func _init(chart_value: Chart = null, sec: float = 0.0) -> void:
+func _init(
+	chart_value: Chart = null,
+	sec: float = 0.0,
+	min_time_ms: int = DEFAULT_MIN_TIME,
+	tail_padding_ms: int = DEFAULT_TAIL_PADDING
+) -> void:
 	chart = chart_value
+	_min_time_ms = min_time_ms
 	_song_length_sec = sec
 	_song_length_ms = int(round(sec * 1000.0))
+	_tail_padding_ms = maxi(0, tail_padding_ms)
 
 func ensure_timings() -> void:
 	if chart == null:
@@ -40,13 +49,13 @@ func get_song_length_sec() -> float:
 	return _song_length_sec
 
 func get_min_time() -> int:
-	return MIN_TIME
+	return _min_time_ms
 
 func get_max_time() -> int:
-	return _song_length_ms + TAIL_PADDING
+	return _song_length_ms + _tail_padding_ms
 
 func clamp_time(value: float) -> float:
-	return clamp(value, float(MIN_TIME), float(_song_length_ms + TAIL_PADDING))
+	return clamp(value, float(_min_time_ms), float(get_max_time()))
 
 func get_active_timing(time_ms: int) -> Timing:
 	ensure_timings()

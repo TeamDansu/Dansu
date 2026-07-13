@@ -4,14 +4,17 @@ class_name EditorSaveController
 @export var editor: Editor
 @export var save_button: Button
 
-func save_chart() -> void:
+func save_chart() -> bool:
 	if editor == null or editor.chart == null:
-		return
+		return false
 	if not EditorChartOps.can_save(editor.chart):
-		return
+		return false
 	if EditorChartOps.save_chart(editor.chart, editor.previous_file_path):
 		editor.previous_file_path = editor.chart.file_path
 		update_save_button_state()
+		editor.mark_saved_state()
+		return true
+	return false
 
 func update_save_button_state() -> void:
 	if save_button != null and editor != null:

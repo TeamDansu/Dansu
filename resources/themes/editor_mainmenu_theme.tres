@@ -87,10 +87,6 @@ border_width_top = 2
 border_width_right = 2
 border_width_bottom = 2
 border_color = Color(0.47058824, 0.40392157, 0.8784314, 0.8)
-corner_radius_top_left = 24
-corner_radius_top_right = 24
-corner_radius_bottom_right = 24
-corner_radius_bottom_left = 24
 shadow_color = Color(0.47058824, 0.40392157, 0.8784314, 0.15686275)
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_popup"]

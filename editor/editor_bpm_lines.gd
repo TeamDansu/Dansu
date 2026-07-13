@@ -82,7 +82,7 @@ func _draw_grid_line(time_value: int, judge_y: float) -> void:
 
 	match denominator:
 		1:
-			color = Color(1, 1, 1, 0.9)
+			color = Color(0.762, 0.762, 0.762, 0.9)
 			thickness = 2.0
 		2:
 			color = Color(0.25, 0.6, 1.0, 0.8)

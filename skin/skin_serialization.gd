@@ -2,7 +2,6 @@ extends RefCounted
 class_name SkinSerialization
 
 const SkinValidationScript = preload("res://skin/skin_validation.gd")
-const SkinRefCleanupScript = preload("res://skin/skin_ref_cleanup.gd")
 const CHART_SKINS_DIR_NAME := "skins"
 const CHART_SKIN_JSON_NAME := "skin.json"
 const CHART_SKIN_SPRITES_DIR_NAME := "sprites"
@@ -53,11 +52,11 @@ static func save_skin_document(document, target_file_path: String = "") -> Strin
 static func clone_skin_to_directory(source_skin_path: String, target_directory_path: String, preferred_name: String) -> String:
 	var source_directory := source_skin_path.get_base_dir()
 	var source_sprite_directory := _find_source_sprite_directory(source_directory)
-	var file_name := preferred_name.validate_filename()
-	if file_name == "":
-		file_name = "skin"
-	var target_path: String = _make_unique_skin_file_path(target_directory_path, file_name)
-	var target_sprite_directory := target_path.get_base_dir().path_join(LEGACY_SKIN_SPRITES_DIR_NAME)
+	var target_directory := target_directory_path
+	if FileAccess.file_exists(target_directory.path_join(CHART_SKIN_JSON_NAME)):
+		target_directory = _make_unique_skin_directory_path(target_directory_path.get_base_dir(), preferred_name)
+	var target_path: String = target_directory.path_join(CHART_SKIN_JSON_NAME)
+	var target_sprite_directory := target_directory.path_join(CHART_SKIN_SPRITES_DIR_NAME)
 
 	FileSystem.ensure_dir(target_path.get_base_dir())
 	FileSystem.ensure_dir(target_sprite_directory)
@@ -67,7 +66,7 @@ static func clone_skin_to_directory(source_skin_path: String, target_directory_p
 	if typeof(data) != TYPE_DICTIONARY:
 		return ""
 
-	data["name"] = target_path.get_basename().get_file()
+	data["name"] = target_directory.get_file()
 
 	var file := FileAccess.open(target_path, FileAccess.WRITE)
 	if file == null:
@@ -129,8 +128,10 @@ static func import_sprite_files(document, source_paths: PackedStringArray) -> Ar
 	return imported
 
 static func ensure_custom_skin_path() -> String:
-	if Config.custom_skin_path != "" and FileAccess.file_exists(ProjectSettings.globalize_path(Config.custom_skin_path)):
-		return ProjectSettings.globalize_path(Config.custom_skin_path)
+	var configured_path := get_custom_skin_file_path()
+	if configured_path != "" and FileAccess.file_exists(configured_path):
+		_store_custom_skin_directory(configured_path.get_base_dir())
+		return configured_path
 
 	var target_directory := ProjectSettings.globalize_path("user://skins/default")
 	var cloned_path := clone_skin_to_directory(
@@ -139,14 +140,20 @@ static func ensure_custom_skin_path() -> String:
 		"default"
 	)
 	if cloned_path != "":
-		Config.custom_skin_path = ProjectSettings.localize_path(cloned_path)
-		Config.save_config()
+		_store_custom_skin_directory(cloned_path.get_base_dir())
 	return cloned_path
+
+static func get_custom_skin_file_path() -> String:
+	var directory_path := Config.custom_skin_path.strip_edges()
+	if directory_path == "":
+		return ""
+	if directory_path.get_extension().to_lower() == "json":
+		directory_path = directory_path.get_base_dir()
+	return ProjectSettings.globalize_path(directory_path).path_join(CHART_SKIN_JSON_NAME)
 
 static func ensure_chart_skin_path(chart) -> String:
 	if chart == null:
 		return ""
-	migrate_chart_skin_layout(chart)
 	if chart.file_skin != "":
 		return ProjectSettings.globalize_path(chart.skin_path)
 
@@ -164,7 +171,7 @@ static func ensure_chart_skin_path(chart) -> String:
 	return cloned_path
 
 static func make_unique_skin_file_path(directory_path: String, preferred_name: String) -> String:
-	return _make_unique_skin_file_path(directory_path, preferred_name)
+	return _make_unique_skin_directory_path(directory_path, preferred_name).path_join(CHART_SKIN_JSON_NAME)
 
 static func make_unique_chart_skin_file_path(chart_folder_path: String, preferred_name: String) -> String:
 	var skin_directory := _make_unique_chart_skin_directory_path(chart_folder_path, preferred_name)
@@ -191,42 +198,6 @@ static func delete_obsolete_skin_path(old_skin_file_path: String, preserved_skin
 	_remove_directory_recursive(old_directory_path.path_join(CHART_SKIN_SPRITES_DIR_NAME))
 	_remove_directory_recursive(old_directory_path.path_join(LEGACY_SKIN_SPRITES_DIR_NAME))
 	_remove_directory_if_empty(old_directory_path)
-
-static func migrate_chartset_skin_layout(charts: Array[Chart]) -> void:
-	if charts.is_empty():
-		return
-
-	var chart_folder_path := ProjectSettings.globalize_path(charts[0].folder_path)
-	var rename_lookup := {}
-
-	for chart in charts:
-		if chart == null:
-			continue
-		var original_skin_ref := chart.file_skin.strip_edges()
-		if original_skin_ref == "":
-			continue
-		if rename_lookup.has(original_skin_ref):
-			continue
-		if not _is_legacy_chart_skin_reference(chart_folder_path, original_skin_ref):
-			continue
-
-		var migrated_skin_name := _migrate_legacy_chart_skin(chart_folder_path, original_skin_ref)
-		if migrated_skin_name == "":
-			continue
-
-		rename_lookup[original_skin_ref] = migrated_skin_name
-
-	for old_skin_name in rename_lookup.keys():
-		var new_skin_name := String(rename_lookup[old_skin_name])
-		SkinRefCleanupScript.rename_skin_references(chart_folder_path, String(old_skin_name), new_skin_name)
-		for chart in charts:
-			if chart != null and chart.file_skin == String(old_skin_name):
-				chart.file_skin = new_skin_name
-
-static func migrate_chart_skin_layout(chart) -> void:
-	if chart == null or chart.chart_set == null:
-		return
-	migrate_chartset_skin_layout(chart.chart_set.charts)
 
 static func _build_animation_payload(skin_data) -> Array[Dictionary]:
 	var result: Array[Dictionary] = []
@@ -262,11 +233,16 @@ static func _build_player_payload(skin_data) -> Dictionary:
 static func _animation_id(animation, fallback: int) -> int:
 	return int(animation.id) if animation != null else fallback
 
-static func _make_unique_skin_file_path(directory_path: String, preferred_name: String) -> String:
+static func _make_unique_skin_directory_path(directory_path: String, preferred_name: String) -> String:
 	var base_name := preferred_name.validate_filename()
 	if base_name == "":
 		base_name = "skin"
-	return directory_path.path_join(_make_unique_file_name(directory_path, "%s.json" % base_name))
+	var candidate := base_name
+	var index := 2
+	while DirAccess.dir_exists_absolute(directory_path.path_join(candidate)):
+		candidate = "%s(%d)" % [base_name, index]
+		index += 1
+	return directory_path.path_join(candidate)
 
 static func _make_unique_chart_skin_directory_path(chart_folder_path: String, preferred_name: String) -> String:
 	var base_name := preferred_name.validate_filename()
@@ -339,40 +315,6 @@ static func _find_source_sprite_directory(directory_path: String) -> String:
 		return new_directory
 	return directory_path.path_join(LEGACY_SKIN_SPRITES_DIR_NAME)
 
-static func _is_legacy_chart_skin_reference(chart_folder_path: String, skin_reference: String) -> bool:
-	if skin_reference == "":
-		return false
-	if skin_reference.get_extension().to_lower() != "json":
-		return false
-	return FileAccess.file_exists(chart_folder_path.path_join(skin_reference))
-
-static func _migrate_legacy_chart_skin(chart_folder_path: String, legacy_skin_reference: String) -> String:
-	var source_skin_path := chart_folder_path.path_join(legacy_skin_reference)
-	if not FileAccess.file_exists(source_skin_path):
-		return ""
-
-	var preferred_name := legacy_skin_reference.get_basename().validate_filename()
-	if preferred_name == "":
-		preferred_name = "skin"
-
-	var target_path := make_unique_chart_skin_file_path(chart_folder_path, preferred_name)
-	if target_path == "":
-		return ""
-
-	var target_directory := target_path.get_base_dir()
-	var target_skin_name := target_directory.get_file()
-	var target_sprite_directory := target_directory.path_join(CHART_SKIN_SPRITES_DIR_NAME)
-
-	FileSystem.ensure_dir(target_directory)
-	FileSystem.ensure_dir(target_sprite_directory)
-	_copy_file(source_skin_path, target_path)
-
-	var legacy_sprite_directory := chart_folder_path.path_join(LEGACY_SKIN_SPRITES_DIR_NAME)
-	if DirAccess.dir_exists_absolute(legacy_sprite_directory):
-		_copy_directory_contents(legacy_sprite_directory, target_sprite_directory)
-
-	var modern_sprite_directory := chart_folder_path.path_join(CHART_SKIN_SPRITES_DIR_NAME)
-	if DirAccess.dir_exists_absolute(modern_sprite_directory):
-		_copy_directory_contents(modern_sprite_directory, target_sprite_directory)
-
-	return target_skin_name
+static func _store_custom_skin_directory(directory_path: String) -> void:
+	Config.custom_skin_path = ProjectSettings.localize_path(directory_path)
+	Config.save_config()

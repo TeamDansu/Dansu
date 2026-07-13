@@ -12,6 +12,8 @@ const JUDGE_POPUP_OFFSET := Vector3(0.0, 2.0, 0.0)
 const SONG_FADE_START_AFTER_LAST_NOTE_MS := 1000.0
 const RESULT_DELAY_AFTER_LAST_NOTE_MS := 2000.0
 const SONG_FADE_DB_PER_SECOND := 30.0
+const SKY_BASE_COLOR_PARAM := "base_color"
+const SKY_DETAIL_COLOR_PARAM := "detail_color"
 
 class SpawnableNote:
 	var note: Note
@@ -20,6 +22,13 @@ class SpawnableNote:
 	func _init(note_value: Note, rail_value: Rail) -> void:
 		note = note_value
 		rail = rail_value
+
+class OverlayRuntimeState:
+	var sprite_ref := ""
+	var position := Vector2.ZERO
+	var scale := Vector2.ONE
+	var rotation := 0.0
+	var opacity := 1.0
 
 # notes
 var note_scene = preload("res://scenes/gameplay/note.tscn")
@@ -64,8 +73,11 @@ var paused := false
 @export var rail_container: Node3D
 @export var songplayer: AudioStreamPlayer
 
+@onready var gameplay_camera = $Camera3D
+@onready var hud_root: Control = $Control
 @onready var combo_container: VBoxContainer = $Control/VBoxContainer
 @onready var combo_label: Label = $Control/VBoxContainer/Combo
+@onready var world_environment: WorldEnvironment = $WorldEnvironment
 
 const LEAD_IN_MS := 3000.0
 
@@ -78,6 +90,16 @@ var _result_transition_started := false
 var _last_note_time_ms := 0.0
 var _song_volume_db := 0.0
 var _timestamp_input_active := false
+var _camera_events: Array[CameraEvent] = []
+var _overlay_events: Array[OverlayEvent] = []
+var _theme_events: Array[ThemeEvent] = []
+var _sky_material: ShaderMaterial = null
+var _default_sky_base_color := Color(0.0627451, 0.0627451, 0.078431375, 1.0)
+var _default_sky_detail_color := Color(0.078431375, 0.078431375, 0.101960786, 1.0)
+var _overlay_root: Control = null
+var _overlay_nodes: Array[TextureRect] = []
+var _overlay_texture_paths: Array[String] = []
+var _overlay_texture_values: Array[Texture2D] = []
 
 # timeline
 var audio_start_target_usec: int = 0
@@ -88,6 +110,8 @@ func _ready() -> void:
 	_setup_timestamp_input()
 	songplayer.stream = CM.selected_chart.get_stream()
 	_song_volume_db = songplayer.volume_db
+	_cache_stage_theme_defaults()
+	_ensure_overlay_root()
 	_prepare_sfx_players()
 	reset()
 
@@ -123,6 +147,10 @@ func reset() -> void:
 	_update_current_time()
 	_rebuild_hitsound_cache()
 	_build_game_objects()
+	_collect_camera_events()
+	_collect_overlay_events()
+	_collect_theme_events()
+	_apply_runtime_events(Game.current_time)
 	_spawn_objects()
 	_reset_combo_hud()
 
@@ -214,6 +242,7 @@ func _process(delta: float) -> void:
 	_check_miss()
 	_check_touch_notes()
 	_update_song_fade(delta)
+	_apply_runtime_events(Game.current_time)
 
 	if Input.is_action_just_pressed("ui_cancel"):
 		exit()
@@ -416,6 +445,242 @@ func _build_game_objects() -> void:
 		song_end = int(_last_note_time_ms + SONG_FADE_START_AFTER_LAST_NOTE_MS)
 
 	_set_next_note()
+
+func _collect_camera_events() -> void:
+	_camera_events.clear()
+	if CM.parsed_chart == null:
+		return
+	for event in CM.parsed_chart.events:
+		if event is CameraEvent:
+			_camera_events.append(event)
+
+func _collect_overlay_events() -> void:
+	_overlay_events.clear()
+	if CM.parsed_chart == null:
+		return
+	for event in CM.parsed_chart.events:
+		if event is OverlayEvent:
+			_overlay_events.append(event)
+
+func _collect_theme_events() -> void:
+	_theme_events.clear()
+	if CM.parsed_chart == null:
+		return
+	for event in CM.parsed_chart.events:
+		if event is ThemeEvent:
+			_theme_events.append(event)
+
+func _cache_stage_theme_defaults() -> void:
+	if world_environment == null or world_environment.environment == null:
+		return
+	var sky := world_environment.environment.sky
+	if sky == null:
+		return
+	_sky_material = sky.sky_material as ShaderMaterial
+	if _sky_material == null:
+		return
+	if _sky_material.get_shader_parameter(SKY_BASE_COLOR_PARAM) is Color:
+		_default_sky_base_color = _sky_material.get_shader_parameter(SKY_BASE_COLOR_PARAM)
+	if _sky_material.get_shader_parameter(SKY_DETAIL_COLOR_PARAM) is Color:
+		_default_sky_detail_color = _sky_material.get_shader_parameter(SKY_DETAIL_COLOR_PARAM)
+
+func _ensure_overlay_root() -> void:
+	if hud_root == null or _overlay_root != null:
+		return
+	_overlay_root = Control.new()
+	_overlay_root.name = "OverlayRuntime"
+	_overlay_root.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_overlay_root.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_overlay_root.clip_contents = false
+	hud_root.add_child(_overlay_root)
+	hud_root.move_child(_overlay_root, 0)
+
+func _apply_runtime_events(time_ms: float) -> void:
+	_apply_theme_events(time_ms)
+	_apply_camera_events(time_ms)
+	_apply_overlay_events(time_ms)
+
+func _apply_theme_events(time_ms: float) -> void:
+	if _sky_material == null:
+		return
+	var base_color := _default_sky_base_color
+	var detail_color := _default_sky_detail_color
+	var active := _find_active_theme_event(time_ms)
+	if active != null and not active.frames.is_empty():
+		var pair_indices := _find_frame_pair_indices(active.frames, time_ms - active.time)
+		var previous: ThemeEventFrame = active.frames[pair_indices.x]
+		var next: ThemeEventFrame = active.frames[pair_indices.y]
+		var alpha := _frame_ease_alpha(previous, next, time_ms - active.time)
+		base_color = previous.bg_color.lerp(next.bg_color, alpha)
+		detail_color = previous.bg_color_2.lerp(next.bg_color_2, alpha)
+	_sky_material.set_shader_parameter(SKY_BASE_COLOR_PARAM, base_color)
+	_sky_material.set_shader_parameter(SKY_DETAIL_COLOR_PARAM, detail_color)
+
+func _find_active_theme_event(time_ms: float) -> ThemeEvent:
+	var active: ThemeEvent = null
+	for event in _theme_events:
+		if time_ms < event.time or time_ms > event.end_time:
+			continue
+		if active == null or event.time >= active.time:
+			active = event
+	return active
+
+func _apply_camera_events(time_ms: float) -> void:
+	if gameplay_camera == null:
+		return
+	var active := _find_active_camera_event(time_ms)
+	if active == null or active.frames.is_empty():
+		gameplay_camera.follow_character = true
+		gameplay_camera.target_position = Vector2.ZERO
+		gameplay_camera.target_zoom = 1.0
+		return
+	var pair_indices := _find_frame_pair_indices(active.frames, time_ms - active.time)
+	var previous: CameraEventFrame = active.frames[pair_indices.x]
+	var next: CameraEventFrame = active.frames[pair_indices.y]
+	var alpha := _frame_ease_alpha(previous, next, time_ms - active.time)
+	gameplay_camera.follow_character = previous.follow_character
+	gameplay_camera.target_position = previous.position.lerp(next.position, alpha)
+	gameplay_camera.target_zoom = lerpf(previous.zoom, next.zoom, alpha)
+
+func _find_active_camera_event(time_ms: float) -> CameraEvent:
+	var active: CameraEvent = null
+	for event in _camera_events:
+		if time_ms < event.time or time_ms > event.end_time:
+			continue
+		if active == null or event.time >= active.time:
+			active = event
+	return active
+
+func _apply_overlay_events(time_ms: float) -> void:
+	if _overlay_root == null:
+		return
+	var active_overlays := _find_active_overlay_events(time_ms)
+	_ensure_overlay_node_pool(active_overlays.size())
+	var visible_count := 0
+	for overlay in active_overlays:
+		var state := _evaluate_overlay_state(overlay, time_ms - overlay.time)
+		if state == null:
+			continue
+		var texture := _load_overlay_texture(state.sprite_ref)
+		if texture == null:
+			continue
+		var node := _overlay_nodes[visible_count]
+		visible_count += 1
+		var center := _overlay_root.size * OverlayEventFrame.anchor_to_vector(overlay.anchor) + state.position
+		node.texture = texture
+		node.size = texture.get_size()
+		node.pivot_offset = node.size * 0.5
+		node.position = center - node.size * 0.5
+		node.scale = state.scale
+		node.rotation = deg_to_rad(state.rotation)
+		node.modulate = Color(1.0, 1.0, 1.0, clampf(state.opacity, 0.0, 1.0))
+		node.visible = true
+		node.z_index = visible_count
+	for index in range(visible_count, _overlay_nodes.size()):
+		_overlay_nodes[index].visible = false
+
+func _find_active_overlay_events(time_ms: float) -> Array[OverlayEvent]:
+	var active_overlays: Array[OverlayEvent] = []
+	for event in _overlay_events:
+		if time_ms >= event.time and time_ms <= event.end_time:
+			active_overlays.append(event)
+	active_overlays.sort_custom(func(a: OverlayEvent, b: OverlayEvent) -> bool:
+		if a.layer == b.layer:
+			return a.time < b.time
+		return a.layer < b.layer
+	)
+	return active_overlays
+
+func _ensure_overlay_node_pool(required_count: int) -> void:
+	while _overlay_nodes.size() < required_count:
+		var node := TextureRect.new()
+		node.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		node.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		node.stretch_mode = TextureRect.STRETCH_KEEP
+		node.visible = false
+		_overlay_root.add_child(node)
+		_overlay_nodes.append(node)
+
+func _evaluate_overlay_state(event: OverlayEvent, local_time: float) -> OverlayRuntimeState:
+	if event.frames.is_empty():
+		return null
+	var pair_indices := _find_frame_pair_indices(event.frames, local_time)
+	var previous: OverlayEventFrame = event.frames[pair_indices.x]
+	var next: OverlayEventFrame = event.frames[pair_indices.y]
+	var alpha := _frame_ease_alpha(previous, next, local_time)
+	var previous_state := _overlay_state_at(event.frames, pair_indices.x)
+	var next_state := _overlay_state_at(event.frames, pair_indices.y)
+	var state := OverlayRuntimeState.new()
+	state.sprite_ref = previous_state.sprite_ref
+	state.position = previous_state.position.lerp(next_state.position, alpha)
+	state.scale = previous_state.scale.lerp(next_state.scale, alpha)
+	state.rotation = lerpf(previous_state.rotation, next_state.rotation, alpha)
+	state.opacity = lerpf(previous_state.opacity, next_state.opacity, alpha)
+	return state
+
+func _overlay_state_at(frames: Array[OverlayEventFrame], target_index: int) -> OverlayRuntimeState:
+	var state := OverlayRuntimeState.new()
+	for index in range(clampi(target_index, 0, frames.size() - 1) + 1):
+		if not frames[index].sprite.is_empty():
+			state.sprite_ref = frames[index].sprite
+		if frames[index].has_opacity:
+			state.opacity = frames[index].opacity
+	var frame := frames[clampi(target_index, 0, frames.size() - 1)]
+	state.position = frame.position
+	state.scale = frame.scale
+	state.rotation = frame.rotation
+	return state
+
+func _load_overlay_texture(reference: String) -> Texture2D:
+	var chart := CM.selected_chart
+	if chart == null or reference.is_empty() or not EventResourceRef.is_valid(reference):
+		return null
+	var path := EventResourceRef.resolve_sprite(chart, reference)
+	var cache_index := _overlay_texture_paths.find(path)
+	if cache_index >= 0:
+		return _overlay_texture_values[cache_index]
+	var texture: Texture2D = null
+	if path.begins_with("res://"):
+		texture = load(path) as Texture2D
+	elif FileAccess.file_exists(path):
+		var image := Image.load_from_file(path)
+		if image != null and not image.is_empty():
+			texture = ImageTexture.create_from_image(image)
+	_overlay_texture_paths.append(path)
+	_overlay_texture_values.append(texture)
+	return texture
+
+func _find_frame_pair_indices(frames: Array, local_time: float) -> Vector2i:
+	var previous_index := 0
+	var next_index := frames.size() - 1
+	for index in range(frames.size()):
+		var frame = frames[index]
+		if frame.time <= local_time:
+			previous_index = index
+		if frame.time >= local_time:
+			next_index = index
+			break
+	return Vector2i(previous_index, next_index)
+
+func _frame_ease_alpha(previous: ChartEventFrame, next: ChartEventFrame, local_time: float) -> float:
+	if previous == next or next.time <= previous.time:
+		return 0.0
+	var alpha := clampf((local_time - previous.time) / float(next.time - previous.time), 0.0, 1.0)
+	return _apply_event_ease(alpha, next.ease)
+
+func _apply_event_ease(value: float, ease_name: String) -> float:
+	match ease_name:
+		"in_sine": return 1.0 - cos(value * PI * 0.5)
+		"out_sine": return sin(value * PI * 0.5)
+		"in_out_sine": return -(cos(PI * value) - 1.0) * 0.5
+		"in_quad": return value * value
+		"out_quad": return 1.0 - (1.0 - value) * (1.0 - value)
+		"in_out_quad": return 2.0 * value * value if value < 0.5 else 1.0 - pow(-2.0 * value + 2.0, 2.0) * 0.5
+		"in_cubic": return value * value * value
+		"out_cubic": return 1.0 - pow(1.0 - value, 3.0)
+		"in_out_cubic": return 4.0 * value * value * value if value < 0.5 else 1.0 - pow(-2.0 * value + 2.0, 3.0) * 0.5
+		_:
+			return value
 
 func _sort_notes(a: SpawnableNote, b: SpawnableNote) -> bool:
 	return a.note.time < b.note.time

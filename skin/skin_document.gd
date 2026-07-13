@@ -101,7 +101,7 @@ func get_next_animation_id() -> int:
 func _resolve_sprite_directory_name(open_mode: int, target_directory_path: String, prefer_new_layout: bool = false) -> String:
 	if open_mode == SkinEditorContextScript.OpenMode.CHART:
 		return "sprites"
-	if prefer_new_layout and DirAccess.dir_exists_absolute(target_directory_path.path_join("sprites")):
+	if prefer_new_layout:
 		return "sprites"
 	if DirAccess.dir_exists_absolute(target_directory_path.path_join("sprites")):
 		return "sprites"

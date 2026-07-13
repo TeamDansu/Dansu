@@ -3,14 +3,15 @@ class_name EventEditor
 
 const MAP_EDITOR_SCENE_PATH := "res://scenes/editor/editor_scene.tscn"
 const MAX_HISTORY_STEPS := 128
-const UIFocusUtils = preload("res://global/ui_focus_utils.gd")
+const GAMEPLAY_ENTRY_LEAD_IN_MS := 3000
+const EVENT_EDITOR_PRE_ENTRY_PADDING_MS := 100
+const EVENT_EDITOR_POST_SONG_PADDING_MS := 3000
 
 @export var chart_root: Control
 @export var event_controller: EditorEventController
 @export var back_button: Button
 @export var save_button: Button
 @export var play_button: Button
-@export var chart_name_label: Label
 @export var time_label: Label
 @export var status_label: Label
 @export var preview: Control
@@ -34,8 +35,6 @@ func _ready() -> void:
 	_connect_ui()
 	if event_controller != null:
 		event_controller.setup()
-	if chart_name_label != null:
-		chart_name_label.text = "%s  ·  %s" % [chart.title, chart.difficulty]
 	_update_toolbar()
 	UIFocusUtils.disable_focus_recursive(self)
 
@@ -76,7 +75,12 @@ func _setup_transport() -> void:
 	transport.setup()
 	transport.chart = chart
 	transport.load_stream()
-	timeline = EditorTimeline.new(chart, transport.stream_length_sec)
+	timeline = EditorTimeline.new(
+		chart,
+		transport.stream_length_sec,
+		-(GAMEPLAY_ENTRY_LEAD_IN_MS + EVENT_EDITOR_PRE_ENTRY_PADDING_MS),
+		EVENT_EDITOR_POST_SONG_PADDING_MS
+	)
 	timeline.ensure_timings()
 	transport.timeline = timeline
 

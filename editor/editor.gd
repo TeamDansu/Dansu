@@ -5,7 +5,6 @@ signal selection_changed()
 signal hitsounds_changed()
 
 const SkinEditorRouterScript = preload("res://skin/skin_editor_router.gd")
-const UIFocusUtils = preload("res://global/ui_focus_utils.gd")
 const EVENT_EDITOR_SCENE_PATH := "res://scenes/editor/event_editor_scene.tscn"
 const PIXELS_PER_MS := 1
 const TRANSPORT_UI_UPDATE_USEC := 33333
@@ -17,6 +16,7 @@ const MAX_HISTORY_STEPS := 128
 @export var bpm_lines: Control
 @export var song_slider: HSlider
 @export var current_time_label: Label
+@export var back_button: Button
 @export var save_button: Button
 @export var delete_button: Button
 @export var hit_button: Button
@@ -60,6 +60,9 @@ var _undo_stack: Array[Dictionary] = []
 var _redo_stack: Array[Dictionary] = []
 var _is_restoring_history := false
 var _point_drag_history_pending := false
+var _saved_snapshot: Dictionary = {}
+var _unsaved_exit_dialog: ConfirmationDialog
+var _pending_exit_target := ""
 
 func _ready() -> void:
 	if not Game.reopen_editor_without_chart_reload:
@@ -87,10 +90,11 @@ func _ready() -> void:
 	_update_beat_division_ui()
 	_refresh_views()
 	_update_save_button_state()
+	mark_saved_state()
 	UIFocusUtils.disable_focus_recursive(self)
 
 func _process(_delta: float) -> void:
-	$Label.text = str(Engine.get_frames_per_second())
+	$VBoxContainer/Label.text = str(Engine.get_frames_per_second())
 	transport.update()
 	_update_time_ui(false)
 
@@ -108,6 +112,13 @@ func _process(_delta: float) -> void:
 	_sync_view_layouts()
 
 func _input(event: InputEvent) -> void:
+	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_ESCAPE:
+		if _unsaved_exit_dialog != null and _unsaved_exit_dialog.visible:
+			return
+		exit()
+		get_viewport().set_input_as_handled()
+		return
+
 	if event is InputEventMouseButton and not event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
 		point_dragging = false
 		_point_drag_history_pending = false
@@ -170,6 +181,8 @@ func _load_chart_data() -> void:
 func _connect_ui() -> void:
 	if song_slider != null:
 		song_slider.value_changed.connect(_on_song_slider_value_changed)
+	if back_button != null:
+		back_button.pressed.connect(exit)
 	if save_button != null:
 		save_button.pressed.connect(_save_chart)
 	if delete_button != null:
@@ -208,6 +221,7 @@ func _connect_ui() -> void:
 func _create_dialogs() -> void:
 	if inspector_controller != null:
 		inspector_controller.create_dialogs()
+	_create_unsaved_exit_dialog()
 
 # — View —
 
@@ -233,7 +247,7 @@ func _handle_mouse_button(event: InputEventMouseButton) -> void:
 
 
 func exit() -> void:
-	Transition.return_to_menu(1)
+	_request_exit("menu")
 
 func _handle_key_input(event: InputEventKey) -> void:
 	if edit_controller != null:
@@ -302,15 +316,34 @@ func _drag_selected_point(global_mouse_pos: Vector2) -> void:
 
 # Save
 
-func _save_chart() -> void:
+func _save_chart() -> bool:
 	if save_controller != null:
-		save_controller.save_chart()
+		return save_controller.save_chart()
+	return false
 
 func _open_skin_editor() -> void:
 	if chart == null:
 		return
+	if _has_unsaved_changes():
+		_request_exit("skin")
+		return
+	_open_skin_editor_now()
+
+func _open_skin_editor_now() -> void:
 	CM.selected_chart = chart
 	SkinEditorRouterScript.open_chart_skin_editor(chart)
+
+func open_new_chart_skin_editor() -> void:
+	if chart == null:
+		return
+	if _has_unsaved_changes():
+		_request_exit("new_skin")
+		return
+	_open_new_chart_skin_editor_now()
+
+func _open_new_chart_skin_editor_now() -> void:
+	CM.selected_chart = chart
+	SkinEditorRouterScript.open_new_chart_skin_editor(chart)
 
 func _open_event_editor() -> void:
 	if chart == null:
@@ -322,10 +355,6 @@ func _open_event_editor() -> void:
 func _on_skin_browser_pressed() -> void:
 	if inspector_controller != null:
 		inspector_controller.open_skin_browser()
-
-func _on_skin_file_selected(path: String) -> void:
-	if inspector_controller != null:
-		inspector_controller._on_skin_file_selected(path)
 
 # UI state
 
@@ -467,6 +496,66 @@ func _restore_history_snapshot(snapshot: Dictionary) -> void:
 	_is_restoring_history = true
 	EditorHistory.restore(self, snapshot)
 	_is_restoring_history = false
+
+# Unsaved changes
+
+func mark_saved_state() -> void:
+	_saved_snapshot = _capture_saved_state()
+
+func _has_unsaved_changes() -> bool:
+	if _saved_snapshot.is_empty():
+		return false
+	return not EditorHistory.same_snapshot(_saved_snapshot, _capture_saved_state())
+
+func _capture_saved_state() -> Dictionary:
+	var snapshot := EditorHistory.capture(self)
+	snapshot.erase("selection")
+	snapshot.erase("current_time")
+	snapshot.erase("beat_division")
+	return snapshot
+
+func _create_unsaved_exit_dialog() -> void:
+	_unsaved_exit_dialog = ConfirmationDialog.new()
+	_unsaved_exit_dialog.title = "Unsaved changes"
+	_unsaved_exit_dialog.dialog_text = "Save chart changes before leaving?"
+	_unsaved_exit_dialog.ok_button_text = "Save and leave"
+	_unsaved_exit_dialog.cancel_button_text = "Cancel"
+	_unsaved_exit_dialog.exclusive = true
+	_unsaved_exit_dialog.confirmed.connect(_on_unsaved_exit_save_confirmed)
+	_unsaved_exit_dialog.custom_action.connect(_on_unsaved_exit_custom_action)
+	_unsaved_exit_dialog.add_button("Leave without saving", false, "discard")
+	add_child(_unsaved_exit_dialog)
+
+func _request_exit(target: String) -> void:
+	if _has_unsaved_changes():
+		_show_unsaved_exit_dialog(target)
+		return
+	_transition_to_pending_target(target)
+
+func _show_unsaved_exit_dialog(target: String) -> void:
+	_pending_exit_target = target
+	if _unsaved_exit_dialog == null:
+		_transition_to_pending_target(target)
+		return
+	_unsaved_exit_dialog.get_ok_button().disabled = not EditorChartOps.can_save(chart)
+	_unsaved_exit_dialog.popup_centered()
+
+func _on_unsaved_exit_save_confirmed() -> void:
+	if _save_chart():
+		_transition_to_pending_target(_pending_exit_target)
+
+func _on_unsaved_exit_custom_action(action: StringName) -> void:
+	if action == &"discard":
+		_transition_to_pending_target(_pending_exit_target)
+
+func _transition_to_pending_target(target: String) -> void:
+	match target:
+		"new_skin":
+			_open_new_chart_skin_editor_now()
+		"skin":
+			_open_skin_editor_now()
+		_:
+			Transition.return_to_menu(1)
 
 # Hitsound public API
 

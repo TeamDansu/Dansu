@@ -16,21 +16,15 @@ const CAMERA_COLOR := Color("46b8ff")
 const THEME_COLOR := Color("5ed39a")
 const SKIN_COLOR := Color("ef6f8f")
 const OVERLAY_COLOR := Color("ffb547")
+const SPRITE_IMPORT_FILTERS : Array = ["*.png,*.jpg,*.jpeg,*.webp,*.svg ; Image Files"]
 
 @export var editor: Node
 @export var event_dock: Control
 @export var timeline_view: EditorEventTimeline
-@export var add_camera_button: Button
 @export var add_overlay_button: Button
-@export var add_overlay_layer_button: Button
-@export var add_theme_button: Button
-@export var add_skin_button: Button
 @export var zoom_slider: HSlider
 @export var follow_button: Button
 @export var collapse_button: Button
-@export var status_label: Label
-@export var inspector_tabs: TabContainer
-@export var event_inspector_tab: Control
 @export var inspector_content: VBoxContainer
 @export var expanded_dock_top := 0.695
 @export var collapsed_dock_top := 0.895
@@ -42,23 +36,20 @@ var _syncing := false
 var _collapsed := false
 var _overlay_layer_count := 1
 var _active_overlay_layer := 0
+var _resource_import_dialog: FileDialog
+var _pending_resource_kind := ""
+var _pending_resource_event: ChartEvent = null
+var _pending_resource_frame: ChartEventFrame = null
 
 func setup() -> void:
 	if _setup_complete or editor == null:
 		return
 	_setup_complete = true
+	_create_resource_import_dialog()
 	if timeline_view != null:
 		timeline_view.controller = self
-	if add_camera_button != null:
-		add_camera_button.pressed.connect(create_event_for_lane.bind(0))
 	if add_overlay_button != null:
-		add_overlay_button.pressed.connect(create_overlay_event)
-	if add_overlay_layer_button != null:
-		add_overlay_layer_button.pressed.connect(add_overlay_layer)
-	if add_theme_button != null:
-		add_theme_button.pressed.connect(create_event_for_lane.bind(1))
-	if add_skin_button != null:
-		add_skin_button.pressed.connect(create_event_for_lane.bind(2))
+		add_overlay_button.pressed.connect(add_overlay_layer)
 	if zoom_slider != null:
 		zoom_slider.value_changed.connect(_on_zoom_changed)
 	if follow_button != null:
@@ -189,8 +180,6 @@ func select_event(event: ChartEvent, frame_index: int = -1, switch_tab: bool = t
 	if safe_index < 0 or safe_index >= frames.size():
 		safe_index = -1
 	editor.selection.select_event(event, safe_index)
-	if switch_tab and inspector_tabs != null and event_inspector_tab != null:
-		inspector_tabs.current_tab = event_inspector_tab.get_index()
 
 func move_event_to_time(event: ChartEvent, requested_time: int) -> void:
 	if event == null or editor == null or editor.timeline == null:
@@ -222,12 +211,17 @@ func resize_event_to_end(event: ChartEvent, requested_end_time: int) -> void:
 	_mark_changed(event, selected_frame)
 
 func add_frame() -> void:
-	var event := _get_selected_event()
-	if event == null or event is SkinEvent:
+	add_frame_to_event(_get_selected_event())
+
+func add_frame_to_event(event: ChartEvent, requested_absolute_time: int = CURRENT_TIME_SENTINEL) -> void:
+	if event == null or event is SkinEvent or editor == null or editor.timeline == null:
 		return
 	var frames := get_frames(event)
-	var target_time := clampi(editor.timeline.snap_time(int(round(Game.current_time))) - event.time, 0, event.duration)
-	var source: ChartEventFrame = _get_selected_frame()
+	var raw_time := int(round(Game.current_time)) if requested_absolute_time == CURRENT_TIME_SENTINEL else requested_absolute_time
+	var target_time := clampi(editor.timeline.snap_time(raw_time) - event.time, 0, event.duration)
+	var source: ChartEventFrame = null
+	if _get_selected_event() == event:
+		source = _get_selected_frame()
 	if source == null and not frames.is_empty():
 		source = frames[0]
 	var frame := _clone_frame(source, event) if source != null else _create_default_frame(event)
@@ -271,7 +265,6 @@ func delete_selection() -> bool:
 func refresh_timeline() -> void:
 	if timeline_view != null:
 		timeline_view.queue_redraw()
-	_update_status()
 
 func refresh_inspector() -> void:
 	if inspector_content == null:
@@ -283,7 +276,6 @@ func refresh_inspector() -> void:
 	var event := _get_selected_event()
 	if event == null:
 		_add_title("EVENTS")
-		_add_help("Select a clip or diamond in the event timeline.\n\nDouble-click an empty lane to create a clip, or use the + buttons in the dock.")
 		UIFocusUtils.disable_focus_recursive(inspector_content)
 		_syncing = false
 		return
@@ -311,9 +303,7 @@ func refresh_inspector() -> void:
 	_add_separator("KEYFRAMES")
 	_add_frame_toolbar(event)
 	var frame := _get_selected_frame()
-	if frame == null:
-		_add_help("Select a diamond to edit its values, or add a keyframe at the current playhead.")
-	else:
+	if frame != null:
 		_add_number_row("Offset (ms)", frame.time, 0.0, event.duration, 1.0, _on_frame_time_changed.bind(event, frame))
 		if frame is CameraEventFrame:
 			_build_camera_frame_inspector(event as CameraEvent, frame as CameraEventFrame)
@@ -379,7 +369,6 @@ func _add_frame_toolbar(event: ChartEvent) -> void:
 	selector.item_selected.connect(_on_frame_selector_changed.bind(event, selector))
 	var add_button := Button.new()
 	add_button.text = "+"
-	add_button.tooltip_text = "Add keyframe at playhead"
 	add_button.pressed.connect(add_frame)
 	var duplicate_button := Button.new()
 	duplicate_button.text = "Duplicate"
@@ -387,7 +376,6 @@ func _add_frame_toolbar(event: ChartEvent) -> void:
 	duplicate_button.pressed.connect(duplicate_frame)
 	var delete_button := Button.new()
 	delete_button.text = "−"
-	delete_button.tooltip_text = "Delete selected keyframe"
 	delete_button.disabled = _get_selected_frame() == null
 	delete_button.pressed.connect(_delete_selected_frame)
 	row.add_child(selector)
@@ -408,13 +396,6 @@ func _add_readonly_badge(text_value: String, color: Color) -> void:
 	label.text = text_value
 	label.add_theme_color_override("font_color", color)
 	label.add_theme_font_size_override("font_size", 11)
-	inspector_content.add_child(label)
-
-func _add_help(text_value: String) -> void:
-	var label := Label.new()
-	label.text = text_value
-	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	label.add_theme_color_override("font_color", Color("8993a3"))
 	inspector_content.add_child(label)
 
 func _add_separator(title: String) -> void:
@@ -501,6 +482,11 @@ func _add_resource_row(label_text: String, current: String, kind: String, event:
 	option.select(maxi(0, references.find(current)))
 	option.item_selected.connect(_on_resource_selected.bind(references, event, frame, kind))
 	row.add_child(option)
+	if _can_import_resource(kind):
+		var import_button := Button.new()
+		import_button.text = "Import"
+		import_button.pressed.connect(_open_resource_import_dialog.bind(kind, event, frame))
+		row.add_child(import_button)
 
 func _add_resource_folder_button() -> void:
 	var button := Button.new()
@@ -527,7 +513,7 @@ func _make_row(label_text: String) -> HBoxContainer:
 
 func _get_resource_references(kind: String) -> Array[String]:
 	var result: Array[String] = []
-	var extensions := ["png", "jpg", "jpeg", "webp", "svg"] if kind == "sprite" else ["json"]
+	var extensions = EventResourceRef.SPRITE_EXTENSIONS if kind == "sprite" else PackedStringArray(["json"])
 	if editor != null and editor.chart != null:
 		var chart_path: String = editor.chart.folder_path.path_join(EventResourceRef.CHART_DIRECTORY_NAME)
 		if DirAccess.dir_exists_absolute(chart_path):
@@ -632,24 +618,10 @@ func _apply_dock_layout() -> void:
 		return
 	if timeline_view != null:
 		timeline_view.visible = not _collapsed
-	if status_label != null:
-		status_label.visible = not _collapsed
 	event_dock.anchor_top = collapsed_dock_top if _collapsed else expanded_dock_top
 	editor.chart_root.anchor_bottom = collapsed_stage_bottom if _collapsed else expanded_stage_bottom
 	if collapse_button != null:
 		collapse_button.text = "Expand" if _collapsed else "Collapse"
-
-func _update_status() -> void:
-	if status_label == null:
-		return
-	var event := _get_selected_event()
-	if event == null:
-		status_label.text = "%d events · Overlay %d active · Drag ruler to scrub · Shift+Wheel layers" % [get_events().size(), _active_overlay_layer + 1]
-		return
-	var frame_text := ""
-	if editor.selection.selected_event_frame_index >= 0:
-		frame_text = " · frame %d" % (editor.selection.selected_event_frame_index + 1)
-	status_label.text = "%s · %s · %dms +%dms%s" % [_get_event_type_name(event), event.id, event.time, event.duration, frame_text]
 
 func _mark_changed(event: ChartEvent, frame: ChartEventFrame = null) -> void:
 	if event != null:
@@ -839,6 +811,68 @@ func _open_event_resource_folder() -> void:
 	var path: String = editor.chart.folder_path.path_join(EventResourceRef.CHART_DIRECTORY_NAME)
 	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(path))
 	OS.shell_open(ProjectSettings.globalize_path(path))
+
+func _create_resource_import_dialog() -> void:
+	_resource_import_dialog = FileDialog.new()
+	_resource_import_dialog.access = FileDialog.ACCESS_FILESYSTEM
+	_resource_import_dialog.file_mode = FileDialog.FILE_MODE_OPEN_FILE
+	_resource_import_dialog.use_native_dialog = true
+	_resource_import_dialog.file_selected.connect(_on_resource_import_file_selected)
+	add_child(_resource_import_dialog)
+	UIFocusUtils.disable_focus_recursive(_resource_import_dialog)
+
+func _can_import_resource(kind: String) -> bool:
+	return kind == "sprite"
+
+func _open_resource_import_dialog(kind: String, event: ChartEvent, frame: ChartEventFrame) -> void:
+	if editor == null or editor.chart == null or _resource_import_dialog == null or not _can_import_resource(kind):
+		return
+	_pending_resource_kind = kind
+	_pending_resource_event = event
+	_pending_resource_frame = frame
+	var target_directory: String = editor.chart.folder_path.path_join(EventResourceRef.CHART_DIRECTORY_NAME)
+	FileSystem.ensure_dir(target_directory)
+	_resource_import_dialog.filters = _get_resource_import_filters(kind)
+	_resource_import_dialog.current_dir = ProjectSettings.globalize_path(target_directory)
+	_resource_import_dialog.popup_centered_ratio(0.7)
+
+func _get_resource_import_filters(kind: String) -> PackedStringArray:
+	if kind == "sprite":
+		return SPRITE_IMPORT_FILTERS
+	return PackedStringArray()
+
+func _on_resource_import_file_selected(path: String) -> void:
+	if editor == null or editor.chart == null:
+		_clear_resource_import_state()
+		return
+
+	var event := _pending_resource_event
+	var frame := _pending_resource_frame
+	var kind := _pending_resource_kind
+	var imported_reference := _import_resource_reference(kind, path)
+	_clear_resource_import_state()
+	if imported_reference.is_empty():
+		return
+
+	if kind == "sprite" and event is OverlayEvent and frame is OverlayEventFrame:
+		var overlay_frame := frame as OverlayEventFrame
+		if overlay_frame.sprite == imported_reference:
+			refresh_inspector()
+			return
+		editor._push_history_snapshot()
+		overlay_frame.sprite = imported_reference
+		_mark_changed(event, overlay_frame)
+		refresh_inspector()
+
+func _import_resource_reference(kind: String, path: String) -> String:
+	if kind == "sprite":
+		return EventResourceRef.import_sprite(editor.chart, path)
+	return ""
+
+func _clear_resource_import_state() -> void:
+	_pending_resource_kind = ""
+	_pending_resource_event = null
+	_pending_resource_frame = null
 
 func _get_event_type_name(event: ChartEvent) -> String:
 	if event is CameraEvent:

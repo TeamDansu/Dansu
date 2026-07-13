@@ -1,8 +1,6 @@
 extends Node
 class_name ChartManager
 
-const SkinSerializationScript = preload("res://skin/skin_serialization.gd")
-
 signal chartset_loaded(_set)
 signal progress_changed(ratio: float) # 0.0 ~ 1.0
 signal loading_finished()
@@ -79,6 +77,10 @@ func start_loading(folders_in: Array[String]) -> void:
 	_folders_to_load = folders_in.duplicate()
 	_loaded_count = 0
 	_stop = false
+	if _folders_to_load.is_empty():
+		call_deferred("_emit_progress", 1.0)
+		call_deferred("_emit_finished")
+		return
 	var thread_count = Config.chart_load_threads
 	_threads.clear()
 	for i in range(thread_count):
@@ -116,7 +118,6 @@ func _thread_func() -> void:
 			Parser.parse_meta(new_chart)
 			new_chart.chart_set = new_set
 			new_set.charts.append(new_chart)
-		SkinSerializationScript.migrate_chartset_skin_layout(new_set.charts)
 		if new_set.charts.size() > 0:
 			call_deferred("_emit_loaded", new_set)
 		else:
@@ -152,6 +153,8 @@ func _emit_progress(ratio: float) -> void:
 	emit_signal("progress_changed", ratio)
 
 func _emit_finished() -> void:
+	selected_chart = null
+	selected_chartset = null
 	emit_signal("loading_finished")
 	if chartsets.size() > 0:
 		selected_chartset = chartsets[0]

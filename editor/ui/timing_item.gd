@@ -1,8 +1,6 @@
 extends PanelContainer
 class_name EditorTimingItem
 
-const UIFocusUtils = preload("res://global/ui_focus_utils.gd")
-
 signal changed(item)
 signal remove_requested(item)
 signal change_started(item)

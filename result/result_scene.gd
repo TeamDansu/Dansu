@@ -115,10 +115,11 @@ func _setup_player_sprite() -> void:
 			loaded = skin.parse_objects(PlayerSkinData.TYPE.IN_CHART, "", chart_skin_path.get_file())
 
 	if not loaded and Config.custom_skin_path != "":
+		var custom_skin_path := SkinSerializationScript.get_custom_skin_file_path()
 		loaded = skin.parse_objects(
 			PlayerSkinData.TYPE.IN_SKIN_FOLDER,
-			Config.custom_skin_path.get_base_dir().get_file(),
-			Config.custom_skin_path.get_file()
+			custom_skin_path.get_base_dir().get_file(),
+			custom_skin_path.get_file()
 		)
 
 	if not loaded:

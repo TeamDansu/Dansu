@@ -168,8 +168,8 @@ func _write_skin_event(file: FileAccess, event: SkinEvent) -> void:
 	file.store_line("skin:%s,%d,%s" % [event.id.strip_edges(), event.time, event.skin_json.strip_edges()])
 	file.store_line("")
 
-func _append_ease(tokens: Array[String], ease: String) -> void:
-	var value := ease.strip_edges()
+func _append_ease(tokens: Array[String], _ease: String) -> void:
+	var value := _ease.strip_edges()
 	if not value.is_empty() and not value.contains(",") and not value.contains("\n") and not value.contains("\r"):
 		tokens.append("e:%s" % value)
 

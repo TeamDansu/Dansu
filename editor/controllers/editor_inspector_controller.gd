@@ -2,6 +2,7 @@ extends Node
 class_name EditorInspectorController
 
 const SkinSerializationScript = preload("res://skin/skin_serialization.gd")
+const CREATE_NEW_SKIN_ID := 1000000
 
 @export var editor: Editor
 @export var title_line_edit: LineEdit
@@ -25,22 +26,21 @@ const SkinSerializationScript = preload("res://skin/skin_serialization.gd")
 var timing_scene := preload("res://scenes/editor/ui/inspector/timing.tscn")
 var timing_items: Array[EditorTimingItem] = []
 var _syncing_metadata := false
-var _skin_file_dialog: FileDialog
+var _skin_picker_menu: PopupMenu
+var _skin_picker_items: Array[String] = []
 var _cover_file_dialog: FileDialog
 var _audio_file_dialog: FileDialog
 var _default_cover_texture: Texture2D
 
 func create_dialogs() -> void:
-	_skin_file_dialog = FileDialog.new()
-	_skin_file_dialog.access = FileDialog.ACCESS_FILESYSTEM
-	_skin_file_dialog.file_mode = FileDialog.FILE_MODE_OPEN_FILE
-	_skin_file_dialog.filters = PackedStringArray(["*.json ; Skin JSON"])
-	_skin_file_dialog.file_selected.connect(_on_skin_file_selected)
-	add_child(_skin_file_dialog)
+	_skin_picker_menu = PopupMenu.new()
+	_skin_picker_menu.id_pressed.connect(_on_skin_picker_id_pressed)
+	add_child(_skin_picker_menu)
 
 	_cover_file_dialog = FileDialog.new()
 	_cover_file_dialog.access = FileDialog.ACCESS_FILESYSTEM
 	_cover_file_dialog.file_mode = FileDialog.FILE_MODE_OPEN_FILE
+	_cover_file_dialog.use_native_dialog = true
 	_cover_file_dialog.filters = PackedStringArray(["*.png,*.jpg,*.jpeg,*.webp ; Cover Image"])
 	_cover_file_dialog.file_selected.connect(_on_cover_file_selected)
 	add_child(_cover_file_dialog)
@@ -48,6 +48,7 @@ func create_dialogs() -> void:
 	_audio_file_dialog = FileDialog.new()
 	_audio_file_dialog.access = FileDialog.ACCESS_FILESYSTEM
 	_audio_file_dialog.file_mode = FileDialog.FILE_MODE_OPEN_FILE
+	_audio_file_dialog.use_native_dialog = true
 	_audio_file_dialog.filters = PackedStringArray(["*.mp3,*.ogg,*.wav ; Audio File"])
 	_audio_file_dialog.file_selected.connect(_on_audio_file_selected)
 	add_child(_audio_file_dialog)
@@ -222,31 +223,50 @@ func on_timing_remove_requested(item: EditorTimingItem) -> void:
 	editor.refresh_views()
 
 func open_skin_browser() -> void:
-	if editor == null or editor.chart == null or _skin_file_dialog == null:
+	if editor == null or editor.chart == null or _skin_picker_menu == null:
 		return
 	var chart_folder_path := ProjectSettings.globalize_path(editor.chart.folder_path)
 	var skins_root_path := SkinSerializationScript.get_chart_skin_root_path(chart_folder_path)
 	FileSystem.ensure_dir(skins_root_path)
-	_skin_file_dialog.root_subfolder = skins_root_path
-	_skin_file_dialog.current_dir = skins_root_path
-	if editor.chart.file_skin != "":
-		SkinSerializationScript.migrate_chart_skin_layout(editor.chart)
-		_skin_file_dialog.current_path = ProjectSettings.globalize_path(editor.chart.skin_path)
-	_skin_file_dialog.popup_centered_ratio(0.7)
 
-func _on_skin_file_selected(path: String) -> void:
+	_skin_picker_items.clear()
+	_skin_picker_menu.clear()
+	var folder_names := DirAccess.get_directories_at(skins_root_path)
+	folder_names.sort()
+	for folder_name in folder_names:
+		var skin_json_path := skins_root_path.path_join(folder_name).path_join(SkinSerializationScript.CHART_SKIN_JSON_NAME)
+		if not FileAccess.file_exists(skin_json_path):
+			continue
+		var id := _skin_picker_items.size()
+		_skin_picker_items.append(folder_name)
+		var label := folder_name
+		if folder_name == editor.chart.file_skin:
+			label = "%s (current)" % folder_name
+		_skin_picker_menu.add_item(label, id)
+
+	if not _skin_picker_items.is_empty():
+		_skin_picker_menu.add_separator()
+	_skin_picker_menu.add_item("Create New One", CREATE_NEW_SKIN_ID)
+
+	var button_rect := skin_browser_button.get_global_rect() if skin_browser_button != null else Rect2(Vector2.ZERO, Vector2.ZERO)
+	var popup_position := Vector2i(int(button_rect.position.x), int(button_rect.position.y + button_rect.size.y))
+	_skin_picker_menu.popup(Rect2i(popup_position, Vector2i(260, 0)))
+
+func _on_skin_picker_id_pressed(id: int) -> void:
 	if editor == null or editor.chart == null:
 		return
-	var chart_folder_path := ProjectSettings.globalize_path(editor.chart.folder_path).simplify_path()
-	var skins_root_path := SkinSerializationScript.get_chart_skin_root_path(chart_folder_path).simplify_path()
-	var selected_path := path.simplify_path()
-	if selected_path.get_file() != Chart.CHART_SKIN_JSON_NAME:
+	if id == CREATE_NEW_SKIN_ID:
+		editor.open_new_chart_skin_editor()
 		return
-	var skin_directory_path := selected_path.get_base_dir().simplify_path()
-	if skin_directory_path.get_base_dir() != skins_root_path:
+	if id < 0 or id >= _skin_picker_items.size():
 		return
-	editor.chart.file_skin = skin_directory_path.get_file()
+	var selected_skin := _skin_picker_items[id]
+	if editor.chart.file_skin == selected_skin:
+		return
+	editor._push_history_snapshot()
+	editor.chart.file_skin = selected_skin
 	update_skin_file_ui()
+	editor._update_save_button_state()
 
 func open_cover_browser() -> void:
 	if editor == null or editor.chart == null or _cover_file_dialog == null:

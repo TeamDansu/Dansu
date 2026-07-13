@@ -12,6 +12,9 @@
 [ext_resource type="Texture2D" uid="uid://cw8cihgunxcv6" path="res://icon.svg" id="9_elju3"]
 [ext_resource type="Script" uid="uid://diqrkfivlom6w" path="res://scenes/gameplay/song_meta.gd" id="9_lb4ud"]
 [ext_resource type="FontFile" uid="uid://cay31gip2omwr" path="res://resources/fonts/BebasNeue-Regular.ttf" id="11_bhb63"]
+[ext_resource type="Texture2D" uid="uid://bcj8k3gehjm1l" path="res://resources/textures/gameplay/stage_frame_left.svg" id="16_stage_left"]
+[ext_resource type="Texture2D" uid="uid://d0ya2wh4o84rp" path="res://resources/textures/gameplay/stage_frame_right.svg" id="17_stage_right"]
+[ext_resource type="Texture2D" uid="uid://dg58ea8jw4pi1" path="res://resources/textures/gameplay/stage_bottom_wave.svg" id="18_stage_bottom"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_sky1"]
 shader = ExtResource("8_t6o8f")
@@ -102,13 +105,14 @@ _data = {
 &"spin": SubResource("Animation_ct7aa")
 }
 
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_bhb63"]
-albedo_color = Color(0, 0, 0, 1)
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_krs01"]
+shading_mode = 0
+albedo_color = Color(0.07058824, 0.07058824, 0.09019608, 1)
 
 [sub_resource type="PlaneMesh" id="PlaneMesh_00tan"]
-lightmap_size_hint = Vector2i(402, 402)
-material = SubResource("StandardMaterial3D_bhb63")
-size = Vector2(80, 80)
+lightmap_size_hint = Vector2i(152, 402)
+material = SubResource("StandardMaterial3D_krs01")
+size = Vector2(20, 80)
 center_offset = Vector3(0, 0, -15)
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_pa1on"]
@@ -151,7 +155,7 @@ player = NodePath("../Player")
 script = ExtResource("2_q64rj")
 
 [node name="Sprite3D" type="Sprite3D" parent="Player" unique_id=1036638687 node_paths=PackedStringArray("effectplayer")]
-layers = 2
+layers = 4
 offset = Vector2(0, 980)
 pixel_size = 0.0009
 texture = ExtResource("4_q64rj")
@@ -167,10 +171,11 @@ libraries/ = SubResource("AnimationLibrary_ct7aa")
 transform = Transform3D(1, 0, 0, 0, 0.8660252, -0.49999988, 0, 0.49999988, 0.8660252, 0, 0, 0)
 
 [node name="Ground" type="MeshInstance3D" parent="PlayArea" unique_id=910030164]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.1, 0)
-visible = false
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.5, 0)
 cast_shadow = 0
 mesh = SubResource("PlaneMesh_00tan")
+
+[node name="GroundDecals" type="Node3D" parent="PlayArea" unique_id=1887894158]
 
 [node name="RailContainer" type="Node3D" parent="PlayArea" unique_id=739287196]
 transform = Transform3D(1, 0, 0, 0, 1.0000001, 0, 0, 0, 1.0000001, 0, 0, -50.5)
@@ -185,6 +190,52 @@ offset_bottom = -1.0
 grow_horizontal = 2
 grow_vertical = 2
 metadata/_edit_lock_ = true
+
+[node name="StageFrame" type="Control" parent="Control" unique_id=1014817685]
+z_index = -20
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="Left" type="TextureRect" parent="Control/StageFrame" unique_id=1236972452]
+layout_mode = 1
+anchors_preset = 9
+anchor_bottom = 1.0
+offset_right = 256.0
+grow_vertical = 2
+mouse_filter = 2
+texture = ExtResource("16_stage_left")
+expand_mode = 1
+
+[node name="Right" type="TextureRect" parent="Control/StageFrame" unique_id=1010588332]
+layout_mode = 1
+anchors_preset = 11
+anchor_left = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -256.0
+grow_horizontal = 0
+grow_vertical = 2
+mouse_filter = 2
+texture = ExtResource("17_stage_right")
+expand_mode = 1
+
+[node name="Bottom" type="TextureRect" parent="Control/StageFrame" unique_id=1894931912]
+layout_mode = 1
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = -96.0
+grow_horizontal = 2
+grow_vertical = 0
+mouse_filter = 2
+texture = ExtResource("18_stage_bottom")
+expand_mode = 1
 
 [node name="VBoxContainer" type="VBoxContainer" parent="Control" unique_id=40893792]
 layout_mode = 1
@@ -317,3 +368,51 @@ theme_override_styles/background = SubResource("StyleBoxFlat_elju3")
 theme_override_styles/fill = SubResource("StyleBoxFlat_lb4ud")
 value = 50.0
 show_percentage = false
+
+[node name="Dialogue" type="Control" parent="Control" unique_id=1121472822]
+visible = false
+clip_children = 2
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -894.0
+offset_right = 1.0
+offset_bottom = 218.0
+grow_horizontal = 0
+
+[node name="Panel" type="Panel" parent="Control/Dialogue" unique_id=947106704]
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 1.0
+anchor_top = 0.018000001
+anchor_right = 1.0
+anchor_bottom = 0.018000001
+offset_left = -220.0
+offset_top = 5.0759997
+offset_right = -19.0
+offset_bottom = 206.076
+
+[node name="TextureRect" type="TextureRect" parent="Control/Dialogue/Panel" unique_id=1055601644]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Label" type="Label" parent="Control/Dialogue" unique_id=1944594055]
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -896.0
+offset_top = 21.0
+offset_right = -235.0
+offset_bottom = 186.0
+grow_horizontal = 0
+theme_override_fonts/font = ExtResource("6_0w2j2")
+theme_override_font_sizes/font_size = 52
+text = "example text"
+horizontal_alignment = 1
+vertical_alignment = 1
