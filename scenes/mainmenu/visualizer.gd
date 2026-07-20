@@ -40,6 +40,13 @@ func _ready() -> void:
 		mm.set_instance_color(i, Color.WHITE)
 
 func _process(delta: float) -> void:
+	if not is_instance_valid(spectrum):
+		spectrum = AudioServer.get_bus_effect_instance(
+			AudioServer.get_bus_index("Master"),
+			0
+		) as AudioEffectSpectrumAnalyzerInstance
+		if not is_instance_valid(spectrum):
+			return
 
 	for i in bar_count:
 

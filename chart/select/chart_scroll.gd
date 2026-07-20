@@ -26,6 +26,7 @@ var _last_cover_request_ids: Array[int] = []
 
 func _ready() -> void:
 	CM.loading_finished.connect(_init_charts)
+	CM.chart_update.connect(_on_chart_update)
 
 
 func _init_charts() -> void:
@@ -59,6 +60,12 @@ func rebuild_items() -> void:
 	_center_on_index(selected_index)
 	_apply_all()
 	_queue_visible_cover_requests()
+
+func _on_chart_update(_chartsets) -> void:
+	if nodes.is_empty():
+		_init_charts()
+		return
+	rebuild_items()
 
 
 func set_search_text(value: String) -> void:
@@ -326,6 +333,8 @@ func _center_on_index(index: int) -> void:
 	scroll = target_scroll
 
 func _sync_visible_hover_states() -> void:
+	if not get_viewport():
+		return
 	var mouse_position := get_viewport().get_mouse_position()
 
 	for node in nodes:

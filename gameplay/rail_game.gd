@@ -2,18 +2,18 @@ extends Node3D
 class_name GameRail
 
 const CLIP_SHADER := preload("res://resources/shaders/rail_clip.gdshader")
-const DEFAULT_WIDTH := 1.2
+const DEFAULT_WIDTH := 0.1
 const DEFAULT_OUTLINE_SIZE := 0.1
 const CAP_SEGMENTS := 10
 const SAMPLE_INTERVAL_MS := 16.0
 const OUTLINE_WORLD_Y_OFFSET := -0.01
 const SHADOW_WORLD_Y_OFFSET := -0.035
 const SHADOW_EXTRA_SIZE := 0.025
-const DEFAULT_FILL_COLOR := Color(0.149, 0.121, 0.278, 1.0)
-const DEFAULT_OUTLINE_COLOR := Color(0.439, 0.357, 0.871, 1.0)
-const DEFAULT_ACCENT_COLOR := Color(0.561, 0.486, 0.988, 1.0)
+const DEFAULT_FILL_COLOR := Color(0.135, 0.132, 0.205, 1.0)
+const DEFAULT_OUTLINE_COLOR := Color(0.455, 0.420, 0.690, 1.0)
+const DEFAULT_ACCENT_COLOR := Color(0.575, 0.520, 0.860, 1.0)
 const DEFAULT_SHADOW_COLOR := Color(0.025, 0.025, 0.04, 1.0)
-const IDLE_BRIGHTNESS := 0.3
+const IDLE_BRIGHTNESS := 0.38
 const STANDING_BRIGHTNESS := 1.0
 const FILL_DEPTH_CLIP_SCALE := 1.0
 const OUTLINE_DEPTH_CLIP_SCALE := 1.0
@@ -42,6 +42,7 @@ var shadow_mesh_instance: MeshInstance3D
 var _fill_material: ShaderMaterial = null
 var _outline_material: ShaderMaterial = null
 var _shadow_material: ShaderMaterial = null
+var _theme_color := DEFAULT_ACCENT_COLOR
 
 var is_standing := false:
 	set(value):
@@ -132,9 +133,9 @@ func _apply_prebaked_meshes() -> void:
 
 
 func _apply_materials() -> void:
-	_fill_material = _create_material(DEFAULT_FILL_COLOR, DEFAULT_ACCENT_COLOR, 1.0, FILL_DEPTH_CLIP_SCALE, 0.0)
-	_outline_material = _create_material(DEFAULT_OUTLINE_COLOR, DEFAULT_ACCENT_COLOR, 0.0, OUTLINE_DEPTH_CLIP_SCALE, 1.0)
-	_shadow_material = _create_material(DEFAULT_SHADOW_COLOR, DEFAULT_SHADOW_COLOR, 0.0, 1.0, 1.0)
+	_fill_material = _create_material(_theme_color.darkened(0.75), _theme_color, 1.0, FILL_DEPTH_CLIP_SCALE, 0.0)
+	_outline_material = _create_material(_theme_color.darkened(0.20), _theme_color, 0.0, OUTLINE_DEPTH_CLIP_SCALE, 1.0)
+	_shadow_material = _create_material(_theme_color.darkened(0.955), _theme_color.darkened(0.955), 0.0, 1.0, 1.0)
 
 	mesh_instance.material_override = _fill_material
 	if outline_mesh_instance != null:
@@ -146,6 +147,25 @@ func _apply_materials() -> void:
 
 	_update_brightness()
 	_update_material_position()
+	_update_theme_color()
+
+
+func set_theme_color(color: Color) -> void:
+	_theme_color = Color(color.r, color.g, color.b, 1.0)
+	_update_theme_color()
+
+
+func _update_theme_color() -> void:
+	if _fill_material != null:
+		_fill_material.set_shader_parameter("albedo_color", _theme_color.darkened(0.75))
+		_fill_material.set_shader_parameter("accent_color", _theme_color)
+	if _outline_material != null:
+		_outline_material.set_shader_parameter("albedo_color", _theme_color.darkened(0.20))
+		_outline_material.set_shader_parameter("accent_color", _theme_color)
+	if _shadow_material != null:
+		var shadow_color := _theme_color.darkened(0.955)
+		_shadow_material.set_shader_parameter("albedo_color", shadow_color)
+		_shadow_material.set_shader_parameter("accent_color", shadow_color)
 
 
 func _create_material(color: Color, accent_color: Color, emission_strength: float, depth_clip_scale: float, surface_role: float) -> ShaderMaterial:

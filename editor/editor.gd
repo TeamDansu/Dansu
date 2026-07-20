@@ -143,7 +143,7 @@ func _ensure_chart() -> Chart:
 	if CM.selected_chart != null:
 		return CM.selected_chart
 	var fallback := Chart.new()
-	fallback.uuid = CM.generate_uuid()
+	fallback.build_uuid()
 	fallback.title = ""
 	fallback.artist = ""
 	fallback.difficulty = ""

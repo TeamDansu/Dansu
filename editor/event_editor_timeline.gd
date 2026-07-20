@@ -8,6 +8,18 @@ const GRID_COLOR := Color(0.28, 0.31, 0.38, 0.32)
 const TEXT_COLOR := Color(0.82, 0.85, 0.9)
 const MUTED_TEXT_COLOR := Color(0.5, 0.54, 0.62)
 
+
+class FrameHit:
+	var event: ChartEvent
+	var frame: ChartEventFrame
+	var frame_index: int
+
+	func _init(hit_event: ChartEvent, hit_frame: ChartEventFrame, hit_index: int) -> void:
+		event = hit_event
+		frame = hit_frame
+		frame_index = hit_index
+
+
 var controller: EditorEventController = null
 var pixels_per_ms := 0.08
 var view_start_ms := 0.0
@@ -161,9 +173,7 @@ func _draw_event_frames(event: ChartEvent, lane: int, color: Color) -> void:
 		var center := Vector2(_time_to_x(event.time + frame.time), _get_lane_y(lane) + LANE_HEIGHT * 0.5)
 		if center.x < LABEL_WIDTH - 8.0 or center.x > size.x + 8.0:
 			continue
-		var selected: bool = controller.editor != null \
-				and controller.editor.selection.selected_event == event \
-				and controller.editor.selection.selected_event_frame_index == frame_index
+		var selected := controller.is_frame_selected(event, frame)
 		var radius := 6.5 if selected else 5.0
 		var points := PackedVector2Array([
 			center + Vector2(0.0, -radius),
@@ -241,13 +251,16 @@ func _handle_mouse_button(mouse_event: InputEventMouseButton) -> void:
 		return
 
 	var frame_hit := _find_frame_at(mouse_event.position)
-	if not frame_hit.is_empty():
-		var event: ChartEvent = frame_hit["event"]
-		var frame: ChartEventFrame = frame_hit["frame"]
-		controller.select_event(event, int(frame_hit["frame_index"]))
-		_drag_event = event
-		_drag_frame = frame
-		_drag_time_offset = clicked_time - float(event.time + frame.time)
+	if frame_hit != null:
+		controller.select_event(frame_hit.event, frame_hit.frame_index, true, mouse_event.shift_pressed)
+		if mouse_event.shift_pressed:
+			_drag_event = null
+			_drag_frame = null
+			accept_event()
+			return
+		_drag_event = frame_hit.event
+		_drag_frame = frame_hit.frame
+		_drag_time_offset = clicked_time - float(frame_hit.event.time + frame_hit.frame.time)
 		_drag_history_pushed = false
 		accept_event()
 		return
@@ -327,7 +340,7 @@ func _find_event_at(position: Vector2) -> ChartEvent:
 			return event
 	return null
 
-func _find_frame_at(position: Vector2) -> Dictionary:
+func _find_frame_at(position: Vector2) -> FrameHit:
 	for event in controller.get_events():
 		if event == null:
 			continue
@@ -337,8 +350,8 @@ func _find_frame_at(position: Vector2) -> Dictionary:
 			var frame: ChartEventFrame = frames[frame_index]
 			var center := Vector2(_time_to_x(event.time + frame.time), _get_lane_y(lane) + LANE_HEIGHT * 0.5)
 			if center.distance_to(position) <= 9.0:
-				return {"event": event, "frame": frame, "frame_index": frame_index}
-	return {}
+				return FrameHit.new(event, frame, frame_index)
+	return null
 
 func _get_event_rect(event: ChartEvent) -> Rect2:
 	var lane := controller.get_event_lane(event)

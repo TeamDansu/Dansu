@@ -43,6 +43,12 @@ var score = Score.new()
 @onready var miss_count_label: Label = $PanelContainer/VBoxContainer/GridContainer/MissCount
 @onready var combo_value_label: Label = $PanelContainer/VBoxContainer/HBoxContainer/ComboValue
 @onready var avg_value_label: Label = $PanelContainer/VBoxContainer/HBoxContainer2/AVGValue
+@onready var difficulty_label: Label = $PanelContainer/VBoxContainer/HBoxContainer3/VBoxContainer/Difficulty
+@onready var title_value_label: Label = $PanelContainer/VBoxContainer/HBoxContainer3/VBoxContainer/Title
+@onready var artist_value_label: Label = $PanelContainer/VBoxContainer/HBoxContainer3/VBoxContainer/Artist
+@onready var cover_image_rect: TextureRect = $PanelContainer/VBoxContainer/HBoxContainer3/CoverImage
+
+var _default_cover_texture: Texture2D
 
 var _tick_players: Array[AudioStreamPlayer] = []
 var _next_tick_player_index := 0
@@ -71,6 +77,8 @@ func _ready() -> void:
 	_create_tick_players()
 	_resolve_score()
 	_setup_player_sprite()
+	_setup_cover_loader()
+	_populate_chart_metadata()
 	_populate_result_details()
 
 	await get_tree().process_frame
@@ -104,6 +112,70 @@ func _populate_result_details() -> void:
 	miss_count_label.text = str(score.miss)
 	combo_value_label.text = "%d/%d" % [score.high_combo, max(score.notes, 1)]
 	avg_value_label.text = "-"
+
+func _populate_chart_metadata() -> void:
+	var chart := CM.selected_chart
+	if chart == null:
+		difficulty_label.text = "-"
+		title_value_label.text = "Unknown Title"
+		artist_value_label.text = "Unknown Artist"
+		if cover_image_rect != null:
+			cover_image_rect.texture = _default_cover_texture
+		return
+
+	title_value_label.text = _coalesce_chart_text(chart.title, "Unknown Title")
+	artist_value_label.text = _coalesce_chart_text(chart.artist, "Unknown Artist")
+	difficulty_label.text = _build_difficulty_text(chart)
+	_update_cover_image(chart)
+
+func _build_difficulty_text(chart: Chart) -> String:
+	if chart == null:
+		return "-"
+
+	var difficulty := _coalesce_chart_text(chart.difficulty, "Unknown Difficulty")
+	if chart.rating > 0.0:
+		return "%s (%.1f)" % [difficulty, chart.rating]
+	return difficulty
+
+func _coalesce_chart_text(value: String, fallback: String) -> String:
+	var normalized := value.strip_edges()
+	if normalized.is_empty() or normalized == "?":
+		return fallback
+	return normalized
+
+func _setup_cover_loader() -> void:
+	if cover_image_rect != null:
+		_default_cover_texture = cover_image_rect.texture
+	if CoverLoader != null:
+		if not CoverLoader.cover_loaded.is_connected(_on_cover_loaded):
+			CoverLoader.cover_loaded.connect(_on_cover_loaded)
+		if not CoverLoader.cover_failed.is_connected(_on_cover_failed):
+			CoverLoader.cover_failed.connect(_on_cover_failed)
+
+func _update_cover_image(chart: Chart) -> void:
+	if cover_image_rect == null:
+		return
+	if chart == null:
+		cover_image_rect.texture = _default_cover_texture
+		return
+	if chart.cover_image != null:
+		cover_image_rect.texture = chart.cover_image
+		return
+	cover_image_rect.texture = _default_cover_texture
+	if not chart.file_cover_art.is_empty():
+		CoverLoader.request_cover(chart)
+
+func _on_cover_loaded(chart: Chart, texture: Texture2D) -> void:
+	if chart == null or texture == null or chart != CM.selected_chart:
+		return
+	if cover_image_rect != null:
+		cover_image_rect.texture = texture
+
+func _on_cover_failed(chart: Chart) -> void:
+	if chart == null or chart != CM.selected_chart:
+		return
+	if cover_image_rect != null:
+		cover_image_rect.texture = _default_cover_texture
 
 func _setup_player_sprite() -> void:
 	var skin := PlayerSkinData.new()

@@ -2,6 +2,12 @@ extends RefCounted
 class_name GameplayPlayfield
 
 const PLAY_AREA_SIZE : Vector2 = Vector2(15,50)
+const SPAWN_FADE_PORTION := 0.18
+const JUDGEMENT_Z := -0.5
+
+
+static func get_spawn_fade_distance() -> float:
+	return PLAY_AREA_SIZE.y * SPAWN_FADE_PORTION
 
 static func get_visible_travel_time_ms() -> float:
 	return PLAY_AREA_SIZE.y / maxf(Config.note_speed, 0.001) * 1000.0

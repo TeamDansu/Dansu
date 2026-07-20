@@ -12,6 +12,7 @@ const JUDGE_POPUP_OFFSET := Vector3(0.0, 2.0, 0.0)
 const SONG_FADE_START_AFTER_LAST_NOTE_MS := 1000.0
 const RESULT_DELAY_AFTER_LAST_NOTE_MS := 2000.0
 const SONG_FADE_DB_PER_SECOND := 30.0
+const MUSIC_BUS := &"Music"
 const SKY_BASE_COLOR_PARAM := "base_color"
 const SKY_DETAIL_COLOR_PARAM := "detail_color"
 
@@ -78,6 +79,7 @@ var paused := false
 @onready var combo_container: VBoxContainer = $Control/VBoxContainer
 @onready var combo_label: Label = $Control/VBoxContainer/Combo
 @onready var world_environment: WorldEnvironment = $WorldEnvironment
+@onready var stage_visualizer: GameplayStageVisualizer = $PlayArea/StageVisualizer
 
 const LEAD_IN_MS := 3000.0
 
@@ -94,8 +96,9 @@ var _camera_events: Array[CameraEvent] = []
 var _overlay_events: Array[OverlayEvent] = []
 var _theme_events: Array[ThemeEvent] = []
 var _sky_material: ShaderMaterial = null
-var _default_sky_base_color := Color(0.0627451, 0.0627451, 0.078431375, 1.0)
-var _default_sky_detail_color := Color(0.078431375, 0.078431375, 0.101960786, 1.0)
+var _default_sky_base_color := Color(0.075, 0.078, 0.09, 1.0)
+var _default_sky_detail_color := Color(0.19, 0.19, 0.22, 1.0)
+var _current_rail_color := GameRail.DEFAULT_ACCENT_COLOR
 var _overlay_root: Control = null
 var _overlay_nodes: Array[TextureRect] = []
 var _overlay_texture_paths: Array[String] = []
@@ -108,6 +111,7 @@ var pause_begin_usec: int = 0
 func _ready() -> void:
 	_setup_combo_hud()
 	_setup_timestamp_input()
+	songplayer.bus = MUSIC_BUS
 	songplayer.stream = CM.selected_chart.get_stream()
 	_song_volume_db = songplayer.volume_db
 	_cache_stage_theme_defaults()
@@ -389,6 +393,7 @@ func _spawn_objects() -> void:
 		var rail_data := rails[rail_spawn_index]
 		var new_rail: GameRail = rail_scene.instantiate()
 		new_rail.rail = rail_data
+		new_rail.set_theme_color(_current_rail_color)
 		rail_container.add_child(new_rail)
 		new_rail.position.y = rail_spawn_index * 0.0002
 		spawned_rails.append(new_rail)
@@ -501,10 +506,9 @@ func _apply_runtime_events(time_ms: float) -> void:
 	_apply_overlay_events(time_ms)
 
 func _apply_theme_events(time_ms: float) -> void:
-	if _sky_material == null:
-		return
 	var base_color := _default_sky_base_color
 	var detail_color := _default_sky_detail_color
+	var rail_color := GameRail.DEFAULT_ACCENT_COLOR
 	var active := _find_active_theme_event(time_ms)
 	if active != null and not active.frames.is_empty():
 		var pair_indices := _find_frame_pair_indices(active.frames, time_ms - active.time)
@@ -513,8 +517,18 @@ func _apply_theme_events(time_ms: float) -> void:
 		var alpha := _frame_ease_alpha(previous, next, time_ms - active.time)
 		base_color = previous.bg_color.lerp(next.bg_color, alpha)
 		detail_color = previous.bg_color_2.lerp(next.bg_color_2, alpha)
-	_sky_material.set_shader_parameter(SKY_BASE_COLOR_PARAM, base_color)
-	_sky_material.set_shader_parameter(SKY_DETAIL_COLOR_PARAM, detail_color)
+		rail_color = previous.rail_color.lerp(next.rail_color, alpha)
+	var next_rail_color := Color(rail_color.r, rail_color.g, rail_color.b, 1.0)
+	if not _current_rail_color.is_equal_approx(next_rail_color):
+		_current_rail_color = next_rail_color
+		for rail_node in spawned_rails:
+			if rail_node != null:
+				rail_node.set_theme_color(_current_rail_color)
+	if _sky_material != null:
+		_sky_material.set_shader_parameter(SKY_BASE_COLOR_PARAM, base_color)
+		_sky_material.set_shader_parameter(SKY_DETAIL_COLOR_PARAM, detail_color)
+	if stage_visualizer != null:
+		stage_visualizer.set_theme_colors(base_color, detail_color, _current_rail_color)
 
 func _find_active_theme_event(time_ms: float) -> ThemeEvent:
 	var active: ThemeEvent = null
@@ -780,6 +794,9 @@ func _check_touch_notes() -> void:
 					else:
 						processed_notes[note] = Score.NONE
 						score.add_spike_dodge(note)
+						_increment_combo()
+						_update_combo_display()
+						_play_combo_pop()
 						var note_node: GameNote = spawned_note_nodes.get(note)
 						if note_node != null:
 							note_node.consume(Score.NONE)
@@ -857,8 +874,7 @@ func _process_note_result(note: Note, judgement: int, gap: float) -> void:
 	if judgement == Score.MISS:
 		combo = 0
 	elif judgement != Score.NONE:
-		combo += 1
-		score.high_combo = max(score.high_combo, combo)
+		_increment_combo()
 
 	if judgement != Score.NONE:
 		_spawn_judge_popup(judgement)
@@ -866,6 +882,7 @@ func _process_note_result(note: Note, judgement: int, gap: float) -> void:
 	_update_combo_display()
 	if judgement != Score.MISS and judgement != Score.NONE:
 		_play_combo_pop()
+		player.spawn_hit_stars()
 
 	if judgement != Score.MISS and judgement != Score.NONE and note.type != Note.NoteType.MOVE:
 		player.play_hit_animation(note)
@@ -881,6 +898,10 @@ func _process_note_result(note: Note, judgement: int, gap: float) -> void:
 
 	if next_process_note == note:
 		_set_next_note()
+
+func _increment_combo() -> void:
+	combo += 1
+	score.high_combo = max(score.high_combo, combo)
 
 func _check_result_transition() -> void:
 	if _result_transition_started:

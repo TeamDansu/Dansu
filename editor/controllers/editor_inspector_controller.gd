@@ -272,7 +272,6 @@ func open_cover_browser() -> void:
 	if editor == null or editor.chart == null or _cover_file_dialog == null:
 		return
 	var chart_folder_path := ProjectSettings.globalize_path(editor.chart.folder_path)
-	_cover_file_dialog.root_subfolder = chart_folder_path
 	_cover_file_dialog.current_dir = chart_folder_path
 	if not editor.chart.file_cover_art.is_empty():
 		_cover_file_dialog.current_path = ProjectSettings.globalize_path(editor.chart.get_cover_path())
@@ -282,14 +281,13 @@ func open_audio_browser() -> void:
 	if editor == null or editor.chart == null or _audio_file_dialog == null:
 		return
 	var chart_folder_path := ProjectSettings.globalize_path(editor.chart.folder_path)
-	_audio_file_dialog.root_subfolder = chart_folder_path
 	_audio_file_dialog.current_dir = chart_folder_path
 	if not editor.chart.file_audio.is_empty():
 		_audio_file_dialog.current_path = ProjectSettings.globalize_path(editor.chart.folder_path.path_join(editor.chart.file_audio))
 	_audio_file_dialog.popup_centered_ratio(0.7)
 
 func _on_cover_file_selected(path: String) -> void:
-	var relative_path := _get_chart_relative_path(path)
+	var relative_path := _resolve_chart_media_relative_path(path)
 	if relative_path.is_empty() or editor == null or editor.chart == null:
 		return
 	editor._push_history_snapshot()
@@ -299,7 +297,7 @@ func _on_cover_file_selected(path: String) -> void:
 	editor._update_save_button_state()
 
 func _on_audio_file_selected(path: String) -> void:
-	var relative_path := _get_chart_relative_path(path)
+	var relative_path := _resolve_chart_media_relative_path(path)
 	if relative_path.is_empty() or editor == null or editor.chart == null:
 		return
 	editor._push_history_snapshot()
@@ -341,3 +339,59 @@ func _get_chart_relative_path(path: String) -> String:
 	if not selected_path_lower.begins_with(folder_prefix_lower):
 		return ""
 	return selected_path.substr(folder_prefix.length()).replace("\\", "/")
+
+func _resolve_chart_media_relative_path(path: String) -> String:
+	if editor == null or editor.chart == null:
+		return ""
+
+	var relative_path := _get_chart_relative_path(path)
+	if not relative_path.is_empty():
+		return relative_path
+
+	return _copy_file_into_chart_folder(path)
+
+func _copy_file_into_chart_folder(source_path: String) -> String:
+	if editor == null or editor.chart == null:
+		return ""
+
+	var normalized_source_path := source_path.simplify_path()
+	if normalized_source_path.is_empty() or not FileAccess.file_exists(normalized_source_path):
+		return ""
+
+	FileSystem.ensure_dir(editor.chart.folder_path)
+
+	var target_name := _make_unique_chart_file_name(normalized_source_path.get_file())
+	var target_path := editor.chart.folder_path.path_join(target_name)
+	var bytes := FileAccess.get_file_as_bytes(normalized_source_path)
+	if bytes.is_empty():
+		return ""
+
+	var file := FileAccess.open(target_path, FileAccess.WRITE)
+	if file == null:
+		return ""
+
+	file.store_buffer(bytes)
+	file.close()
+	return target_name
+
+func _make_unique_chart_file_name(preferred_name: String) -> String:
+	if editor == null or editor.chart == null:
+		return preferred_name
+
+	var safe_name := preferred_name.validate_filename()
+	if safe_name.is_empty():
+		safe_name = "imported"
+
+	var base_name := safe_name.get_basename()
+	var extension := safe_name.get_extension()
+	var candidate := safe_name
+	var suffix := 2
+
+	while FileAccess.file_exists(editor.chart.folder_path.path_join(candidate)):
+		if extension.is_empty():
+			candidate = "%s_%d" % [base_name, suffix]
+		else:
+			candidate = "%s_%d.%s" % [base_name, suffix, extension]
+		suffix += 1
+
+	return candidate

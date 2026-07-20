@@ -57,6 +57,31 @@ func select_chartset(chartset: ChartSet):
 	selected_chartset = chartset
 	emit_signal("chartset_selected",chartset)
 
+func make_unique_chartset_folder_name(preferred_name: String = "new_chartset") -> String:
+	var base_name := preferred_name.strip_edges().validate_filename()
+	if base_name.is_empty():
+		base_name = "new_chartset"
+
+	var candidate := base_name
+	var suffix := 2
+	while _chartset_folder_exists(candidate):
+		candidate = "%s_%d" % [base_name, suffix]
+		suffix += 1
+	return candidate
+
+func register_saved_chart(chart: Chart) -> void:
+	if chart == null or chart.chart_set == null:
+		return
+
+	if not chartsets.has(chart.chart_set):
+		chartsets.append(chart.chart_set)
+	if not chart.chart_set.charts.has(chart):
+		chart.chart_set.charts.append(chart)
+
+	select_chartset(chart.chart_set)
+	select_chart(chart)
+	_emit_update()
+
 func _load(is_reload: bool) -> void:
 	FileSystem.ensure_dir(SONG_PATH)
 
@@ -165,3 +190,15 @@ func _emit_reload() -> void:
 
 func _emit_update() -> void:
 	emit_signal("chart_update",chartsets)
+
+func _chartset_folder_exists(folder_name: String) -> bool:
+	var normalized := folder_name.strip_edges()
+	if normalized.is_empty():
+		return true
+
+	for chartset in chartsets:
+		if chartset != null and chartset.folder_name == normalized:
+			return true
+
+	var absolute_path := ProjectSettings.globalize_path(FileSystem.chart_path.path_join(normalized))
+	return DirAccess.dir_exists_absolute(absolute_path)

@@ -134,6 +134,10 @@ text = "Skin Editor"
 layout_mode = 2
 text = "Event Editor"
 
+[node name="Spacer" type="Control" parent="TopBar/Margin/Row" unique_id=142528898]
+layout_mode = 2
+size_flags_horizontal = 3
+
 [node name="BeatDivisionLabel" type="Label" parent="TopBar/Margin/Row" unique_id=1602701495]
 layout_mode = 2
 text = "Beat Division"
@@ -149,10 +153,6 @@ vertical_alignment = 1
 [node name="BeatDivisionSlider" type="HSlider" parent="TopBar/Margin/Row" unique_id=1733959881]
 custom_minimum_size = Vector2(150, 0)
 layout_mode = 2
-
-[node name="Spacer" type="Control" parent="TopBar/Margin/Row" unique_id=142528898]
-layout_mode = 2
-size_flags_horizontal = 3
 
 [node name="Save" type="Button" parent="TopBar/Margin/Row" unique_id=287334942]
 custom_minimum_size = Vector2(100, 0)

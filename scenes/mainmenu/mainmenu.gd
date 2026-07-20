@@ -30,6 +30,10 @@ var _last_logo_half_beat_key := ""
 var _last_logo_chart_key := ""
 var _last_logo_playback_msec := -1.0
 
+func _enter_tree() -> void:
+	if is_node_ready():
+		call_deferred("_refresh_chart_browser")
+
 func _ready() -> void:
 	if progress_bar == null:
 		progress_bar = $LoadingProgress/ProgressBar
@@ -69,10 +73,14 @@ func _process(delta):
 
 	loading_timer += delta
 	_update_logo_pulse(delta)
-	
-	if Input.is_action_just_pressed("shortcut_enter_editor"):
-		CM.parse_selected_chart()
-		Transition.transition_to("res://scenes/editor/editor_scene.tscn",1)
+
+	if Game.stage == Game.GameStage.Main:
+		if Input.is_action_just_pressed("shortcut_create_chartset"):
+			_open_new_chartset_editor()
+		elif Input.is_action_just_pressed("shortcut_new_difficulty"):
+			_open_new_difficulty_editor()
+		elif Input.is_action_just_pressed("shortcut_enter_editor"):
+			_open_selected_chart_editor()
 
 
 func _input(_event: InputEvent) -> void:
@@ -163,6 +171,7 @@ func _loading_finished() -> void:
 	Game.stage = Game.GameStage.Main
 	Game.set_main_menu_state(Game.MainMenuState.Home)
 	$Animations.loading_done()
+	_refresh_chart_browser()
 
 
 func _setup_sort_options() -> void:
@@ -188,6 +197,25 @@ func _on_sort_item_selected(index: int) -> void:
 	var sort_id := sort_option_button.get_item_id(index)
 	if chart_scroll != null and chart_scroll.has_method("set_sort_mode"):
 		chart_scroll.set_sort_mode(sort_id)
+
+func _refresh_chart_browser() -> void:
+	if chart_scroll != null and chart_scroll.has_method("rebuild_items"):
+		chart_scroll.rebuild_items()
+
+func _open_new_chartset_editor() -> void:
+	if EditorChartOps.prepare_new_chartset_chart() == null:
+		return
+	Transition.transition_to("res://scenes/editor/editor_scene.tscn", 1)
+
+func _open_new_difficulty_editor() -> void:
+	if EditorChartOps.prepare_new_difficulty_chart() == null:
+		return
+	Transition.transition_to("res://scenes/editor/editor_scene.tscn", 1)
+
+func _open_selected_chart_editor() -> void:
+	if not CM.parse_selected_chart():
+		return
+	Transition.transition_to("res://scenes/editor/editor_scene.tscn", 1)
 
 
 func _update_logo_pulse(delta: float) -> void:

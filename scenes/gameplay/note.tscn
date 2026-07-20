@@ -2,16 +2,26 @@
 
 [ext_resource type="Script" uid="uid://yt15g07posb4" path="res://gameplay/note_game.gd" id="1_yi1o8"]
 [ext_resource type="Texture2D" uid="uid://0tsl2wcyjngr" path="res://resources/textures/gameplay/hit_note.png" id="2_6hwfw"]
+[ext_resource type="PackedScene" uid="uid://24osfal67ed8" path="res://scenes/gameplay/note_particle.tscn" id="3_break"]
 
-[node name="Note" type="Node3D" unique_id=495088426 node_paths=PackedStringArray("note_sprite")]
+[node name="Note" type="Node3D" unique_id=495088426 node_paths=PackedStringArray("note_sprite", "note_shadow")]
 transform = Transform3D(0.5, 0, 0, 0, 0.5, 0, 0, 0, 0.5, 0, 0, 0)
 script = ExtResource("1_yi1o8")
 note_sprite = NodePath("Sprite")
+note_shadow = NodePath("Sprite2")
+break_effect_scene = ExtResource("3_break")
 
 [node name="Sprite" type="Sprite3D" parent="." unique_id=645126525]
 transform = Transform3D(1, 0, 0, 0, 1.25, 0, 0, 0, 1, 0, 0, 0)
 layers = 4
-modulate = Color(0.78682333, 0.7825977, 0.97887665, 1)
+pixel_size = 0.003
+double_sided = false
+texture = ExtResource("2_6hwfw")
+
+[node name="Sprite2" type="Sprite3D" parent="." unique_id=845779430]
+transform = Transform3D(-1, -8.742277e-08, 0, 8.742278e-08, -0.99999994, 0, 0, 0, 0.99999994, 0, 0, 0)
+layers = 4
+modulate = Color(0.37036446, 0.3703645, 0.37036446, 0.9411765)
 pixel_size = 0.003
 double_sided = false
 texture = ExtResource("2_6hwfw")

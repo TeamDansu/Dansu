@@ -1,7 +1,9 @@
 extends Node3D
 class_name GameNote
 
-const SPAWN_FADE_PORTION := 0.18
+const SPAWN_FADE_PORTION := GameplayPlayfield.SPAWN_FADE_PORTION
+const VISUAL_SURFACE_OFFSET := 0.025
+const VISUAL_RENDER_PRIORITY := 1
 
 var move_texture : Texture2D = preload("res://resources/textures/gameplay/move_note.png")
 var spike_texture : Texture2D = preload("res://resources/textures/gameplay/spike_note.png")
@@ -9,7 +11,8 @@ var trace_texture : Texture2D = preload("res://resources/textures/gameplay/trace
 
 @export var mesh : MeshInstance3D
 @export var note_sprite: Sprite3D
-@export var arrow_sprite: Sprite3D
+@export var note_shadow: Sprite3D
+@export var break_effect_scene: PackedScene
 
 signal consumed(judge: int, note_node: GameNote)
 
@@ -17,7 +20,6 @@ var note: Note
 var rail: Rail
 var is_consumed := false
 var _note_base_modulate := Color.WHITE
-var _arrow_base_modulate := Color.WHITE
 var _spawn_fade_active := false
 
 func _ready() -> void:
@@ -25,17 +27,23 @@ func _ready() -> void:
 	if note == null or rail == null:
 		return
 	position.x = GameplayPlayfield.normalized_x_to_world(rail._get_rail_x_at_time(note.time))
+	position.y = VISUAL_SURFACE_OFFSET
 	position.z = GameplayPlayfield.local_z_from_start(rail.start_time, note.time)
-	_cache_base_modulates()
+	_configure_sprite_depth(note_sprite)
 	_set_note_texture()
+	_cache_base_modulates()
 	_initialize_spawn_fade()
 
+
+func _configure_sprite_depth(sprite: Sprite3D) -> void:
+	if sprite == null:
+		return
+	sprite.no_depth_test = true
+	sprite.render_priority = VISUAL_RENDER_PRIORITY
 
 func _cache_base_modulates() -> void:
 	if note_sprite != null:
 		_note_base_modulate = note_sprite.modulate
-	if arrow_sprite != null:
-		_arrow_base_modulate = arrow_sprite.modulate
 
 func _set_note_texture() -> void:
 	note_sprite.flip_h = false
@@ -43,20 +51,26 @@ func _set_note_texture() -> void:
 		Note.NoteType.NONE:
 			visible = false
 		Note.NoteType.HIT:
+			#note_sprite.modulate = Color(0.697, 0.925, 0.998, 1.0)
 			pass
 		Note.NoteType.MOVE:
 			note_sprite.texture = move_texture
+			note_shadow.texture = move_texture
+			# note_sprite.modulate = Color(0.84, 0.496, 1.0, 1.0)
 			match note.dir:
 				Note.Dir.LEFT:
-					pass
+					note_shadow.flip_h = true
 				Note.Dir.RIGHT:
 					note_sprite.flip_h = true
 		Note.NoteType.TRACE:
 			note_sprite.texture = trace_texture
+			note_shadow.texture = trace_texture
 		Note.NoteType.SPIKE:
 			note_sprite.texture = spike_texture
+			note_shadow.texture = spike_texture
 	if note_sprite.texture != null:
 		note_sprite.offset.y = note_sprite.texture.get_size().y / 2
+		note_shadow.offset.y = note_shadow.texture.get_size().y / 2
 
 
 func _initialize_spawn_fade() -> void:
@@ -89,16 +103,38 @@ func _update_spawn_fade() -> void:
 func _set_visual_alpha(alpha: float) -> void:
 	if note_sprite != null:
 		note_sprite.modulate = Color(_note_base_modulate.r, _note_base_modulate.g, _note_base_modulate.b, _note_base_modulate.a * alpha)
-	if arrow_sprite != null:
-		arrow_sprite.modulate = Color(_arrow_base_modulate.r, _arrow_base_modulate.g, _arrow_base_modulate.b, _arrow_base_modulate.a * alpha)
 
 func consume(judge: int) -> void:
 	if is_consumed:
 		return
 
 	is_consumed = true
+	if judge != Score.MISS and judge != Score.NONE:
+		_spawn_break_effect()
 	consumed.emit(judge, self)
 	queue_free()
+
+
+func _spawn_break_effect() -> void:
+	if break_effect_scene == null or note_sprite == null or note_sprite.texture == null:
+		return
+	var effect := break_effect_scene.instantiate() as GameplayNoteBreakEffect
+	var scene_root := get_tree().current_scene
+	if effect == null or scene_root == null:
+		return
+
+	scene_root.add_child(effect)
+	var effect_transform := note_sprite.global_transform
+	var offset := Vector3(note_sprite.offset.x, note_sprite.offset.y, 0.0) * note_sprite.pixel_size
+	effect_transform.origin = note_sprite.to_global(offset)
+	effect.global_transform = effect_transform
+	effect.play(
+		note_sprite.texture,
+		_note_base_modulate,
+		note_sprite.flip_h,
+		note_sprite.pixel_size,
+		Config.note_speed
+	)
 
 func _process(_delta) -> void:
 	_update_spawn_fade()

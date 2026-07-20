@@ -174,7 +174,7 @@ func drag_selected_point(global_mouse_pos: Vector2) -> void:
 	if point == null:
 		return
 	var local := chart_panel.get_global_transform_with_canvas().affine_inverse() * global_mouse_pos
-	var next_x = clamp(snapped(local.x / max(1.0, chart_panel.size.x), 0.1), 0.0, 1.0)
+	var next_x = clamp(snapped(local.x / max(1.0, chart_panel.size.x), 0.05), 0.0, 1.0)
 	var next_time := editor.timeline.snap_time(editor._local_y_to_time(local.y))
 	if is_equal_approx(point.x, next_x) and point.time == next_time:
 		return

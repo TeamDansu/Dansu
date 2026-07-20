@@ -55,6 +55,16 @@ func _input(event: InputEvent) -> void:
 	if event.ctrl_pressed and event.keycode == KEY_Y:
 		_redo_history()
 		return
+	if event.ctrl_pressed and event.keycode == KEY_C:
+		if event_controller != null:
+			event_controller.copy_selected_frames()
+		get_viewport().set_input_as_handled()
+		return
+	if event.ctrl_pressed and event.keycode == KEY_V:
+		if event_controller != null:
+			event_controller.paste_copied_frames()
+		get_viewport().set_input_as_handled()
+		return
 	match event.keycode:
 		KEY_SPACE: transport.toggle()
 		KEY_DELETE:

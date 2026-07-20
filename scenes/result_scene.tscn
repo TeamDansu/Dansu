@@ -9,6 +9,7 @@
 [ext_resource type="Texture2D" uid="uid://4mpob6r0inkq" path="res://resources/icons/arrow-big-left.svg" id="5_sm1ph"]
 [ext_resource type="Shader" uid="uid://qbfnricvyktb" path="res://resources/shaders/wave.gdshader" id="6_3ugua"]
 [ext_resource type="FontFile" uid="uid://cay31gip2omwr" path="res://resources/fonts/BebasNeue-Regular.ttf" id="8_n4qk8"]
+[ext_resource type="Texture2D" uid="uid://cw8cihgunxcv6" path="res://icon.svg" id="9_un7y5"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_dpngd"]
 shader = ExtResource("2_b83s4")
@@ -189,15 +190,49 @@ hover_scale = 1.04
 [node name="Final2" type="CPUParticles2D" parent="." unique_id=875579375]
 
 [node name="PanelContainer" type="PanelContainer" parent="." unique_id=1820402306]
-layout_mode = 0
-offset_left = 128.0
-offset_top = 464.0
-offset_right = 952.0
-offset_bottom = 832.0
+layout_mode = 1
+anchors_preset = -1
+anchor_top = 0.164
+anchor_bottom = 0.164
+offset_left = 99.0
+offset_top = 150.87999
+offset_right = 923.0
+offset_bottom = 721.88
 theme_override_styles/panel = SubResource("StyleBoxEmpty_g6gwf")
 
 [node name="VBoxContainer" type="VBoxContainer" parent="PanelContainer" unique_id=371856651]
 layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="HBoxContainer3" type="HBoxContainer" parent="PanelContainer/VBoxContainer" unique_id=2090849704]
+layout_mode = 2
+
+[node name="CoverImage" type="TextureRect" parent="PanelContainer/VBoxContainer/HBoxContainer3" unique_id=608540475]
+layout_mode = 2
+texture = ExtResource("9_un7y5")
+expand_mode = 3
+stretch_mode = 6
+
+[node name="VBoxContainer" type="VBoxContainer" parent="PanelContainer/VBoxContainer/HBoxContainer3" unique_id=342867666]
+layout_mode = 2
+
+[node name="Difficulty" type="Label" parent="PanelContainer/VBoxContainer/HBoxContainer3/VBoxContainer" unique_id=86026973]
+layout_mode = 2
+theme_override_fonts/font = ExtResource("8_n4qk8")
+theme_override_font_sizes/font_size = 42
+text = "difficulty(rating)"
+
+[node name="Title" type="Label" parent="PanelContainer/VBoxContainer/HBoxContainer3/VBoxContainer" unique_id=366220458]
+layout_mode = 2
+theme_override_fonts/font = ExtResource("8_n4qk8")
+theme_override_font_sizes/font_size = 42
+text = "Title"
+
+[node name="Artist" type="Label" parent="PanelContainer/VBoxContainer/HBoxContainer3/VBoxContainer" unique_id=1896946033]
+layout_mode = 2
+theme_override_fonts/font = ExtResource("8_n4qk8")
+theme_override_font_sizes/font_size = 32
+text = "Artist"
 
 [node name="GridContainer" type="GridContainer" parent="PanelContainer/VBoxContainer" unique_id=1032436735]
 layout_mode = 2
@@ -322,7 +357,7 @@ size_flags_horizontal = 3
 size_flags_vertical = 6
 theme_override_fonts/font = ExtResource("8_n4qk8")
 theme_override_font_sizes/font_size = 48
-text = "combo"
+text = "max combo"
 horizontal_alignment = 2
 
 [node name="ComboValue" type="Label" parent="PanelContainer/VBoxContainer/HBoxContainer" unique_id=1399533343]

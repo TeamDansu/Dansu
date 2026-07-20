@@ -108,7 +108,12 @@ static func remove_point(rail: Rail, point_index: int) -> void:
 	rail.sort_points()
 
 static func can_save(chart: Chart) -> bool:
-	return chart != null and not chart.title.strip_edges().is_empty() and not chart.difficulty.strip_edges().is_empty()
+	return (
+		chart != null
+		and not chart.title.strip_edges().is_empty()
+		and not chart.difficulty.strip_edges().is_empty()
+		and not has_duplicate_difficulty(chart, chart.difficulty)
+	)
 
 static func has_duplicate_difficulty(chart: Chart, difficulty: String) -> bool:
 	if chart == null:
@@ -158,7 +163,53 @@ static func save_chart(chart: Chart, previous_file_path: String) -> bool:
 	var success := writer.write_chart(CM.parsed_chart)
 	if success:
 		chart.build_search_string()
-		CM.selected_chart = chart
-		if not chart.chart_set.charts.has(chart):
-			chart.chart_set.charts.append(chart)
+		CM.register_saved_chart(chart)
 	return success
+
+static func prepare_new_chartset_chart() -> Chart:
+	var chart_set := ChartSet.new()
+	chart_set.folder_name = CM.make_unique_chartset_folder_name()
+
+	var chart := Chart.new()
+	chart.build_uuid()
+	chart.chart_set = chart_set
+	chart.folder_name = chart_set.folder_name
+
+	CM.parsed_chart = ParsedChart.new(chart)
+	CM.select_chartset(chart_set)
+	CM.select_chart(chart)
+	return chart
+
+static func prepare_new_difficulty_chart() -> Chart:
+	var source_chart := CM.selected_chart
+	if source_chart == null:
+		Notification.notice("no chart selected", Notification.Type.WARNING)
+		return null
+
+	var chart_set: ChartSet = source_chart.chart_set if source_chart.chart_set != null else CM.selected_chartset
+	if chart_set == null:
+		Notification.notice("no chartset selected", Notification.Type.WARNING)
+		return null
+
+	var chart := Chart.new()
+	chart.build_uuid()
+	chart.chart_set = chart_set
+	chart.folder_name = chart_set.folder_name
+	chart.version = source_chart.version
+	chart.title = source_chart.title
+	chart.artist = source_chart.artist
+	chart.creator = source_chart.creator
+	chart.source = source_chart.source
+	chart.tags = source_chart.tags
+	chart.rating = source_chart.rating
+	chart.preview_time = source_chart.preview_time
+	chart.file_audio = source_chart.file_audio
+	chart.file_cover_art = source_chart.file_cover_art
+	chart.file_skin = source_chart.file_skin
+	chart.cover_image = source_chart.cover_image
+
+	CM.parsed_chart = ParsedChart.new(chart)
+
+	CM.select_chartset(chart_set)
+	CM.select_chart(chart)
+	return chart

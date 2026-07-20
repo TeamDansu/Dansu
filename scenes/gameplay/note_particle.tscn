@@ -1,44 +1,55 @@
 [gd_scene format=3 uid="uid://24osfal67ed8"]
 
-[sub_resource type="Curve" id="Curve_pa1on"]
-_data = [Vector2(0, 1), 0.0, 0.0, 0, 0, Vector2(1, 0), 0.0, 0.0, 0, 0]
-point_count = 2
+[ext_resource type="Script" uid="uid://dtb1qrk67f0u" path="res://gameplay/note_break_effect.gd" id="1_effect"]
+[ext_resource type="Shader" uid="uid://bta7elmnijq6" path="res://resources/shaders/note_shard_process.gdshader" id="2_process"]
+[ext_resource type="Shader" uid="uid://b1kpa22deomx" path="res://resources/shaders/note_shard.gdshader" id="3_draw"]
 
-[sub_resource type="CurveTexture" id="CurveTexture_elju3"]
-curve = SubResource("Curve_pa1on")
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_process"]
+resource_local_to_scene = true
+shader = ExtResource("2_process")
+shader_parameter/full_size = Vector2(1, 1)
+shader_parameter/shard_columns = 2
+shader_parameter/shard_rows = 1
+shader_parameter/burst_speed_min = 1.15
+shader_parameter/burst_speed_max = 2.45
+shader_parameter/vertical_lift = 0.85
+shader_parameter/gravity = 16.0
+shader_parameter/drag = 1.2
+shader_parameter/spin_min = 0.45
+shader_parameter/spin_max = 1.5
+shader_parameter/forward_inertia = 1.0
 
-[sub_resource type="ParticleProcessMaterial" id="ParticleProcessMaterial_pa1on"]
-lifetime_randomness = 0.65
-emission_shape = 3
-emission_box_extents = Vector3(0.7, 0, 0.1)
-angle_min = 1.0728835e-05
-angle_max = 1.0728835e-05
-direction = Vector3(0, 1, 0)
-spread = 20.0
-initial_velocity_min = 0.5
-initial_velocity_max = 1.5
-gravity = Vector3(0, 0, 0)
-alpha_curve = SubResource("CurveTexture_elju3")
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_shard"]
+resource_local_to_scene = true
+render_priority = 1
+shader = ExtResource("3_draw")
+shader_parameter/tint = Color(1, 1, 1, 1)
+shader_parameter/shard_columns = 2
+shader_parameter/shard_rows = 1
+shader_parameter/flip_h = false
 
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_elju3"]
-transparency = 1
-shading_mode = 0
-vertex_color_use_as_albedo = true
-albedo_color = Color(0.9799716, 0.3669114, 0.99999994, 1)
+[sub_resource type="QuadMesh" id="QuadMesh_shard"]
+resource_local_to_scene = true
+material = SubResource("ShaderMaterial_shard")
+size = Vector2(0.2, 0.2)
 
-[sub_resource type="SphereMesh" id="SphereMesh_lb4ud"]
-material = SubResource("StandardMaterial3D_elju3")
-radius = 0.01
-height = 0.02
+[node name="NoteBreakEffect" type="Node3D" unique_id=1982852363 node_paths=PackedStringArray("particles")]
+script = ExtResource("1_effect")
+particles = NodePath("Shards")
+inertia_ratio = 0.09
 
-[node name="GPUParticles" type="GPUParticles3D" unique_id=774335004]
-transform = Transform3D(1, 0, 0, 0, 0.98788416, -0.15519312, 0, 0.15519312, 0.98788416, 0, 0, 0)
+[node name="Shards" type="GPUParticles3D" parent="." unique_id=781432013]
 layers = 4
 emitting = false
-amount = 40
-lifetime = 0.25
+amount = 2
+lifetime = 0.38
 one_shot = true
 explosiveness = 1.0
-collision_base_size = 1.0
-process_material = SubResource("ParticleProcessMaterial_pa1on")
-draw_pass_1 = SubResource("SphereMesh_lb4ud")
+randomness = 0.08
+fixed_fps = 60
+visibility_aabb = AABB(-4, -4, -2, 8, 8, 4)
+local_coords = true
+process_material = SubResource("ShaderMaterial_process")
+draw_pass_1 = SubResource("QuadMesh_shard")
+
+[connection signal="finished" from="Shards" to="." method="_on_particles_finished"]

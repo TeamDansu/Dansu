@@ -5,6 +5,9 @@ const SkinSerializationScript = preload("res://skin/skin_serialization.gd")
 
 @onready var sprite: PlayerSprite = $Sprite3D
 
+@export var hit_star_effect_scene: PackedScene
+@export var hit_star_offset := Vector3(0.0, 0.06, 0.03)
+
 var standing_rail: Rail = null
 var _is_moving := false
 
@@ -82,6 +85,17 @@ func play_hit_animation(note: Note = null) -> void:
 		return
 
 	sprite.play_animation(sprite.get_hit_animation())
+
+
+func spawn_hit_stars() -> void:
+	if hit_star_effect_scene == null:
+		return
+	var effect := hit_star_effect_scene.instantiate() as Node3D
+	var scene_root := get_tree().current_scene
+	if effect == null or scene_root == null:
+		return
+	scene_root.add_child(effect)
+	effect.global_position = global_position + hit_star_offset
 
 func play_move_note_animation(note: Note, dir: Note.Dir = Note.Dir.NONE) -> void:
 	if not sprite.skin:

@@ -1,7 +1,6 @@
 extends Node
 class_name EditorEventController
 
-const UIFocusUtils = preload("res://global/ui_focus_utils.gd")
 const CURRENT_TIME_SENTINEL := -9223372036854775807
 const EASE_OPTIONS := [
 	"", "linear",
@@ -17,6 +16,47 @@ const THEME_COLOR := Color("5ed39a")
 const SKIN_COLOR := Color("ef6f8f")
 const OVERLAY_COLOR := Color("ffb547")
 const SPRITE_IMPORT_FILTERS : Array = ["*.png,*.jpg,*.jpeg,*.webp,*.svg ; Image Files"]
+
+
+class SelectedFrame:
+	var event: ChartEvent
+	var frame: ChartEventFrame
+
+	func _init(source_event: ChartEvent, source_frame: ChartEventFrame) -> void:
+		event = source_event
+		frame = source_frame
+
+
+class ClipboardFrame:
+	var event_reference: ChartEvent
+	var event_id: String
+	var event_type: String
+	var absolute_time: int
+	var frame: ChartEventFrame
+
+	func _init(
+			source_event: ChartEvent,
+			source_frame: ChartEventFrame,
+			source_absolute_time: int,
+			source_event_type: String
+	) -> void:
+		event_reference = source_event
+		event_id = source_event.id
+		event_type = source_event_type
+		absolute_time = source_absolute_time
+		frame = source_frame
+
+
+class PlannedFrame:
+	var event: ChartEvent
+	var frame: ChartEventFrame
+	var absolute_time: int
+
+	func _init(target_event: ChartEvent, target_frame: ChartEventFrame, target_time: int) -> void:
+		event = target_event
+		frame = target_frame
+		absolute_time = target_time
+
 
 @export var editor: Node
 @export var event_dock: Control
@@ -40,6 +80,8 @@ var _resource_import_dialog: FileDialog
 var _pending_resource_kind := ""
 var _pending_resource_event: ChartEvent = null
 var _pending_resource_frame: ChartEventFrame = null
+var _selected_frames: Array[SelectedFrame] = []
+var _frame_clipboard: Array[ClipboardFrame] = []
 
 func setup() -> void:
 	if _setup_complete or editor == null:
@@ -169,7 +211,7 @@ func create_event_for_lane(lane: int, requested_time: int = CURRENT_TIME_SENTINE
 	select_event(event, 0 if not get_frames(event).is_empty() else -1)
 	refresh_timeline()
 
-func select_event(event: ChartEvent, frame_index: int = -1, switch_tab: bool = true) -> void:
+func select_event(event: ChartEvent, frame_index: int = -1, switch_tab: bool = true, additive: bool = false) -> void:
 	if editor == null:
 		return
 	if event is OverlayEvent:
@@ -179,7 +221,138 @@ func select_event(event: ChartEvent, frame_index: int = -1, switch_tab: bool = t
 	var safe_index := frame_index
 	if safe_index < 0 or safe_index >= frames.size():
 		safe_index = -1
-	editor.selection.select_event(event, safe_index)
+	if safe_index < 0:
+		_selected_frames.clear()
+		editor.selection.select_event(event, -1)
+		return
+
+	var frame: ChartEventFrame = frames[safe_index]
+	if not additive:
+		_selected_frames.clear()
+		_selected_frames.append(SelectedFrame.new(event, frame))
+		editor.selection.select_event(event, safe_index)
+		return
+
+	var selected_index := _find_selected_frame(event, frame)
+	if selected_index >= 0:
+		_selected_frames.remove_at(selected_index)
+		_select_primary_frame(event)
+	else:
+		_selected_frames.append(SelectedFrame.new(event, frame))
+		editor.selection.select_event(event, safe_index)
+
+
+func is_frame_selected(event: ChartEvent, frame: ChartEventFrame) -> bool:
+	return _find_selected_frame(event, frame) >= 0
+
+
+func copy_selected_frames() -> bool:
+	var selected := _get_valid_selected_frames()
+	if selected.is_empty():
+		return false
+	_frame_clipboard.clear()
+	for entry in selected:
+		var event := entry.event
+		var frame := entry.frame
+		var snapshot := _clone_frame(frame, event)
+		if snapshot == null:
+			continue
+		snapshot.time = frame.time
+		_frame_clipboard.append(ClipboardFrame.new(
+			event,
+			snapshot,
+			event.time + frame.time,
+			_get_event_type_name(event)
+		))
+	return not _frame_clipboard.is_empty()
+
+
+func paste_copied_frames() -> bool:
+	if editor == null or editor.timeline == null or _frame_clipboard.is_empty():
+		return false
+	var source_anchor := 9223372036854775807
+	for item in _frame_clipboard:
+		source_anchor = mini(source_anchor, item.absolute_time)
+	var paste_anchor :int = editor.timeline.snap_time(int(round(Game.current_time)))
+	var planned: Array[PlannedFrame] = []
+	for item in _frame_clipboard:
+		var target_event := _find_clipboard_event(item)
+		if target_event == null or target_event is SkinEvent:
+			continue
+		if item.frame == null:
+			continue
+		var frame := _clone_frame(item.frame, target_event)
+		if frame == null:
+			continue
+		var relative_time := item.absolute_time - source_anchor
+		var absolute_time := clampi(
+			paste_anchor + relative_time,
+			editor.timeline.get_min_time(),
+			editor.timeline.get_max_time()
+		)
+		planned.append(PlannedFrame.new(target_event, frame, absolute_time))
+	if planned.is_empty():
+		return false
+
+	editor._push_history_snapshot()
+	_selected_frames.clear()
+	var touched_events: Array[ChartEvent] = []
+	for item in planned:
+		var event := item.event
+		var frame := item.frame
+		var absolute_time := item.absolute_time
+		if absolute_time > event.end_time:
+			event.duration = absolute_time - event.time
+		frame.time = clampi(absolute_time - event.time, 0, event.duration)
+		get_frames(event).append(frame)
+		if event not in touched_events:
+			touched_events.append(event)
+		_selected_frames.append(SelectedFrame.new(event, frame))
+	for event in touched_events:
+		event.sort_frames()
+	CM.ensure_parsed_chart().sort_events()
+	_select_primary_frame(null)
+	refresh_timeline()
+	refresh_inspector()
+	return true
+
+
+func _find_selected_frame(event: ChartEvent, frame: ChartEventFrame) -> int:
+	for index in range(_selected_frames.size()):
+		var entry := _selected_frames[index]
+		if entry.event == event and entry.frame == frame:
+			return index
+	return -1
+
+
+func _get_valid_selected_frames() -> Array[SelectedFrame]:
+	var valid: Array[SelectedFrame] = []
+	for entry in _selected_frames:
+		if entry.event != null and entry.frame != null and get_frames(entry.event).has(entry.frame):
+			valid.append(entry)
+	_selected_frames = valid
+	return _selected_frames
+
+
+func _select_primary_frame(fallback_event: ChartEvent) -> void:
+	var selected := _get_valid_selected_frames()
+	if selected.is_empty():
+		if fallback_event != null:
+			editor.selection.select_event(fallback_event, -1)
+		else:
+			editor.selection.clear()
+		return
+	var primary: SelectedFrame = selected.back()
+	editor.selection.select_event(primary.event, get_frames(primary.event).find(primary.frame))
+
+
+func _find_clipboard_event(item: ClipboardFrame) -> ChartEvent:
+	if item.event_reference != null and get_events().has(item.event_reference):
+		return item.event_reference
+	for event in get_events():
+		if event != null and event.id == item.event_id and _get_event_type_name(event) == item.event_type:
+			return event
+	return null
 
 func move_event_to_time(event: ChartEvent, requested_time: int) -> void:
 	if event == null or editor == null or editor.timeline == null:
@@ -250,6 +423,16 @@ func delete_selection() -> bool:
 	var event := _get_selected_event()
 	if event == null:
 		return false
+	var selected_frames := _get_valid_selected_frames()
+	if not selected_frames.is_empty():
+		editor._push_history_snapshot()
+		for entry in selected_frames:
+			get_frames(entry.event).erase(entry.frame)
+		_selected_frames.clear()
+		select_event(event)
+		refresh_timeline()
+		refresh_inspector()
+		return true
 	var frame := _get_selected_frame()
 	editor._push_history_snapshot()
 	if frame != null:
@@ -317,6 +500,10 @@ func refresh_inspector() -> void:
 	_syncing = false
 
 func on_history_restored() -> void:
+	_selected_frames.clear()
+	var restored_frame := _get_selected_frame()
+	if restored_frame != null:
+		_selected_frames.append(SelectedFrame.new(_get_selected_event(), restored_frame))
 	_sync_overlay_layers_from_events()
 	refresh_inspector()
 	refresh_timeline()
@@ -595,6 +782,12 @@ func _make_unique_id(prefix: String) -> String:
 
 func _on_selection_changed() -> void:
 	var event := _get_selected_event()
+	var frame := _get_selected_frame()
+	if frame == null:
+		_selected_frames.clear()
+	elif not is_frame_selected(event, frame):
+		_selected_frames.clear()
+		_selected_frames.append(SelectedFrame.new(event, frame))
 	if event is OverlayEvent:
 		_active_overlay_layer = maxi(0, (event as OverlayEvent).layer)
 		_overlay_layer_count = maxi(_overlay_layer_count, _active_overlay_layer + 1)
