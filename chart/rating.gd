@@ -3,16 +3,20 @@ class_name Rating
 
 const SEGMENT_DURATION_MS := 2000
 const POWER := 10.5
-const WEIGHT := 2.15
+const WEIGHT := 3.2
+const CACHE_VERSION := 1
 
-const TYPE_OBSTACLE := 4
+const HIT_NOTE_INPUT_WEIGHT := 1.0
+const MOVE_NOTE_INPUT_WEIGHT := 1.1
+const TRACE_NOTE_INPUT_WEIGHT := 0.3
+const HIDDEN_MOVE_INPUT_WEIGHT := 1.2
 
 static func calculate_rating(chart: ParsedChart) -> float:
 	if chart == null:
 		return 0.0
 
-	var notes: Array = chart.get_notes()
-	var rails: Array = chart.rails.duplicate()
+	var notes: Array[Note] = chart.get_notes()
+	var rails: Array[Rail] = chart.rails.duplicate()
 
 	if notes.is_empty() or rails.is_empty():
 		return 0.0
@@ -33,6 +37,7 @@ static func calculate_rating(chart: ParsedChart) -> float:
 		segments[i] = 0.0
 
 	var notes_by_time := _group_notes_by_time(notes)
+	var note_owner_by_note := _build_note_owner_by_note(rails)
 	var event_times := _build_event_times(notes, rails)
 	if event_times.is_empty():
 		return 0.0
@@ -49,6 +54,7 @@ static func calculate_rating(chart: ParsedChart) -> float:
 			_process_notes_at_time(
 				state,
 				rails,
+				note_owner_by_note,
 				time_ms,
 				notes_by_time[time_ms],
 				segments,
@@ -72,13 +78,13 @@ static func calculate_rating(chart: ParsedChart) -> float:
 	var mean := pow(acc / valid_count, 1.0 / POWER)
 	return mean * WEIGHT
 
-static func _get_first_note_time(notes: Array) -> int:
+static func _get_first_note_time(notes: Array[Note]) -> int:
 	if notes.is_empty():
 		return 0
 	return int(notes[0].time)
 
 
-static func _get_last_relevant_time(notes: Array, rails: Array) -> int:
+static func _get_last_relevant_time(notes: Array[Note], rails: Array[Rail]) -> int:
 	var last_time := 0
 
 	for note in notes:
@@ -95,7 +101,7 @@ static func _get_last_relevant_time(notes: Array, rails: Array) -> int:
 	return last_time
 
 
-static func _group_notes_by_time(notes: Array) -> Dictionary:
+static func _group_notes_by_time(notes: Array[Note]) -> Dictionary:
 	var result := {}
 
 	for note in notes:
@@ -107,7 +113,20 @@ static func _group_notes_by_time(notes: Array) -> Dictionary:
 	return result
 
 
-static func _build_event_times(notes: Array, rails: Array) -> Array[int]:
+static func _build_note_owner_by_note(rails: Array[Rail]) -> Dictionary:
+	var result := {}
+
+	for rail in rails:
+		if rail == null:
+			continue
+		for note in rail.notes:
+			if note != null:
+				result[note] = rail
+
+	return result
+
+
+static func _build_event_times(notes: Array[Note], rails: Array[Rail]) -> Array[int]:
 	var time_map := {}
 
 	for note in notes:
@@ -132,7 +151,7 @@ static func _build_event_times(notes: Array, rails: Array) -> Array[int]:
 	result.sort()
 	return result
 
-static func _resolve_occupancy_at_time(state: Dictionary, rails: Array, time_ms: int) -> void:
+static func _resolve_occupancy_at_time(state: Dictionary, rails: Array[Rail], time_ms: int) -> void:
 	var occupied_rail_id := int(state["occupied_rail_id"])
 	var active_rails := _get_sorted_active_rails_at_time(rails, time_ms)
 
@@ -159,7 +178,8 @@ static func _resolve_occupancy_at_time(state: Dictionary, rails: Array, time_ms:
 
 static func _process_notes_at_time(
 	state: Dictionary,
-	rails: Array,
+	rails: Array[Rail],
+	note_owner_by_note: Dictionary,
 	time_ms: int,
 	note_group: Array,
 	segments: Array[float],
@@ -173,8 +193,11 @@ static func _process_notes_at_time(
 	var playable_notes: Array = []
 
 	for note in note_group:
-		var rail_id := int(note.rail)
-		if int(note.type) == TYPE_OBSTACLE:
+		var owner_rail: Rail = note_owner_by_note.get(note)
+		if owner_rail == null:
+			continue
+		var rail_id := int(owner_rail.id)
+		if note.type == Note.NoteType.SPIKE:
 			blocked_rail_ids[rail_id] = true
 		else:
 			playable_notes.append(note)
@@ -188,7 +211,11 @@ static func _process_notes_at_time(
 	var occupied_rail_id := int(state["occupied_rail_id"])
 
 	if not playable_notes.is_empty():
-		var candidate_targets := _collect_unique_playable_target_rails(playable_notes, blocked_rail_ids)
+		var candidate_targets := _collect_unique_playable_target_rails(
+			playable_notes,
+			note_owner_by_note,
+			blocked_rail_ids
+		)
 
 		if candidate_targets.is_empty():
 			return
@@ -203,25 +230,45 @@ static func _process_notes_at_time(
 		if best_target_rail_id == -1:
 			return
 
-		var move_inputs := _get_required_move_inputs_by_order(
+		var hidden_move_steps := _get_required_move_inputs_by_order(
 			occupied_rail_id,
 			best_target_rail_id,
 			active_rails
 		)
 
-		_add_inputs_at_time(segments, start_time, time_ms, float(move_inputs))
+		_add_inputs_at_time(
+			segments,
+			start_time,
+			time_ms,
+			float(hidden_move_steps) * HIDDEN_MOVE_INPUT_WEIGHT
+		)
 
-		var note_inputs := 0
+		var note_input_weight := 0.0
+		var move_note: Note = null
 		for note in playable_notes:
-			if int(note.rail) == best_target_rail_id:
-				note_inputs += 1
+			var owner_rail: Rail = note_owner_by_note.get(note)
+			if owner_rail != null and int(owner_rail.id) == best_target_rail_id:
+				note_input_weight += _get_note_input_weight(note)
+				if move_note == null and note.type == Note.NoteType.MOVE:
+					move_note = note
 
-		_add_inputs_at_time(segments, start_time, time_ms, float(note_inputs))
+		_add_inputs_at_time(segments, start_time, time_ms, note_input_weight)
 
 		state["occupied_rail_id"] = best_target_rail_id
 		var target_rail = _find_rail_by_id(rails, best_target_rail_id)
 		if target_rail != null:
 			state["free_x"] = target_rail._get_rail_x_at_time(time_ms)
+
+		if move_note != null:
+			var move_target := _find_nearest_rail_in_direction(
+				active_rails,
+				best_target_rail_id,
+				move_note.dir,
+				time_ms
+			)
+			if move_target != null:
+				state["occupied_rail_id"] = int(move_target.id)
+				state["free_x"] = move_target._get_rail_x_at_time(time_ms)
 
 		return
 
@@ -233,25 +280,37 @@ static func _process_notes_at_time(
 		)
 
 		if safe_target_rail_id != -1:
-			var evade_inputs := _get_required_move_inputs_by_order(
+			var evade_steps := _get_required_move_inputs_by_order(
 				occupied_rail_id,
 				safe_target_rail_id,
 				active_rails
 			)
 
-			_add_inputs_at_time(segments, start_time, time_ms, float(evade_inputs))
+			_add_inputs_at_time(
+				segments,
+				start_time,
+				time_ms,
+				float(evade_steps) * HIDDEN_MOVE_INPUT_WEIGHT
+			)
 
 			state["occupied_rail_id"] = safe_target_rail_id
 			var safe_rail: Rail = _find_rail_by_id(rails, safe_target_rail_id)
 			if safe_rail != null:
 				state["free_x"] = safe_rail._get_rail_x_at_time(time_ms)
 
-static func _collect_unique_playable_target_rails(playable_notes: Array, blocked_rail_ids: Dictionary) -> Array[int]:
+static func _collect_unique_playable_target_rails(
+	playable_notes: Array,
+	note_owner_by_note: Dictionary,
+	blocked_rail_ids: Dictionary
+) -> Array[int]:
 	var result: Array[int] = []
 	var seen := {}
 
 	for note in playable_notes:
-		var rail_id := int(note.rail)
+		var owner_rail: Rail = note_owner_by_note.get(note)
+		if owner_rail == null:
+			continue
+		var rail_id := int(owner_rail.id)
 		if blocked_rail_ids.has(rail_id):
 			continue
 		if seen.has(rail_id):
@@ -330,6 +389,55 @@ static func _get_required_move_inputs_by_order(
 	return abs(target_index - current_index)
 
 
+static func _get_note_input_weight(note: Note) -> float:
+	if note == null:
+		return 0.0
+
+	match note.type:
+		Note.NoteType.HIT:
+			return HIT_NOTE_INPUT_WEIGHT
+		Note.NoteType.MOVE:
+			return MOVE_NOTE_INPUT_WEIGHT
+		Note.NoteType.TRACE:
+			return TRACE_NOTE_INPUT_WEIGHT
+		_:
+			return 0.0
+
+
+static func _find_nearest_rail_in_direction(
+	active_rails: Array[Rail],
+	current_rail_id: int,
+	dir: Note.Dir,
+	time_ms: int
+) -> Rail:
+	var current_rail := _find_rail_by_id(active_rails, current_rail_id)
+	if current_rail == null:
+		return null
+
+	var current_x := current_rail._get_rail_x_at_time(time_ms)
+	var nearest_rail: Rail = null
+	var nearest_distance := INF
+
+	for rail in active_rails:
+		if rail == current_rail:
+			continue
+
+		var delta_x := rail._get_rail_x_at_time(time_ms) - current_x
+		var is_in_direction := (
+			(dir == Note.Dir.LEFT and delta_x < 0.0)
+			or (dir == Note.Dir.RIGHT and delta_x > 0.0)
+		)
+		if not is_in_direction:
+			continue
+
+		var distance := absf(delta_x)
+		if distance < nearest_distance:
+			nearest_distance = distance
+			nearest_rail = rail
+
+	return nearest_rail
+
+
 static func _get_rail_index_in_sorted_active(active_rails: Array[Rail], rail_id: int) -> int:
 	for i in range(active_rails.size()):
 		if int(active_rails[i].id) == rail_id:
@@ -379,7 +487,7 @@ static func _find_rail_by_id(rails: Array[Rail], rail_id: int) -> Rail:
 	return null
 
 
-static func _find_closest_rail_by_x(active_rails: Array[Rail], x: float, time_ms: int):
+static func _find_closest_rail_by_x(active_rails: Array[Rail], x: float, time_ms: int) -> Rail:
 	var best_rail = null
 	var best_dist := INF
 

@@ -53,12 +53,11 @@ func _ready() -> void:
 	if logo != null and not logo.resized.is_connected(_refresh_logo_pivot):
 		logo.resized.connect(_refresh_logo_pivot)
 
-	if Game.stage == Game.GameStage.Loading:
-		CM._load(false)
-		
-	
 	CM.progress_changed.connect(_update_progress)
 	CM.loading_finished.connect(_loading_finished)
+
+	if Game.stage == Game.GameStage.Loading:
+		CM._load(false)
 
 	if search_input != null:
 		search_input.text_changed.connect(_on_search_text_changed)
@@ -83,11 +82,22 @@ func _process(delta):
 			_open_selected_chart_editor()
 
 
-func _input(_event: InputEvent) -> void:
-	if not is_exiting:
+func _input(event: InputEvent) -> void:
+	if is_exiting:
+		get_viewport().set_input_as_handled()
 		return
 
-	get_viewport().set_input_as_handled()
+	if (
+		Game.stage == Game.GameStage.Main
+		and Game.main_menu_state == Game.MainMenuState.SongSelect
+		and event is InputEventKey
+		and event.pressed
+		and not event.echo
+		and event.ctrl_pressed
+		and event.keycode == KEY_F5
+	):
+		_recalculate_all_chart_ratings()
+		get_viewport().set_input_as_handled()
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -182,6 +192,7 @@ func _setup_sort_options() -> void:
 	sort_option_button.add_item("title", 0)
 	sort_option_button.add_item("artist", 1)
 	sort_option_button.add_item("rating", 2)
+	sort_option_button.add_item("recent", 3)
 	sort_option_button.select(0)
 
 
@@ -201,6 +212,18 @@ func _on_sort_item_selected(index: int) -> void:
 func _refresh_chart_browser() -> void:
 	if chart_scroll != null and chart_scroll.has_method("rebuild_items"):
 		chart_scroll.rebuild_items()
+
+func _recalculate_all_chart_ratings() -> void:
+	var result := CM.recalculate_all_ratings()
+	var updated := int(result.get("updated", 0))
+	var failed := int(result.get("failed", 0))
+	var total := int(result.get("total", 0))
+	var message := "[rating] 전체 차트 재계산 완료: %d/%d" % [updated, total]
+	if failed > 0:
+		message += " (실패: %d)" % failed
+		Notification.notice(message, Notification.Type.WARNING)
+	else:
+		print(message)
 
 func _open_new_chartset_editor() -> void:
 	if EditorChartOps.prepare_new_chartset_chart() == null:

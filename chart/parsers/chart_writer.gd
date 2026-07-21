@@ -9,6 +9,11 @@ func write_chart(parsed_chart: ParsedChart) -> bool:
 		return false
 
 	var chart := parsed_chart.chart
+	if chart.chart_set == null:
+		push_error("Failed to write chart: chart set is missing")
+		return false
+	if chart.chart_set.uuid.is_empty():
+		chart.chart_set.build_uuid()
 	var file := FileAccess.open(chart.file_path, FileAccess.WRITE)
 	if file == null:
 		push_error("Failed to open chart file for writing: %s" % chart.file_path)
@@ -32,6 +37,7 @@ func _write_metadata(file: FileAccess, chart: Chart) -> void:
 	if not chart.uuid:
 		chart.build_uuid()
 	file.store_line("uuid: %s" % _safe_string(chart.uuid))
+	file.store_line("chartset_uuid: %s" % _safe_string(chart.chart_set.uuid))
 	file.store_line("title: %s" % _safe_string(chart.title))
 	file.store_line("artist: %s" % _safe_string(chart.artist))
 	file.store_line("creator: %s" % _safe_string(chart.creator))
@@ -42,7 +48,6 @@ func _write_metadata(file: FileAccess, chart: Chart) -> void:
 	file.store_line("file_skin: %s" % _safe_string(chart.file_skin))
 	file.store_line("file_cover_art: %s" % _safe_string(chart.file_cover_art))
 	file.store_line("version: %s" % _safe_string(chart.version))
-	file.store_line("rating: %s" % _safe_string(chart.rating))
 	file.store_line("tags: %s" % _safe_string(chart.tags))
 	file.store_line("")
 

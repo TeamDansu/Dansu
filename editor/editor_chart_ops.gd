@@ -160,6 +160,7 @@ static func save_chart(chart: Chart, previous_file_path: String) -> bool:
 		CM.parsed_chart.chart = chart
 
 	var writer := ChartWriter.new()
+	CM.parsed_chart.chart.rating = Rating.calculate_rating(CM.parsed_chart)
 	var success := writer.write_chart(CM.parsed_chart)
 	if success:
 		chart.build_search_string()
@@ -168,6 +169,7 @@ static func save_chart(chart: Chart, previous_file_path: String) -> bool:
 
 static func prepare_new_chartset_chart() -> Chart:
 	var chart_set := ChartSet.new()
+	chart_set.build_uuid()
 	chart_set.folder_name = CM.make_unique_chartset_folder_name()
 
 	var chart := Chart.new()
@@ -201,7 +203,7 @@ static func prepare_new_difficulty_chart() -> Chart:
 	chart.creator = source_chart.creator
 	chart.source = source_chart.source
 	chart.tags = source_chart.tags
-	chart.rating = source_chart.rating
+	chart.rating = 0.0
 	chart.preview_time = source_chart.preview_time
 	chart.file_audio = source_chart.file_audio
 	chart.file_cover_art = source_chart.file_cover_art

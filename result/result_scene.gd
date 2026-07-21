@@ -17,7 +17,7 @@ const RANK_DATA := [
 	{"label": "S", "min": 95.0},
 	{"label": "S+", "min": 99.0},
 	{"label": "SS", "min": 100.0},
-	{"label": "X+", "min": 101.0},
+	{"label": "X", "min": 101.0},
 ]
 
 var score = Score.new()

@@ -6,7 +6,7 @@
 [ext_resource type="Texture2D" uid="uid://c2uou5wxlsrtf" path="res://resources/icons/chevron-left.svg" id="4_oxefu"]
 [ext_resource type="Texture2D" uid="uid://carktd8pd048o" path="res://resources/icons/checkbox-checked.svg" id="5_checkbox_checked"]
 [ext_resource type="Texture2D" uid="uid://cxpljh46m1aii" path="res://resources/icons/checkbox-unchecked.svg" id="6_checkbox_unchecked"]
-[ext_resource type="Texture2D" uid="uid://s10h37holudd" path="res://resources/icons/slider-grabber-empty.svg" id="7_slider_grabber_empty"]
+[ext_resource type="Texture2D" uid="uid://s10h37holudd" path="res://resources/icons/empty.svg" id="7_slider_grabber_empty"]
 [ext_resource type="Shader" uid="uid://qbfnricvyktb" path="res://resources/shaders/wave.gdshader" id="9_r4ceb"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_button_hover"]
@@ -311,10 +311,9 @@ theme_override_styles/panel = SubResource("StyleBoxEmpty_6wklw")
 theme_override_styles/tab_unselected = SubResource("StyleBoxFlat_oxefu")
 theme_override_styles/tab_hovered = SubResource("StyleBoxFlat_7vhfp")
 theme_override_styles/tab_selected = SubResource("StyleBoxFlat_0w3cm")
-current_tab = 1
+current_tab = 0
 
 [node name="Graphics" type="ScrollContainer" parent="Panel/Margin/VBox/Pages" unique_id=1538677562]
-visible = false
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
@@ -459,6 +458,7 @@ theme_override_fonts/font = ExtResource("3")
 theme_override_font_sizes/font_size = 22
 
 [node name="Audio" type="ScrollContainer" parent="Panel/Margin/VBox/Pages" unique_id=87365343]
+visible = false
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3

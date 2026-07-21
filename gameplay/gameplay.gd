@@ -910,6 +910,7 @@ func _check_result_transition() -> void:
 		return
 
 	_result_transition_started = true
+	Scores.record_play(CM.selected_chart, score)
 	Game.last_result_score = score
 	Transition.transition_to(RESULT_SCENE_PATH, 1.0)
 

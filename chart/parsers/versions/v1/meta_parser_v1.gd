@@ -39,6 +39,10 @@ func _parse_metadata_line(chart: Chart, line: String) -> void:
 	match key:
 		"uuid":
 			chart.uuid = value
+		"chartset_uuid":
+			if chart.chart_set == null:
+				chart.chart_set = ChartSet.new()
+			chart.chart_set.uuid = value
 		"title":
 			chart.title = value
 		"artist":
@@ -53,8 +57,6 @@ func _parse_metadata_line(chart: Chart, line: String) -> void:
 			chart.file_skin = value
 		"file_cover_art":
 			chart.file_cover_art = value
-		"rating":
-			chart.rating = float(value)
 		"source":
 			chart.source = value
 		"tags":

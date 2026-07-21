@@ -1,6 +1,13 @@
 extends RefCounted
 class_name Chart
 
+enum Availability {
+	UNKNOWN,
+	AVAILABLE,
+	MISSING,
+	INVALID,
+}
+
 const DEFAULT_HITSOUND_HIT := 0
 const DEFAULT_HITSOUND_MOVE := 1
 const DEFAULT_HITSOUND_TRACE := 2
@@ -16,8 +23,12 @@ func _init() -> void:
 	default_hitsounds = PackedInt32Array([-1, -1, -1, -1, -1])
 
 var version: int = 1
+var db_id: int = -1
 var uuid: String = ""
 var filehash: String = ""
+var file_modified_time: int = 0
+var file_size: int = 0
+var availability: Availability = Availability.UNKNOWN
 var folder_name: String = ""
 var file_name: String = ""
 var is_built_in := false
@@ -61,6 +72,11 @@ var source: String = "?"
 var tags: String = ""
 var difficulty: String = "?"
 var rating: float = 0.0
+var rating_calculated := false
+var last_played_at: int = 0
+var best_score: float = 0.0
+var play_count: int = 0
+var current_version_play_count: int = 0
 
 var preview_time := -1.0
 var timings: Array[Timing]

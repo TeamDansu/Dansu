@@ -28,8 +28,10 @@ buses/default_bus_layout="uid://dq3i0pwsbqyhu"
 [autoload]
 
 Config="*res://global/config.gd"
+DB="*res://global/database_manager.gd"
 CM="*res://global/chart_manager.gd"
 Game="*res://global/game.gd"
+Scores="*res://global/score_manager.gd"
 CoverLoader="*res://global/cover_loader.gd"
 Transition="*uid://bw12vr28vpm78"
 Notification="*uid://b6j4mfmqfjhgb"

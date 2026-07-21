@@ -24,6 +24,13 @@ static var _stream_length_cache := {}
 @onready var title_label: Label = %Title
 @onready var artist_label: Label = %Artist
 @onready var desc_label: Label = %Desc
+@onready var rank_label: Label = $"../Rank"
+@onready var full_combo_label: Label = $"../FullCombo"
+@onready var all_just_label: Label = $"../AllJust"
+@onready var perfect_label: Label = $"../Perfect"
+@onready var never_played_label: Label = $"../NeverPlayed"
+@onready var score_label: Label = $"../Score"
+@onready var ranked_label: Label = $"../Ranked"
 
 var click_tween: Tween
 var thumb_tween: Tween
@@ -118,6 +125,7 @@ func _process(delta: float) -> void:
 
 func _refresh(chart: Chart) -> void:
 	current_cover_chart = chart
+	_refresh_best_play(chart)
 
 	if chart == null:
 		title_label.text = ""
@@ -138,6 +146,47 @@ func _refresh(chart: Chart) -> void:
 	else:
 		thumb.texture = null
 		CoverLoader.request_cover(chart)
+
+
+func _refresh_best_play(chart: Chart) -> void:
+	var best_play: Score = Scores.get_best_play(chart) if chart != null else null
+	var has_record := best_play != null
+
+	rank_label.visible = has_record
+	score_label.visible = has_record
+	full_combo_label.visible = false
+	all_just_label.visible = false
+	perfect_label.visible = false
+	never_played_label.visible = chart != null and not has_record
+	ranked_label.visible = false
+
+	if not has_record:
+		return
+
+	rank_label.text = best_play.rank_str
+	score_label.text = "%.2f%%" % best_play.total_score
+	rank_label.add_theme_color_override("font_color", best_play.rank_color)
+	score_label.add_theme_color_override("font_color", best_play.rank_color)
+
+	if best_play.notes <= 0:
+		return
+
+	var is_full_combo := best_play.miss == 0 and best_play.high_combo >= best_play.notes
+	var is_all_just := (
+		best_play.great == 0
+		and best_play.ok == 0
+		and best_play.bad == 0
+		and best_play.miss == 0
+	)
+	var is_impeccable := (
+		is_all_just
+		and best_play.perfect == 0
+		and best_play.perfect_plus >= best_play.notes
+	)
+
+	full_combo_label.visible = is_full_combo
+	all_just_label.visible = is_all_just and not is_impeccable
+	perfect_label.visible = is_impeccable
 
 
 func _on_mouse_entered() -> void:

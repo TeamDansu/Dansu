@@ -6,6 +6,7 @@ enum SortMode {
 	TITLE,
 	ARTIST,
 	RATING,
+	RECENT,
 }
 
 var nodes: Array[Node] = []
@@ -223,7 +224,7 @@ func _build_visible_items() -> Array[SongListItem]:
 
 		matched_charts.sort_custom(_sort_chart_by_rating)
 
-		if sort_mode == SortMode.RATING:
+		if sort_mode == SortMode.RATING or sort_mode == SortMode.RECENT:
 			for chart in matched_charts:
 				var chart_item := SongListItem.new()
 				chart_item.type = SongListItem.ItemType.CHART
@@ -246,6 +247,8 @@ func _build_visible_items() -> Array[SongListItem]:
 			items.sort_custom(_sort_item_by_artist)
 		SortMode.RATING:
 			items.sort_custom(_sort_item_by_rating_desc)
+		SortMode.RECENT:
+			items.sort_custom(_sort_item_by_recent_desc)
 
 	return items
 
@@ -276,6 +279,14 @@ func _sort_item_by_rating_desc(a: SongListItem, b: SongListItem) -> bool:
 	return ar > br
 
 
+func _sort_item_by_recent_desc(a: SongListItem, b: SongListItem) -> bool:
+	var at := _get_item_last_played_at(a)
+	var bt := _get_item_last_played_at(b)
+	if at == bt:
+		return _get_item_title(a).to_lower() < _get_item_title(b).to_lower()
+	return at > bt
+
+
 func _get_item_title(item: SongListItem) -> String:
 	if item == null or item.primary_chart == null:
 		return ""
@@ -292,6 +303,12 @@ func _get_item_rating(item: SongListItem) -> float:
 	if item == null or item.primary_chart == null:
 		return 0.0
 	return item.primary_chart.rating
+
+
+func _get_item_last_played_at(item: SongListItem) -> int:
+	if item == null or item.primary_chart == null:
+		return 0
+	return item.primary_chart.last_played_at
 
 
 func _find_best_selection_index(previous_chart: Chart, previous_chartset: ChartSet) -> int:

@@ -21,10 +21,11 @@ var bad := 0
 var miss := 0
 
 var signed_timings : Array[float] = []
+var stored_avg_signed_timing := 0.0
 var avg_signed_timings : float :
 	get :
 		if signed_timings.size() <= 0:
-			return 0
+			return stored_avg_signed_timing
 		var total = 0
 		for value in signed_timings:
 			total += value
@@ -36,6 +37,17 @@ var max_score :float = 0
 var high_combo := 0
 
 var object_hash = ""
+var db_id := -1
+var chart_db_id := -1
+var played_at := 0
+var scoring_version := 1
+var unstable_rate := 0.0 # TODO: calculate from signed_timings
+var stored_total_score := -1.0
+var chart_title := ""
+var chart_artist := ""
+var chart_difficulty := ""
+var chart_folder_name := ""
+var chart_file_name := ""
 
 func get_judgement(time_gap) -> int:
 	if abs(time_gap) < T.PERFECT_PLUS:
@@ -153,7 +165,7 @@ var rank_color: Color:
 var rank_str: String:
 	get:
 		if total_score >= 101.0:
-			return "X+"
+			return "X"
 		if total_score >= 100.0:
 			return "SS"
 		if total_score >= 99.0:
@@ -170,6 +182,8 @@ var rank_str: String:
 
 var total_score: float:
 	get:
+		if stored_total_score >= 0.0:
+			return stored_total_score
 		if notes == 0:
 			return 0.0
 		if _is_all_just_result():
