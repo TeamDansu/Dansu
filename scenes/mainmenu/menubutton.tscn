@@ -33,8 +33,6 @@ offset_left = -128.0
 offset_top = -30.0
 offset_right = -128.0
 offset_bottom = -30.0
-scale = Vector2(1e-05, 1e-05)
-pivot_offset = Vector2(0, 25)
 color = Color(0.4392157, 0.35686275, 0.87058824, 1)
 
 [node name="Button" type="Button" parent="Pivot" unique_id=109064066]

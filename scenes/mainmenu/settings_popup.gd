@@ -62,9 +62,9 @@ func _ready() -> void:
 
 	overlay.modulate.a = 0.0
 	panel.modulate.a = 1.0
-	panel.scale = HIDDEN_SCALE
-	panel.resized.connect(_refresh_panel_pivot)
-	call_deferred("_refresh_panel_pivot")
+	panel.offset_transform_enabled = true
+	panel.offset_transform_pivot_ratio = Vector2(0.5, 0.5)
+	panel.offset_transform_scale = HIDDEN_SCALE
 
 
 func show_popup() -> void:
@@ -213,26 +213,20 @@ func _play_tween(opening: bool) -> void:
 	if opening:
 		overlay.modulate.a = 0.0
 		panel.modulate.a = 1.0
-		panel.scale = HIDDEN_SCALE
-		_refresh_panel_pivot()
+		panel.offset_transform_scale = HIDDEN_SCALE
 		_tween.set_parallel(true)
 		_tween.tween_property(overlay, "modulate:a", 0.78, OVERLAY_OPEN_DURATION)
-		_tween.tween_property(panel, "scale", OPEN_OVERSHOOT_SCALE, OPEN_BOUNCE_DURATION).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-		_tween.chain().tween_property(panel, "scale", OPEN_SETTLE_SCALE, OPEN_SETTLE_DURATION).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
-		_tween.chain().tween_property(panel, "scale", Vector2.ONE, OPEN_FINISH_DURATION).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+		_tween.tween_property(panel, "offset_transform_scale", OPEN_OVERSHOOT_SCALE, OPEN_BOUNCE_DURATION).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+		_tween.chain().tween_property(panel, "offset_transform_scale", OPEN_SETTLE_SCALE, OPEN_SETTLE_DURATION).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+		_tween.chain().tween_property(panel, "offset_transform_scale", Vector2.ONE, OPEN_FINISH_DURATION).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
 	else:
 		_tween.set_parallel(true)
 		_tween.tween_property(overlay, "modulate:a", 0.0, OVERLAY_CLOSE_DURATION)
-		_tween.tween_property(panel, "scale", HIDDEN_SCALE, CLOSE_DURATION).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_IN)
+		_tween.tween_property(panel, "offset_transform_scale", HIDDEN_SCALE, CLOSE_DURATION).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_IN)
 		_tween.finished.connect(func() -> void:
 			if not _is_open:
 				visible = false
 		)
-
-
-func _refresh_panel_pivot() -> void:
-	panel.pivot_offset = panel.size * 0.5
-
 
 func _select_option_by_id(option: OptionButton, target_id: int) -> void:
 	for i in range(option.item_count):

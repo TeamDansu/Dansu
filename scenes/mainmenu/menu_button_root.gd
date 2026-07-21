@@ -26,7 +26,6 @@ class_name MenuBigButton
 
 var tween: Tween
 
-var pivot_position: Vector2
 var background_width: float = 0.0
 var background_height: float = 0.0
 
@@ -34,11 +33,15 @@ func _ready() -> void:
 	await get_tree().process_frame
 	
 	$Pivot/Background.color = bg_color
-	pivot_position = pivot.position
+	pivot.offset_transform_enabled = true
+	background.offset_transform_enabled = true
+	background.offset_transform_pivot_ratio = Vector2(0.0, 0.5)
 
 	_update_button()
 
 	background.size = Vector2.ZERO
+	background.scale = Vector2.ONE
+	background.offset_transform_scale = Vector2.ZERO
 	background.modulate.a = 0.0
 
 	if not Engine.is_editor_hint():
@@ -59,8 +62,7 @@ func _update_button() -> void:
 
 	background.size.x = min_size.x + 40
 	background.size.y = min_size.y + 10
-	background.scale.x = 0.0
-	background.scale.y = 0.0
+	background.offset_transform_scale = Vector2.ZERO
 
 
 func _hover_enter() -> void:
@@ -80,11 +82,11 @@ func _pressed() -> void:
 	tween.set_trans(Tween.TRANS_BACK)
 	tween.set_ease(Tween.EASE_OUT)
 
-	pivot.scale = Vector2.ONE * 0.96
+	pivot.offset_transform_scale = Vector2.ONE * 0.96
 
 	tween.tween_property(
 		pivot,
-		"scale",
+		"offset_transform_scale",
 		Vector2.ONE * hover_scale,
 		0.12
 	)
@@ -101,28 +103,35 @@ func _play_hover(state: bool) -> void:
 	if state:
 		tween.parallel().tween_property(
 			pivot,
-			"scale",
+			"offset_transform_scale",
 			Vector2.ONE * hover_scale,
 			hover_time
 		)
 
 		tween.parallel().tween_property(
 			pivot,
-			"rotation_degrees",
-			hover_rotation,
+			"offset_transform_position",
+			hover_offset,
+			hover_time
+		)
+
+		tween.parallel().tween_property(
+			pivot,
+			"offset_transform_rotation",
+			deg_to_rad(hover_rotation),
 			hover_time
 		)
 
 		tween.parallel().tween_property(
 			background,
-			"scale:x",
+			"offset_transform_scale:x",
 			1.0,
 			hover_time
 		)
 
 		tween.parallel().tween_property(
 			background,
-			"scale:y",
+			"offset_transform_scale:y",
 			1.0,
 			hover_time
 		)
@@ -137,28 +146,35 @@ func _play_hover(state: bool) -> void:
 	else:
 		tween.parallel().tween_property(
 			pivot,
-			"scale",
+			"offset_transform_scale",
 			Vector2.ONE,
 			hover_time
 		)
 
 		tween.parallel().tween_property(
 			pivot,
-			"rotation_degrees",
+			"offset_transform_position",
+			Vector2.ZERO,
+			hover_time
+		)
+
+		tween.parallel().tween_property(
+			pivot,
+			"offset_transform_rotation",
 			0.0,
 			hover_time
 		)
 
 		tween.parallel().tween_property(
 			background,
-			"scale:x",
+			"offset_transform_scale:x",
 			0.0,
 			hover_time
 		)
 
 		tween.parallel().tween_property(
 			background,
-			"scale:y",
+			"offset_transform_scale:y",
 			0.0,
 			hover_time
 		)

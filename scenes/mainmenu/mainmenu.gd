@@ -24,7 +24,6 @@ const EXIT_FADE_DURATION := 1.5
 var progress: float = 0.0
 var loading_timer = 0.0
 var is_exiting := false
-var _logo_base_scale := Vector2.ONE
 var _logo_pulse_time := LOGO_PULSE_DURATION
 var _last_logo_half_beat_key := ""
 var _last_logo_chart_key := ""
@@ -48,10 +47,8 @@ func _ready() -> void:
 
 	exit_overlay.visible = false
 	exit_overlay.color.a = 0.0
-	_logo_base_scale = logo.scale
+	logo.offset_transform_enabled = true
 	_refresh_logo_pivot()
-	if logo != null and not logo.resized.is_connected(_refresh_logo_pivot):
-		logo.resized.connect(_refresh_logo_pivot)
 
 	CM.progress_changed.connect(_update_progress)
 	CM.loading_finished.connect(_loading_finished)
@@ -252,7 +249,10 @@ func _update_logo_pulse(delta: float) -> void:
 		_last_logo_chart_key = ""
 		_last_logo_playback_msec = -1.0
 		_logo_pulse_time = minf(_logo_pulse_time + delta, LOGO_PULSE_DURATION)
-		logo.scale = logo.scale.lerp(_logo_base_scale * LOGO_IDLE_SCALE, delta * LOGO_RETURN_SPEED)
+		logo.offset_transform_scale = logo.offset_transform_scale.lerp(
+			Vector2.ONE * LOGO_IDLE_SCALE,
+			delta * LOGO_RETURN_SPEED
+		)
 		return
 
 	var chart_key := chart.uuid if not chart.uuid.is_empty() else chart.file_path
@@ -269,15 +269,18 @@ func _update_logo_pulse(delta: float) -> void:
 	_last_logo_playback_msec = playback_msec
 	_logo_pulse_time = minf(_logo_pulse_time + delta, LOGO_PULSE_DURATION)
 
-	var target_scale := _logo_base_scale * _get_logo_pulse_scale(_logo_pulse_time / LOGO_PULSE_DURATION)
-	logo.scale = logo.scale.lerp(target_scale, delta * LOGO_RETURN_SPEED)
+	var target_scale := Vector2.ONE * _get_logo_pulse_scale(_logo_pulse_time / LOGO_PULSE_DURATION)
+	logo.offset_transform_scale = logo.offset_transform_scale.lerp(
+		target_scale,
+		delta * LOGO_RETURN_SPEED
+	)
 
 
 func _refresh_logo_pivot() -> void:
 	if logo == null:
 		return
 
-	logo.pivot_offset = logo.size * 0.5
+	logo.offset_transform_pivot_ratio = Vector2(0.5, 0.5)
 
 
 func _get_logo_chart_time_msec() -> float:

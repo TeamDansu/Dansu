@@ -108,14 +108,14 @@ length = 0.001
 tracks/0/type = "value"
 tracks/0/imported = false
 tracks/0/enabled = true
-tracks/0/path = NodePath("MenuButtons:position")
+tracks/0/path = NodePath("MenuButtons:offset_transform_position")
 tracks/0/interp = 1
 tracks/0/loop_wrap = true
 tracks/0/keys = {
 "times": PackedFloat32Array(0),
 "transitions": PackedFloat32Array(1),
 "update": 0,
-"values": [Vector2(127, 575)]
+"values": [Vector2(0, 0)]
 }
 tracks/1/type = "value"
 tracks/1/imported = false
@@ -136,14 +136,14 @@ length = 0.56666666
 tracks/0/type = "value"
 tracks/0/imported = false
 tracks/0/enabled = true
-tracks/0/path = NodePath("MenuButtons:position")
+tracks/0/path = NodePath("MenuButtons:offset_transform_position")
 tracks/0/interp = 1
 tracks/0/loop_wrap = true
 tracks/0/keys = {
 "times": PackedFloat32Array(0, 0.53333336),
 "transitions": PackedFloat32Array(0.31864014, 1),
 "update": 0,
-"values": [Vector2(-400, 575), Vector2(127, 575)]
+"values": [Vector2(-527, 0), Vector2(0, 0)]
 }
 tracks/1/type = "value"
 tracks/1/imported = false
@@ -235,14 +235,14 @@ length = 0.001
 tracks/0/type = "value"
 tracks/0/imported = false
 tracks/0/enabled = true
-tracks/0/path = NodePath("../Logo:position:y")
+tracks/0/path = NodePath("../Logo:offset_transform_position:y")
 tracks/0/interp = 1
 tracks/0/loop_wrap = true
 tracks/0/keys = {
 "times": PackedFloat32Array(0),
 "transitions": PackedFloat32Array(1),
 "update": 1,
-"values": [-300.0]
+"values": [-364.0]
 }
 
 [sub_resource type="Animation" id="Animation_dx8qc"]
@@ -250,14 +250,14 @@ resource_name = "fade"
 tracks/0/type = "value"
 tracks/0/imported = false
 tracks/0/enabled = true
-tracks/0/path = NodePath("../Logo:position:y")
+tracks/0/path = NodePath("../Logo:offset_transform_position:y")
 tracks/0/interp = 1
 tracks/0/loop_wrap = true
 tracks/0/keys = {
 "times": PackedFloat32Array(0.100000024, 0.6333333),
 "transitions": PackedFloat32Array(0.1486511, 1),
 "update": 0,
-"values": [-300.0, 64.0]
+"values": [-364.0, 0.0]
 }
 
 [sub_resource type="AnimationLibrary" id="AnimationLibrary_vbcus"]
@@ -271,7 +271,7 @@ length = 0.001
 tracks/0/type = "value"
 tracks/0/imported = false
 tracks/0/enabled = true
-tracks/0/path = NodePath("../Charts:position")
+tracks/0/path = NodePath("../Charts:offset_transform_position")
 tracks/0/interp = 1
 tracks/0/loop_wrap = true
 tracks/0/keys = {
@@ -287,7 +287,7 @@ length = 0.53333336
 tracks/0/type = "value"
 tracks/0/imported = false
 tracks/0/enabled = true
-tracks/0/path = NodePath("../Charts:position")
+tracks/0/path = NodePath("../Charts:offset_transform_position")
 tracks/0/interp = 1
 tracks/0/loop_wrap = true
 tracks/0/keys = {
@@ -308,14 +308,14 @@ length = 0.001
 tracks/0/type = "value"
 tracks/0/imported = false
 tracks/0/enabled = true
-tracks/0/path = NodePath("../BottomButtons:position")
+tracks/0/path = NodePath("../BottomButtons:offset_transform_position")
 tracks/0/interp = 1
 tracks/0/loop_wrap = true
 tracks/0/keys = {
 "times": PackedFloat32Array(0),
 "transitions": PackedFloat32Array(1),
 "update": 0,
-"values": [Vector2(0, 1150)]
+"values": [Vector2(0, 170)]
 }
 
 [sub_resource type="Animation" id="Animation_nh018"]
@@ -324,14 +324,14 @@ length = 0.56666666
 tracks/0/type = "value"
 tracks/0/imported = false
 tracks/0/enabled = true
-tracks/0/path = NodePath("../BottomButtons:position")
+tracks/0/path = NodePath("../BottomButtons:offset_transform_position")
 tracks/0/interp = 1
 tracks/0/loop_wrap = true
 tracks/0/keys = {
 "times": PackedFloat32Array(0, 0.46666667),
 "transitions": PackedFloat32Array(1, 1),
 "update": 0,
-"values": [Vector2(0, 1150), Vector2(0, 980)]
+"values": [Vector2(0, 170), Vector2(0, 0)]
 }
 
 [sub_resource type="AnimationLibrary" id="AnimationLibrary_xujh8"]
@@ -345,14 +345,14 @@ length = 0.001
 tracks/0/type = "value"
 tracks/0/imported = false
 tracks/0/enabled = true
-tracks/0/path = NodePath("../ChartInfo:position")
+tracks/0/path = NodePath("../ChartInfo:offset_transform_position")
 tracks/0/interp = 1
 tracks/0/loop_wrap = true
 tracks/0/keys = {
 "times": PackedFloat32Array(0),
 "transitions": PackedFloat32Array(1),
 "update": 0,
-"values": [Vector2(2001, 178)]
+"values": [Vector2(1101, 0)]
 }
 
 [sub_resource type="Animation" id="Animation_1w8yq"]
@@ -361,14 +361,14 @@ length = 0.53333336
 tracks/0/type = "value"
 tracks/0/imported = false
 tracks/0/enabled = true
-tracks/0/path = NodePath("../ChartInfo:position")
+tracks/0/path = NodePath("../ChartInfo:offset_transform_position")
 tracks/0/interp = 1
 tracks/0/loop_wrap = true
 tracks/0/keys = {
 "times": PackedFloat32Array(0.033333335, 0.4),
 "transitions": PackedFloat32Array(0.16493858, 1),
 "update": 0,
-"values": [Vector2(2000, 178), Vector2(900, 178)]
+"values": [Vector2(1100, 0), Vector2(0, 0)]
 }
 
 [sub_resource type="AnimationLibrary" id="AnimationLibrary_nnql3"]
@@ -549,10 +549,11 @@ multimesh = SubResource("MultiMesh_jyltf")
 [node name="Logo" type="Control" parent="." unique_id=721616641]
 anchors_preset = 0
 offset_left = 80.0
-offset_top = -300.0
+offset_top = 64.0
 offset_right = 576.0
-offset_bottom = -147.99988
-pivot_offset = Vector2(0, 100)
+offset_bottom = 216.00012
+offset_transform_enabled = true
+offset_transform_position = Vector2(0, -364)
 
 [node name="Icon" type="TextureRect" parent="Logo" unique_id=1341307483]
 layout_mode = 0
@@ -618,10 +619,12 @@ anchor_left = 1.0
 anchor_top = 0.483
 anchor_right = 1.0
 anchor_bottom = 0.483
-offset_left = 81.0
+offset_left = -1020.0
 offset_top = -343.64
-offset_right = 1024.0
+offset_right = -77.0
 offset_bottom = 344.36
+offset_transform_enabled = true
+offset_transform_position = Vector2(1101, 0)
 mouse_filter = 2
 
 [node name="Panel" type="Panel" parent="ChartInfo" unique_id=34224441]
@@ -838,7 +841,7 @@ offset_top = -3.0
 offset_right = 75.0
 offset_bottom = 66.0
 rotation = -0.2012667
-theme_override_colors/font_color = Color(0.7781524, 0.9855893, 0.71779585, 1)
+theme_override_colors/font_color = Color(0.89283663, 0.9162954, 0.9607381, 1)
 theme_override_colors/font_shadow_color = Color(0.9647059, 0.9254902, 0.74509805, 1)
 theme_override_colors/font_outline_color = Color(0.4392157, 0.35686275, 0.87058824, 1)
 theme_override_constants/shadow_offset_x = 1
@@ -893,9 +896,10 @@ vertical_alignment = 1
 layout_mode = 1
 anchors_preset = 9
 anchor_bottom = 1.0
-offset_left = -1000.0
-offset_right = -248.0
+offset_right = 752.0
 grow_vertical = 2
+offset_transform_enabled = true
+offset_transform_position = Vector2(-1000, 0)
 script = ExtResource("20_vv2g0")
 content = NodePath("Content")
 
@@ -1116,6 +1120,7 @@ offset_left = 127.0
 offset_top = 126.79999
 offset_right = 411.0
 offset_bottom = 494.8
+offset_transform_enabled = true
 theme_override_constants/separation = 12
 script = ExtResource("6_xnw7g")
 
@@ -1219,8 +1224,10 @@ anchors_preset = -1
 anchor_top = 1.0
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_top = 70.0
-offset_bottom = 158.0
+offset_top = -100.0
+offset_bottom = -12.0
+offset_transform_enabled = true
+offset_transform_position = Vector2(0, 170)
 script = ExtResource("24_nnql3")
 
 [node name="Back" parent="BottomButtons" unique_id=735854669 instance=ExtResource("4_da4vi")]

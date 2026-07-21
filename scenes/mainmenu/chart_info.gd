@@ -40,8 +40,6 @@ var hovered := false
 var hover_strength := 0.0
 var shine_uv := Vector2(0.5, 0.5)
 var press_scale_multiplier := 1.0
-var base_thumb_position := Vector2.ZERO
-var base_content_position := Vector2.ZERO
 var panel_style: StyleBoxFlat
 var shine_rect: ColorRect
 var shine_material: ShaderMaterial
@@ -56,10 +54,13 @@ func _ready() -> void:
 	CM.chart_selected.connect(_refresh)
 	CoverLoader.cover_loaded.connect(_on_cover_loaded)
 	CoverLoader.cover_failed.connect(_on_cover_failed)
+	offset_transform_enabled = true
+	thumb.offset_transform_enabled = true
+	content.offset_transform_enabled = true
 
 	_setup_stylebox()
 	_setup_shine()
-	call_deferred("_cache_layout")
+	_snap_to_rest_state()
 	call_deferred("_on_resized")
 	set_process(false)
 
@@ -86,12 +87,12 @@ func _process(delta: float) -> void:
 	var visual_weight := minf(delta * VISUAL_LERP_SPEED, 1.0)
 	var hover_weight := minf(delta * HOVER_LERP_SPEED, 1.0)
 	var target_scale := Vector2.ONE * (target_scale_value * press_scale_multiplier)
-	var target_rotation := normalized.x * MAX_ROTATION_DEGREES
-	var target_thumb_position := base_thumb_position - Vector2(
+	var target_rotation := deg_to_rad(normalized.x * MAX_ROTATION_DEGREES)
+	var target_thumb_offset := -Vector2(
 		normalized.x * THUMB_PARALLAX.x,
 		normalized.y * THUMB_PARALLAX.y
 	)
-	var target_content_position := base_content_position + Vector2(
+	var target_content_offset := Vector2(
 		normalized.x * CONTENT_PARALLAX.x,
 		normalized.y * CONTENT_PARALLAX.y
 	)
@@ -102,10 +103,10 @@ func _process(delta: float) -> void:
 	var target_shadow_color := SHADOW_HOVER_COLOR if hovered else SHADOW_REST_COLOR
 	var target_shadow_size := SHADOW_HOVER_SIZE if hovered else 0.0
 
-	scale = scale.lerp(target_scale, visual_weight)
-	rotation_degrees = lerpf(rotation_degrees, target_rotation, visual_weight)
-	thumb.position = thumb.position.lerp(target_thumb_position, visual_weight)
-	content.position = content.position.lerp(target_content_position, visual_weight)
+	offset_transform_scale = offset_transform_scale.lerp(target_scale, visual_weight)
+	offset_transform_rotation = lerpf(offset_transform_rotation, target_rotation, visual_weight)
+	thumb.offset_transform_position = thumb.offset_transform_position.lerp(target_thumb_offset, visual_weight)
+	content.offset_transform_position = content.offset_transform_position.lerp(target_content_offset, visual_weight)
 	shine_uv = shine_uv.lerp(target_uv, visual_weight)
 	hover_strength = lerpf(hover_strength, target_hover_strength, hover_weight)
 
@@ -205,7 +206,7 @@ func _on_gui_input(event: InputEvent) -> void:
 
 
 func _on_resized() -> void:
-	pivot_offset = size * 0.5
+	offset_transform_pivot_ratio = Vector2(0.5, 0.5)
 	if shine_rect != null:
 		shine_rect.pivot_offset = shine_rect.size * 0.5
 
@@ -224,12 +225,6 @@ func _on_cover_failed(chart: Chart) -> void:
 		return
 	thumb.texture = null
 	_set_thumb_alpha(THUMB_HIDDEN_ALPHA)
-
-
-func _cache_layout() -> void:
-	base_thumb_position = thumb.position
-	base_content_position = content.position
-	_snap_to_rest_state()
 
 
 func _setup_stylebox() -> void:
@@ -406,13 +401,13 @@ func _build_difficulty_text(chart: Chart) -> String:
 
 
 func _is_visual_resting() -> bool:
-	if absf(rotation_degrees) > 0.05:
+	if absf(offset_transform_rotation) > deg_to_rad(0.05):
 		return false
-	if scale.distance_to(Vector2.ONE) > 0.001:
+	if offset_transform_scale.distance_to(Vector2.ONE) > 0.001:
 		return false
-	if thumb.position.distance_to(base_thumb_position) > 0.2:
+	if thumb.offset_transform_position.length() > 0.2:
 		return false
-	if content.position.distance_to(base_content_position) > 0.2:
+	if content.offset_transform_position.length() > 0.2:
 		return false
 	if hover_strength > 0.01:
 		return false
@@ -423,10 +418,10 @@ func _is_visual_resting() -> bool:
 
 func _snap_to_rest_state() -> void:
 	press_scale_multiplier = 1.0
-	scale = Vector2.ONE
-	rotation_degrees = 0.0
-	thumb.position = base_thumb_position
-	content.position = base_content_position
+	offset_transform_scale = Vector2.ONE
+	offset_transform_rotation = 0.0
+	thumb.offset_transform_position = Vector2.ZERO
+	content.offset_transform_position = Vector2.ZERO
 	shine_uv = Vector2(0.5, 0.5)
 	hover_strength = 0.0
 

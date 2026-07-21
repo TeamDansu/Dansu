@@ -55,11 +55,6 @@ var _next_tick_player_index := 0
 var _tick_cooldown := 0.0
 var _target_score := 0.0
 var _current_rank_index := 0
-var _rank_base_position := Vector2.ZERO
-var _rank_base_scale := Vector2.ONE
-var _current_rank_score_base_position := Vector2.ZERO
-var _next_rank_score_base_position := Vector2.ZERO
-var _label_pulse_scale := Vector2.ONE
 var _player_sprite_base_position := Vector2.ZERO
 var _player_sprite_base_scale := Vector2.ONE
 var _player_sprite_tween: Tween
@@ -208,20 +203,23 @@ func _setup_player_sprite() -> void:
 	player_sprite._apply_skin_scale()
 
 func _cache_animation_bases() -> void:
+	for label: Control in [rank, current_rank_score, next_rank_score, score_label]:
+		label.offset_transform_enabled = true
 	_refresh_label_pivots()
-	_rank_base_position = rank.position
-	_rank_base_scale = rank.scale
-	_current_rank_score_base_position = current_rank_score.position
-	_next_rank_score_base_position = next_rank_score.position
-	_label_pulse_scale = Vector2.ONE
+	rank.offset_transform_position = Vector2.ZERO
+	rank.offset_transform_scale = Vector2.ONE
+	current_rank_score.offset_transform_position = Vector2.ZERO
+	current_rank_score.offset_transform_scale = Vector2.ONE
+	next_rank_score.offset_transform_position = Vector2.ZERO
+	next_rank_score.offset_transform_scale = Vector2.ONE
 	_player_sprite_base_position = player_sprite.position
 	_player_sprite_base_scale = player_sprite.scale
 
 func _refresh_label_pivots() -> void:
-	rank.pivot_offset = rank.size * 0.5
-	current_rank_score.pivot_offset = current_rank_score.size * 0.5
-	next_rank_score.pivot_offset = next_rank_score.size * 0.5
-	score_label.pivot_offset = score_label.size * 0.5
+	rank.offset_transform_pivot_ratio = Vector2(0.5, 0.5)
+	current_rank_score.offset_transform_pivot_ratio = Vector2(0.5, 0.5)
+	next_rank_score.offset_transform_pivot_ratio = Vector2(0.5, 0.5)
+	score_label.offset_transform_pivot_ratio = Vector2(0.5, 0.5)
 
 func _create_tick_players() -> void:
 	if not _tick_players.is_empty():
@@ -387,51 +385,51 @@ func _play_rank_transition(new_rank_index: int) -> void:
 	tween.set_parallel(true)
 	tween.set_trans(Tween.TRANS_BACK)
 	tween.set_ease(Tween.EASE_IN)
-	tween.tween_property(rank, "position", _rank_base_position + Vector2(0.0, 28.0), 0.12)
-	tween.tween_property(rank, "scale", _rank_base_scale * 0.82, 0.12)
+	tween.tween_property(rank, "offset_transform_position", Vector2(0.0, 28.0), 0.12)
+	tween.tween_property(rank, "offset_transform_scale", Vector2.ONE * 0.82, 0.12)
 	tween.tween_property(rank, "modulate:a", 0.0, 0.12)
 	await tween.finished
 
 	_apply_rank_state(new_rank_index)
-	rank.position = _rank_base_position + Vector2(0.0, 20.0)
-	rank.scale = _rank_base_scale * 1.16
+	rank.offset_transform_position = Vector2(0.0, 20.0)
+	rank.offset_transform_scale = Vector2.ONE * 1.16
 	rank.modulate.a = 0.0
 
 	var rank_tween := create_tween()
 	rank_tween.set_parallel(true)
 	rank_tween.set_trans(Tween.TRANS_BACK)
 	rank_tween.set_ease(Tween.EASE_OUT)
-	rank_tween.tween_property(rank, "position", _rank_base_position, 0.2)
-	rank_tween.tween_property(rank, "scale", _rank_base_scale, 0.2)
+	rank_tween.tween_property(rank, "offset_transform_position", Vector2.ZERO, 0.2)
+	rank_tween.tween_property(rank, "offset_transform_scale", Vector2.ONE, 0.2)
 	rank_tween.tween_property(rank, "modulate:a", 1.0, 0.18)
 
 	_pulse_rank_score_labels()
 	await rank_tween.finished
 
 func _pulse_rank_score_labels() -> void:
-	current_rank_score.position = _current_rank_score_base_position
-	next_rank_score.position = _next_rank_score_base_position
-	current_rank_score.scale = _label_pulse_scale
-	next_rank_score.scale = _label_pulse_scale
+	current_rank_score.offset_transform_position = Vector2.ZERO
+	next_rank_score.offset_transform_position = Vector2.ZERO
+	current_rank_score.offset_transform_scale = Vector2.ONE
+	next_rank_score.offset_transform_scale = Vector2.ONE
 
 	var tween := create_tween()
 	tween.set_parallel(true)
 	tween.set_trans(Tween.TRANS_BACK)
 	tween.set_ease(Tween.EASE_OUT)
-	tween.tween_property(current_rank_score, "position", _current_rank_score_base_position + Vector2(0.0, -10.0), 0.12)
-	tween.tween_property(next_rank_score, "position", _next_rank_score_base_position + Vector2(0.0, -10.0), 0.12)
-	tween.tween_property(current_rank_score, "scale", Vector2(1.0, 1.12), 0.12)
-	tween.tween_property(next_rank_score, "scale", Vector2(1.0, 1.12), 0.12)
+	tween.tween_property(current_rank_score, "offset_transform_position", Vector2(0.0, -10.0), 0.12)
+	tween.tween_property(next_rank_score, "offset_transform_position", Vector2(0.0, -10.0), 0.12)
+	tween.tween_property(current_rank_score, "offset_transform_scale", Vector2(1.0, 1.12), 0.12)
+	tween.tween_property(next_rank_score, "offset_transform_scale", Vector2(1.0, 1.12), 0.12)
 
 	tween.finished.connect(func() -> void:
 		var settle_tween := create_tween()
 		settle_tween.set_parallel(true)
 		settle_tween.set_trans(Tween.TRANS_BACK)
 		settle_tween.set_ease(Tween.EASE_OUT)
-		settle_tween.tween_property(current_rank_score, "position", _current_rank_score_base_position, 0.16)
-		settle_tween.tween_property(next_rank_score, "position", _next_rank_score_base_position, 0.16)
-		settle_tween.tween_property(current_rank_score, "scale", _label_pulse_scale, 0.16)
-		settle_tween.tween_property(next_rank_score, "scale", _label_pulse_scale, 0.16)
+		settle_tween.tween_property(current_rank_score, "offset_transform_position", Vector2.ZERO, 0.16)
+		settle_tween.tween_property(next_rank_score, "offset_transform_position", Vector2.ZERO, 0.16)
+		settle_tween.tween_property(current_rank_score, "offset_transform_scale", Vector2.ONE, 0.16)
+		settle_tween.tween_property(next_rank_score, "offset_transform_scale", Vector2.ONE, 0.16)
 	)
 
 func _apply_rank_state(rank_index: int) -> void:
@@ -451,7 +449,6 @@ func _apply_rank_state(rank_index: int) -> void:
 		next_rank_score.text = "MAX\n%s" % _format_rank_score(MAX_SCORE_DISPLAY)
 
 	_apply_rank_colors(rank_index)
-	call_deferred("_refresh_label_pivots")
 
 func _update_live_score(display_score: float, locked_rank_index: int = -1) -> void:
 	var display_rank_index := _get_rank_index_for_score(display_score)

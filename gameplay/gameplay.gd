@@ -174,15 +174,9 @@ func _setup_combo_hud() -> void:
 		return
 	combo_container.visible = true
 	combo_container.modulate.a = 1.0
-	combo_container.scale = Vector2.ONE
-	combo_container.resized.connect(_refresh_combo_pivot)
-	call_deferred("_refresh_combo_pivot")
-
-
-func _refresh_combo_pivot() -> void:
-	if combo_container == null:
-		return
-	combo_container.pivot_offset = combo_container.size * 0.5
+	combo_container.offset_transform_enabled = true
+	combo_container.offset_transform_pivot_ratio = Vector2(0.5, 0.5)
+	combo_container.offset_transform_scale = Vector2.ONE
 
 
 func _reset_combo_hud() -> void:
@@ -191,7 +185,7 @@ func _reset_combo_hud() -> void:
 	if combo_container != null:
 		combo_container.visible = true
 		combo_container.modulate.a = 1.0
-		combo_container.scale = Vector2.ONE
+		combo_container.offset_transform_scale = Vector2.ONE
 	_update_combo_display()
 
 
@@ -207,13 +201,22 @@ func _play_combo_pop() -> void:
 		return
 	if _combo_tween != null:
 		_combo_tween.kill()
-	_refresh_combo_pivot()
-	combo_container.scale = Vector2.ONE
+	combo_container.offset_transform_scale = Vector2.ONE
 	_combo_tween = create_tween()
 	_combo_tween.set_trans(Tween.TRANS_BACK)
 	_combo_tween.set_ease(Tween.EASE_OUT)
-	_combo_tween.tween_property(combo_container, "scale", COMBO_POP_SCALE, COMBO_POP_DURATION_IN)
-	_combo_tween.tween_property(combo_container, "scale", Vector2.ONE, COMBO_POP_DURATION_OUT)
+	_combo_tween.tween_property(
+		combo_container,
+		"offset_transform_scale",
+		COMBO_POP_SCALE,
+		COMBO_POP_DURATION_IN
+	)
+	_combo_tween.tween_property(
+		combo_container,
+		"offset_transform_scale",
+		Vector2.ONE,
+		COMBO_POP_DURATION_OUT
+	)
 
 
 func _spawn_judge_popup(judgement: int) -> void:
@@ -580,13 +583,20 @@ func _apply_overlay_events(time_ms: float) -> void:
 			continue
 		var node := _overlay_nodes[visible_count]
 		visible_count += 1
-		var center := _overlay_root.size * OverlayEventFrame.anchor_to_vector(overlay.anchor) + state.position
+		var anchor := OverlayEventFrame.anchor_to_vector(overlay.anchor)
 		node.texture = texture
 		node.size = texture.get_size()
-		node.pivot_offset = node.size * 0.5
-		node.position = center - node.size * 0.5
-		node.scale = state.scale
-		node.rotation = deg_to_rad(state.rotation)
+		node.anchor_left = anchor.x
+		node.anchor_top = anchor.y
+		node.anchor_right = anchor.x
+		node.anchor_bottom = anchor.y
+		node.offset_left = -node.size.x * 0.5
+		node.offset_top = -node.size.y * 0.5
+		node.offset_right = node.size.x * 0.5
+		node.offset_bottom = node.size.y * 0.5
+		node.offset_transform_position = state.position
+		node.offset_transform_scale = state.scale
+		node.offset_transform_rotation = deg_to_rad(state.rotation)
 		node.modulate = Color(1.0, 1.0, 1.0, clampf(state.opacity, 0.0, 1.0))
 		node.visible = true
 		node.z_index = visible_count
@@ -611,6 +621,8 @@ func _ensure_overlay_node_pool(required_count: int) -> void:
 		node.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		node.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		node.stretch_mode = TextureRect.STRETCH_KEEP
+		node.offset_transform_enabled = true
+		node.offset_transform_pivot_ratio = Vector2(0.5, 0.5)
 		node.visible = false
 		_overlay_root.add_child(node)
 		_overlay_nodes.append(node)

@@ -25,6 +25,8 @@ var current_cover_chart: Chart = null
 var hovered := false
 
 func _ready() -> void:
+	panel.offset_transform_enabled = true
+	panel.offset_transform_pivot_ratio = Vector2(0.5, 0.5)
 	mouse_entered.connect(_on_enter)
 	mouse_exited.connect(_on_exit)
 	gui_input.connect(_on_gui_input)
@@ -62,10 +64,10 @@ func _apply_hover_state() -> void:
 	var rest_scale := SELECTED_SCALE if selected else NORMAL_SCALE
 
 	if hovered:
-		hover_tween.tween_property(panel, "scale", HOVER_SCALE, 0.15)
+		hover_tween.tween_property(panel, "offset_transform_scale", HOVER_SCALE, 0.15)
 		hover_tween.parallel().tween_property(panel, "modulate:a", HOVER_ALPHA, 0.15)
 	else:
-		hover_tween.tween_property(panel, "scale", rest_scale, 0.2)
+		hover_tween.tween_property(panel, "offset_transform_scale", rest_scale, 0.2)
 		hover_tween.parallel().tween_property(panel, "modulate:a", NORMAL_ALPHA, 0.2)
 
 func _set_hovered_state(value: bool, play_sound: bool = false) -> void:
@@ -141,7 +143,7 @@ func check_is_selected():
 	var brightness := SELECTED_BRIGHTNESS if selected else NORMAL_BRIGHTNESS
 	panel.self_modulate = Color(brightness, brightness, brightness, 1)
 	if not hovered:
-		panel.scale = SELECTED_SCALE if selected else NORMAL_SCALE
+		panel.offset_transform_scale = SELECTED_SCALE if selected else NORMAL_SCALE
 
 func update_selected(_chart) -> void:
 	check_is_selected()
@@ -179,8 +181,13 @@ func _play_click_animation() -> void:
 	click_tween = create_tween()
 	click_tween.set_trans(Tween.TRANS_BACK)
 	click_tween.set_ease(Tween.EASE_OUT)
-	click_tween.tween_property(panel, "scale", CLICK_SCALE, 0.06)
-	click_tween.tween_property(panel, "scale", HOVER_SCALE if hovered else (SELECTED_SCALE if selected else NORMAL_SCALE), 0.14)
+	click_tween.tween_property(panel, "offset_transform_scale", CLICK_SCALE, 0.06)
+	click_tween.tween_property(
+		panel,
+		"offset_transform_scale",
+		HOVER_SCALE if hovered else (SELECTED_SCALE if selected else NORMAL_SCALE),
+		0.14
+	)
 	click_tween.parallel().tween_property(panel, "modulate:a", HOVER_ALPHA if hovered else NORMAL_ALPHA, 0.12)
 
 func _sort_by_rating(a: Chart, b: Chart) -> bool:

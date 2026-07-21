@@ -8,7 +8,6 @@
 self_modulate = Color(0.49019608, 0.5058824, 0.78039217, 1)
 offset_right = 128.0
 offset_bottom = 120.0
-mouse_behavior_recursive = 2
 mouse_default_cursor_shape = 2
 texture = ExtResource("1_gol86")
 expand_mode = 2
@@ -25,6 +24,7 @@ offset_left = -42.0
 offset_top = -18.472
 offset_right = 42.0
 offset_bottom = 20.528
+mouse_filter = 1
 theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
 theme_override_fonts/font = ExtResource("2_iorlk")
 theme_override_font_sizes/font_size = 32

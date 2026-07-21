@@ -19,6 +19,8 @@ var hovered := false
 var base_color := Color.WHITE
 
 func _ready() -> void:
+	offset_transform_enabled = true
+	offset_transform_pivot_ratio = Vector2(0.5, 0.5)
 	mouse_entered.connect(_on_enter)
 	mouse_exited.connect(_on_exit)
 	gui_input.connect(_on_gui_input)
@@ -26,7 +28,6 @@ func _ready() -> void:
 
 	base_color = Game.get_color_from_rating(rating)
 	$Label.text = str(int(rating))
-	pivot_offset = size * 0.5
 	modulate.a = NORMAL_ALPHA
 	_update_selected_state(CM.selected_chart)
 
@@ -35,7 +36,7 @@ func play_appear_animation(delay: float = 0.0) -> void:
 	if appear_tween:
 		appear_tween.kill()
 
-	scale = Vector2(0.78, 0.78)
+	offset_transform_scale = Vector2(0.78, 0.78)
 	modulate.a = 0.0
 
 	appear_tween = create_tween()
@@ -46,7 +47,7 @@ func play_appear_animation(delay: float = 0.0) -> void:
 		appear_tween.tween_interval(delay)
 
 	var rest_scale := SELECTED_SCALE if chart != null and chart == CM.selected_chart else NORMAL_SCALE
-	appear_tween.tween_property(self, "scale", rest_scale, 0.22)
+	appear_tween.tween_property(self, "offset_transform_scale", rest_scale, 0.22)
 	appear_tween.parallel().tween_property(self, "modulate:a", NORMAL_ALPHA, 0.18)
 
 
@@ -86,10 +87,10 @@ func _apply_hover_state() -> void:
 	var rest_scale := SELECTED_SCALE if chart != null and chart == CM.selected_chart else NORMAL_SCALE
 
 	if hovered:
-		hover_tween.tween_property(self, "scale", HOVER_SCALE, 0.15)
+		hover_tween.tween_property(self, "offset_transform_scale", HOVER_SCALE, 0.15)
 		hover_tween.parallel().tween_property(self, "modulate:a", HOVER_ALPHA, 0.15)
 	else:
-		hover_tween.tween_property(self, "scale", rest_scale, 0.2)
+		hover_tween.tween_property(self, "offset_transform_scale", rest_scale, 0.2)
 		hover_tween.parallel().tween_property(self, "modulate:a", NORMAL_ALPHA, 0.2)
 
 
@@ -103,8 +104,13 @@ func _play_click_animation() -> void:
 	click_tween = create_tween()
 	click_tween.set_trans(Tween.TRANS_BACK)
 	click_tween.set_ease(Tween.EASE_OUT)
-	click_tween.tween_property(self, "scale", CLICK_SCALE, 0.05)
-	click_tween.tween_property(self, "scale", HOVER_SCALE if hovered else (SELECTED_SCALE if chart != null and chart == CM.selected_chart else NORMAL_SCALE), 0.14)
+	click_tween.tween_property(self, "offset_transform_scale", CLICK_SCALE, 0.05)
+	click_tween.tween_property(
+		self,
+		"offset_transform_scale",
+		HOVER_SCALE if hovered else (SELECTED_SCALE if chart != null and chart == CM.selected_chart else NORMAL_SCALE),
+		0.14
+	)
 	click_tween.parallel().tween_property(self, "modulate:a", HOVER_ALPHA if hovered else NORMAL_ALPHA, 0.12)
 
 
@@ -118,4 +124,4 @@ func _update_selected_state(_selected_chart: Chart) -> void:
 		1.0
 	)
 	if not hovered:
-		scale = SELECTED_SCALE if is_selected else NORMAL_SCALE
+		offset_transform_scale = SELECTED_SCALE if is_selected else NORMAL_SCALE

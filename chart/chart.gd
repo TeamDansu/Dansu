@@ -65,12 +65,12 @@ func build_search_string() -> void:
 	search_string = title + "-" + artist + "-" + creator + "-" + tags + "-" + difficulty + "-" + source
 	search_string_lower = search_string.to_lower()
 
-var title: String = "?"
-var artist: String = "?"
-var creator: String = "?"
-var source: String = "?"
+var title: String = ""
+var artist: String = ""
+var creator: String = ""
+var source: String = ""
 var tags: String = ""
-var difficulty: String = "?"
+var difficulty: String = ""
 var rating: float = 0.0
 var rating_calculated := false
 var last_played_at: int = 0
@@ -82,7 +82,7 @@ var preview_time := -1.0
 var timings: Array[Timing]
 var default_hitsounds: PackedInt32Array
 
-var file_audio: String = "song.mp3"
+var file_audio: String = ""
 var file_cover_art: String = ""
 var file_skin: String = ""
 

@@ -143,6 +143,9 @@ static func save_chart(chart: Chart, previous_file_path: String) -> bool:
 		chart.chart_set = CM.selected_chartset
 	if chart.chart_set == null:
 		return false
+	if chart.chart_set.db_id <= 0 and chart.chart_set.charts.is_empty():
+		chart.chart_set.folder_name = CM.make_unique_chartset_folder_name(chart.title.strip_edges())
+		chart.folder_name = chart.chart_set.folder_name
 	if chart.folder_name.is_empty():
 		chart.folder_name = chart.chart_set.folder_name
 
