@@ -27,9 +27,6 @@ func _process(delta: float) -> void:
 		texture = _animation.frames[_frame_index]
 		offset = Vector2(0,texture.get_size().y / 2)
 
-func play_animation_id(id: int) -> void:
-	play_animation(skin.get_animation_via_id(id))
-
 func get_hit_animation() -> PlayerAnimation:
 	var size = skin.hits.size()
 	if size < 1:

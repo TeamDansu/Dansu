@@ -1,12 +1,14 @@
 extends TextureRect
+class_name DifficultyStar
 
 const NORMAL_BRIGHTNESS := 0.75
 const SELECTED_BRIGHTNESS := 1.0
-const NORMAL_ALPHA := 0.82
+const NORMAL_ALPHA := 0.68
+const SELECTED_ALPHA := 1.0
 const HOVER_ALPHA := 1.0
 const NORMAL_SCALE := Vector2.ONE
-const SELECTED_SCALE := Vector2(1.06, 1.06)
-const HOVER_SCALE := Vector2(1.12, 1.12)
+const SELECTED_SCALE := Vector2(1.12, 1.12)
+const HOVER_SCALE := Vector2(1.16, 1.16)
 const CLICK_SCALE := Vector2(0.92, 0.92)
 
 var rating := 0.0
@@ -28,7 +30,6 @@ func _ready() -> void:
 
 	base_color = Game.get_color_from_rating(rating)
 	$Label.text = str(int(rating))
-	modulate.a = NORMAL_ALPHA
 	_update_selected_state(CM.selected_chart)
 
 
@@ -47,8 +48,9 @@ func play_appear_animation(delay: float = 0.0) -> void:
 		appear_tween.tween_interval(delay)
 
 	var rest_scale := SELECTED_SCALE if chart != null and chart == CM.selected_chart else NORMAL_SCALE
+	var rest_alpha := SELECTED_ALPHA if chart != null and chart == CM.selected_chart else NORMAL_ALPHA
 	appear_tween.tween_property(self, "offset_transform_scale", rest_scale, 0.22)
-	appear_tween.parallel().tween_property(self, "modulate:a", NORMAL_ALPHA, 0.18)
+	appear_tween.parallel().tween_property(self, "modulate:a", rest_alpha, 0.18)
 
 
 func _on_enter() -> void:
@@ -85,13 +87,14 @@ func _apply_hover_state() -> void:
 	hover_tween.set_ease(Tween.EASE_OUT)
 
 	var rest_scale := SELECTED_SCALE if chart != null and chart == CM.selected_chart else NORMAL_SCALE
+	var rest_alpha := SELECTED_ALPHA if chart != null and chart == CM.selected_chart else NORMAL_ALPHA
 
 	if hovered:
 		hover_tween.tween_property(self, "offset_transform_scale", HOVER_SCALE, 0.15)
 		hover_tween.parallel().tween_property(self, "modulate:a", HOVER_ALPHA, 0.15)
 	else:
 		hover_tween.tween_property(self, "offset_transform_scale", rest_scale, 0.2)
-		hover_tween.parallel().tween_property(self, "modulate:a", NORMAL_ALPHA, 0.2)
+		hover_tween.parallel().tween_property(self, "modulate:a", rest_alpha, 0.2)
 
 
 func _play_click_animation() -> void:
@@ -117,11 +120,13 @@ func _play_click_animation() -> void:
 func _update_selected_state(_selected_chart: Chart) -> void:
 	var is_selected := chart != null and chart == CM.selected_chart
 	var brightness := SELECTED_BRIGHTNESS if is_selected else NORMAL_BRIGHTNESS
+	$SelectionGlow.visible = is_selected
 	self_modulate = Color(
 		base_color.r * brightness,
 		base_color.g * brightness,
 		base_color.b * brightness,
 		1.0
 	)
+	modulate.a = HOVER_ALPHA if hovered else (SELECTED_ALPHA if is_selected else NORMAL_ALPHA)
 	if not hovered:
 		offset_transform_scale = SELECTED_SCALE if is_selected else NORMAL_SCALE

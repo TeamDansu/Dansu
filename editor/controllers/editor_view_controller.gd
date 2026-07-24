@@ -84,6 +84,16 @@ func refresh_views() -> void:
 	editor.transport.rebuild_playback_notes()
 	sync_layouts()
 
+
+func refresh_note(note: Note) -> void:
+	if note == null:
+		return
+	mark_layout_dirty()
+	sync_layouts()
+	var note_view := note_views.get(note) as EditorNote
+	if note_view != null:
+		note_view.queue_redraw()
+
 func clear_layers() -> void:
 	if rail_layer != null:
 		for child in rail_layer.get_children():

@@ -24,12 +24,27 @@ const WAVE_BASE_OFFSET := 0.72
 const WAVE_SURFACE_Y := -0.018
 const WAVE_BACKING_Y := -0.055
 const DETAIL_Y := 0.018
+const FLOOR_DETAIL_MIX := 0.38
+const FLOOR_RAIL_MIX := 0.12
+const FLOOR_VALUE_FROM_BACKGROUND := 0.42
+const FLOOR_VALUE_FROM_RAIL := 0.07
+const FLOOR_MIN_VALUE := 0.10
+const FLOOR_MAX_VALUE := 0.34
+const GUIDE_BASE_MIX := 0.28
+const GUIDE_RAIL_MIX := 0.34
+const GUIDE_VALUE_FROM_BACKGROUND := 0.78
+const GUIDE_VALUE_FROM_RAIL := 0.56
+const GUIDE_MIN_VALUE := 0.28
+const GUIDE_MAX_VALUE := 0.78
 
 @export var ground: MeshInstance3D
 @export var player: Node3D
+@export var vignette: ColorRect
 @export_range(0.0, 10.0, 0.1) var scroll_speed := 3.2
-@export var accent_color := Color(0.50, 0.42, 0.92, 1.0)
-@export var guide_color := Color(0.34, 0.35, 0.40, 1.0)
+
+var accent_color: Color
+var guide_color: Color
+var _floor_color: Color
 
 var low_energy := 0.0
 var mid_energy := 0.0
@@ -56,12 +71,6 @@ func _ready() -> void:
 	_spectrum_levels.resize(WAVE_SAMPLE_COUNT)
 	_cache_ground_material()
 	_find_spectrum_analyzer()
-	_create_stage_shell()
-	_create_scrolling_details()
-	_create_waveforms()
-	_create_judgement_line()
-	_create_player_rings()
-	_update_shader_parameters()
 
 
 func _process(delta: float) -> void:
@@ -77,14 +86,62 @@ func _process(delta: float) -> void:
 
 
 func set_theme_colors(base_color: Color, detail_color: Color, rail_color: Color) -> void:
-	accent_color = Color(rail_color.r, rail_color.g, rail_color.b, 1.0)
+	_update_theme_palette(base_color, detail_color, rail_color)
 	if _judgement_material != null:
 		_judgement_material.emission = accent_color.darkened(0.16)
-	if _ground_material == null:
+	if _ground_material != null:
+		_ground_material.set_shader_parameter("floor_color", _floor_color)
+	if vignette != null and vignette.material is ShaderMaterial:
+		var vignette_material := vignette.material as ShaderMaterial
+		vignette_material.set_shader_parameter("edge_color", _floor_color.darkened(0.36))
+	_update_shader_parameters()
+	_ensure_themed_visuals()
+
+
+func _update_theme_palette(base_color: Color, detail_color: Color, rail_color: Color) -> void:
+	var base := Color(base_color.r, base_color.g, base_color.b, 1.0)
+	var detail := Color(detail_color.r, detail_color.g, detail_color.b, 1.0)
+	accent_color = Color(rail_color.r, rail_color.g, rail_color.b, 1.0)
+
+	var background_value := maxf(base.v, detail.v)
+	var floor_seed := base.lerp(detail, FLOOR_DETAIL_MIX).lerp(accent_color, FLOOR_RAIL_MIX)
+	var floor_value := clampf(
+		background_value * FLOOR_VALUE_FROM_BACKGROUND + accent_color.v * FLOOR_VALUE_FROM_RAIL,
+		FLOOR_MIN_VALUE,
+		FLOOR_MAX_VALUE
+	)
+	_floor_color = Color.from_hsv(
+		floor_seed.h,
+		clampf(floor_seed.s * 1.12, 0.0, 0.88),
+		floor_value,
+		1.0
+	)
+
+	var guide_seed := detail.lerp(base, GUIDE_BASE_MIX).lerp(accent_color, GUIDE_RAIL_MIX)
+	var guide_value := clampf(
+		maxf(
+			background_value * GUIDE_VALUE_FROM_BACKGROUND,
+			accent_color.v * GUIDE_VALUE_FROM_RAIL
+		),
+		GUIDE_MIN_VALUE,
+		GUIDE_MAX_VALUE
+	)
+	guide_color = Color.from_hsv(
+		guide_seed.h,
+		clampf(guide_seed.s * 1.08, 0.0, 0.92),
+		guide_value,
+		1.0
+	)
+
+
+func _ensure_themed_visuals() -> void:
+	if _stage_shell != null:
 		return
-	var neutral_floor := Color(0.105, 0.108, 0.125, 1.0)
-	var themed_floor := base_color.lerp(detail_color, 0.25).darkened(0.54)
-	_ground_material.set_shader_parameter("floor_color", neutral_floor.lerp(themed_floor, 0.22))
+	_create_stage_shell()
+	_create_scrolling_details()
+	_create_waveforms()
+	_create_judgement_line()
+	_create_player_rings()
 
 
 func _cache_ground_material() -> void:
@@ -250,7 +307,8 @@ func _create_stage_shell() -> void:
 		var surface := SurfaceTool.new()
 		surface.begin(Mesh.PRIMITIVE_TRIANGLES)
 
-		var wall_color := Color(0.10, 0.105, 0.125, 0.055)
+		var wall_color := _floor_color
+		wall_color.a = 0.075
 		_add_prism(surface, Vector3(WALL_WIDTH * 0.5, -0.045, -23.0), Vector3(WALL_WIDTH, 0.045, 60.0), wall_color)
 
 		var edge_color := guide_color.lerp(accent_color, 0.08)
@@ -398,7 +456,8 @@ func _build_waveform_surface(mesh: ImmediateMesh, z_shift: float) -> void:
 		var level := _spectrum_levels[source_index]
 		var x := WAVE_BASE_OFFSET + 0.22 + level * 1.18
 		var half_width := 0.065 + level * 0.025
-		var shadow_color := Color(0.025, 0.026, 0.035, 0.12)
+		var shadow_color := _floor_color.darkened(0.58)
+		shadow_color.a = 0.12
 
 		mesh.surface_set_color(shadow_color)
 		mesh.surface_add_vertex(Vector3(x - half_width, WAVE_BACKING_Y + 0.004, z))
@@ -417,13 +476,16 @@ func _create_judgement_line() -> void:
 	surface.begin(Mesh.PRIMITIVE_TRIANGLES)
 	var judgement_z := GameplayPlayfield.JUDGEMENT_Z
 
-	var shadow_color := Color(1.0, 1.0, 1.0, 0.137)
+	var shadow_color := guide_color.lightened(0.34)
+	shadow_color.a = 0.137
 	_add_prism(surface, Vector3(0.0, 0.010, judgement_z), Vector3(16.0, 0.016, 0.23), shadow_color)
 
-	var body_color := guide_color.lerp(Color(0.263, 0.247, 0.329, 0.38), 0.35)
+	var body_color := guide_color.darkened(0.20)
+	body_color.a = 0.38
 	_add_prism(surface, Vector3(0.0, 0.028, judgement_z), Vector3(15.72, 0.020, 0.13), body_color)
 
-	var core_color := accent_color.darkened(0.14).lerp(Color(0.527, 0.49, 0.681, 0.278), 0.14)
+	var core_color := accent_color.lerp(guide_color, 0.14).darkened(0.08)
+	core_color.a = 0.278
 	_add_prism(surface, Vector3(0.0, 0.050, judgement_z - 0.003), Vector3(15.34, 0.013, 0.042), core_color)
 
 	for side_value in [-1.0, 1.0]:
@@ -533,17 +595,6 @@ func _add_triangle(surface: SurfaceTool, center: Vector3, size: Vector2, color: 
 	var b := center + Vector3(side * size.x * 0.5, 0.0, 0.0)
 	var c := center + Vector3(-side * size.x * 0.5, 0.0, -size.y * 0.5)
 	_add_colored_triangle(surface, a, b, c, color)
-
-
-func _add_quad(surface: SurfaceTool, center: Vector3, size: Vector2, color: Color, rotation: float = 0.0) -> void:
-	var axis_x := Vector3(cos(rotation), 0.0, sin(rotation)) * size.x * 0.5
-	var axis_z := Vector3(-sin(rotation), 0.0, cos(rotation)) * size.y * 0.5
-	var a := center - axis_x - axis_z
-	var b := center + axis_x - axis_z
-	var c := center - axis_x + axis_z
-	var d := center + axis_x + axis_z
-	_add_colored_triangle(surface, a, c, b, color)
-	_add_colored_triangle(surface, b, c, d, color)
 
 
 func _add_prism(surface: SurfaceTool, base_center: Vector3, size: Vector3, color: Color, rotation: float = 0.0) -> void:

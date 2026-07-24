@@ -93,7 +93,7 @@ func create_rail() -> void:
 	var new_rail := EditorChartOps.create_default_rail(editor.timeline.snap_time(int(round(Game.current_time))))
 	CM.ensure_parsed_chart().rails.append(new_rail)
 	editor.selection.select_rail(new_rail)
-	editor._refresh_views()
+	editor.refresh_views()
 
 func create_hit_note() -> void:
 	create_note(Note.NoteType.HIT, Note.Dir.NONE)
@@ -115,11 +115,18 @@ func create_note(note_type: Note.NoteType, dir: int) -> void:
 		return
 	editor._push_history_snapshot()
 	var note_time := editor.timeline.snap_time(int(round(Game.current_time)))
+	var parsed_chart := CM.ensure_parsed_chart()
+	EditorChartOps.remove_note_placement_conflicts(
+		parsed_chart.rails,
+		editor.selection.selected_rail,
+		note_time,
+		note_type
+	)
 	var new_note := EditorChartOps.create_note(note_type, note_time, dir)
 	editor.selection.selected_rail.notes.append(new_note)
 	editor.selection.selected_rail.sort_notes()
 	editor.selection.select_note(editor.selection.selected_rail, new_note)
-	editor._refresh_views()
+	editor.refresh_views()
 
 func delete_selected() -> void:
 	if editor == null:
@@ -134,7 +141,7 @@ func delete_selected() -> void:
 	elif editor.selection.selected_rail != null:
 		EditorChartOps.remove_rail(editor.selection.selected_rail)
 	editor.selection.clear()
-	editor._refresh_views()
+	editor.refresh_views()
 
 func add_point_at_mouse(global_mouse_pos: Vector2) -> void:
 	if editor == null or editor.timeline == null or editor.chart_panel == null:
@@ -145,18 +152,23 @@ func add_point_at_mouse(global_mouse_pos: Vector2) -> void:
 	var point_x := editor._snap_point_x(local.x / max(1.0, editor.chart_panel.size.x))
 	var point_index := EditorChartOps.add_point(editor.selection.selected_rail, point_time, point_x)
 	editor.selection.select_point(editor.selection.selected_rail, point_index)
-	editor._refresh_views()
+	editor.refresh_views()
 
 func adjust_selected_object(is_positive: bool) -> void:
 	if editor == null:
 		return
 	if editor.selection.selected_note != null:
+		var note := editor.selection.selected_note
+		var direction := 1 if is_positive else -1
+		var stepped_end_time := editor.timeline.step_time(note.end_time, direction)
+		var next_length := maxi(0, stepped_end_time - note.time)
+		if next_length == note.length:
+			return
 		editor._push_history_snapshot()
-		var delta := 50 if is_positive else -50
-		editor.selection.selected_note.length = max(0, editor.selection.selected_note.length + delta)
+		note.length = next_length
 		if editor.view_controller != null:
-			editor.view_controller.mark_layout_dirty()
-		editor._sync_view_layouts()
+			editor.view_controller.refresh_note(note)
+		editor.selection_changed.emit()
 		return
 	if editor.selection.has_point():
 		editor._push_history_snapshot()

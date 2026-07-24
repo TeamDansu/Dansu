@@ -15,6 +15,19 @@ var sprite: String = ""
 var opacity: float = 1.0
 var has_opacity: bool = false
 
+func clone() -> ChartEventFrame:
+	var result := OverlayEventFrame.new()
+	result.time = time
+	result.ease = ease
+	result.position = position
+	result.anchor = anchor
+	result.scale = scale
+	result.rotation = rotation
+	result.sprite = sprite
+	result.opacity = opacity
+	result.has_opacity = has_opacity
+	return result
+
 static func is_valid_anchor(value: String) -> bool:
 	return ANCHOR_PRESETS.has(value)
 

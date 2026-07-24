@@ -80,19 +80,11 @@ func add_custom_hitsound_from_file(source_path: String) -> void:
 	if source_path.get_extension().to_lower() != "wav":
 		return
 	ensure_builtins()
-	FileSystem.ensure_dir(chart.folder_path)
-	var target_name := _make_unique_file_name(source_path.get_file())
-	var target_path := chart.folder_path.path_join(target_name)
-	var bytes := FileAccess.get_file_as_bytes(source_path)
-	if bytes.is_empty():
+	var target_path := FileSystem.copy_file_unique(source_path, chart.folder_path, "hitsound")
+	if target_path.is_empty():
 		return
-	var file := FileAccess.open(target_path, FileAccess.WRITE)
-	if file == null:
-		return
-	file.store_buffer(bytes)
-	file.flush()
 	var hitsound := HitSound.new()
-	hitsound.setup(chart, _next_id(), target_name)
+	hitsound.setup(chart, _next_id(), target_path.get_file())
 	CM.ensure_parsed_chart().hitsounds.append(hitsound)
 	_notify_changed()
 
@@ -120,21 +112,10 @@ func remove_custom_hitsound(hitsound_id: int) -> void:
 	_notify_changed()
 
 func get_stream_for_note(note: Note) -> AudioStream:
-	if note == null:
-		return null
-	var id := int(note.hitsound)
-	if id < 0 and chart != null:
-		id = chart.get_default_hitsound_id(chart.get_default_hitsound_slot_for_note(note))
-	if id >= 0 and _streams.has(id):
-		return _streams[id]
-	return DEFAULT_MOVE_SFX if int(note.type) == int(Note.NoteType.MOVE) else DEFAULT_HIT_SFX
+	return HitsoundResolver.for_note(chart, _streams, note, DEFAULT_HIT_SFX, DEFAULT_MOVE_SFX)
 
 func get_release_stream() -> AudioStream:
-	if chart != null:
-		var id := chart.get_default_hitsound_id(Chart.DEFAULT_HITSOUND_LONGNOTE_RELEASE)
-		if id >= 0 and _streams.has(id):
-			return _streams[id]
-	return DEFAULT_HIT_SFX
+	return HitsoundResolver.long_note_release(chart, _streams, DEFAULT_HIT_SFX)
 
 func _notify_changed() -> void:
 	rebuild_cache()
@@ -146,13 +127,3 @@ func _next_id() -> int:
 		if hitsound != null:
 			next_id = max(next_id, hitsound.id + 1)
 	return next_id
-
-func _make_unique_file_name(file_name: String) -> String:
-	var base := file_name.get_basename()
-	var ext := file_name.get_extension().to_lower()
-	var candidate := "%s.%s" % [base, ext]
-	var i := 1
-	while FileAccess.file_exists(chart.folder_path.path_join(candidate)):
-		candidate = "%s_%d.%s" % [base, i, ext]
-		i += 1
-	return candidate

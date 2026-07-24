@@ -16,7 +16,10 @@ layout_mode = 2
 
 [node name="file_name" type="Label" parent="MarginContainer/HBoxContainer" unique_id=952875251]
 layout_mode = 2
+size_flags_horizontal = 3
 text = "FileName.wav"
+clip_text = true
+text_overrun_behavior = 5
 
 [node name="VSeparator" type="VSeparator" parent="MarginContainer/HBoxContainer" unique_id=669223752]
 layout_mode = 2

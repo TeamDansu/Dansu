@@ -42,12 +42,6 @@ func ensure_timings() -> void:
 
 	chart.timings.sort_custom(func(a, b) -> bool: return a.time < b.time)
 
-func get_song_length_ms() -> int:
-	return _song_length_ms
-
-func get_song_length_sec() -> float:
-	return _song_length_sec
-
 func get_min_time() -> int:
 	return _min_time_ms
 

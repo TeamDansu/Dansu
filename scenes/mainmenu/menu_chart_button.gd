@@ -1,4 +1,5 @@
 extends Control
+class_name MenuChartButton
 
 @onready var panel: PanelContainer = $PanelContainer
 @onready var rating_hbox: HBoxContainer = %Levels

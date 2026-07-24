@@ -65,9 +65,6 @@ func create_dialogs() -> void:
 		if not CoverLoader.cover_failed.is_connected(_on_cover_failed):
 			CoverLoader.cover_failed.connect(_on_cover_failed)
 
-func is_syncing_metadata() -> bool:
-	return _syncing_metadata
-
 func refresh_metadata_fields() -> void:
 	if editor == null or editor.chart == null:
 		return
@@ -85,14 +82,17 @@ func update_skin_file_ui() -> void:
 	if skin_file_label == null or editor == null or editor.chart == null:
 		return
 	skin_file_label.text = editor.chart.file_skin if editor.chart.file_skin != "" else "(no linked skin file)"
+	skin_file_label.tooltip_text = skin_file_label.text
 
 func update_media_ui() -> void:
 	if editor == null or editor.chart == null:
 		return
 	if cover_file_label != null:
 		cover_file_label.text = editor.chart.file_cover_art if not editor.chart.file_cover_art.is_empty() else "(no linked cover art)"
+		cover_file_label.tooltip_text = cover_file_label.text
 	if audio_file_label != null:
 		audio_file_label.text = editor.chart.file_audio if not editor.chart.file_audio.is_empty() else "(no linked audio file)"
+		audio_file_label.tooltip_text = audio_file_label.text
 	_update_cover_preview()
 
 func _update_cover_preview() -> void:
@@ -358,40 +358,5 @@ func _copy_file_into_chart_folder(source_path: String) -> String:
 	if normalized_source_path.is_empty() or not FileAccess.file_exists(normalized_source_path):
 		return ""
 
-	FileSystem.ensure_dir(editor.chart.folder_path)
-
-	var target_name := _make_unique_chart_file_name(normalized_source_path.get_file())
-	var target_path := editor.chart.folder_path.path_join(target_name)
-	var bytes := FileAccess.get_file_as_bytes(normalized_source_path)
-	if bytes.is_empty():
-		return ""
-
-	var file := FileAccess.open(target_path, FileAccess.WRITE)
-	if file == null:
-		return ""
-
-	file.store_buffer(bytes)
-	file.close()
-	return target_name
-
-func _make_unique_chart_file_name(preferred_name: String) -> String:
-	if editor == null or editor.chart == null:
-		return preferred_name
-
-	var safe_name := preferred_name.validate_filename()
-	if safe_name.is_empty():
-		safe_name = "imported"
-
-	var base_name := safe_name.get_basename()
-	var extension := safe_name.get_extension()
-	var candidate := safe_name
-	var suffix := 2
-
-	while FileAccess.file_exists(editor.chart.folder_path.path_join(candidate)):
-		if extension.is_empty():
-			candidate = "%s_%d" % [base_name, suffix]
-		else:
-			candidate = "%s_%d.%s" % [base_name, suffix, extension]
-		suffix += 1
-
-	return candidate
+	var target_path := FileSystem.copy_file_unique(normalized_source_path, editor.chart.folder_path)
+	return target_path.get_file() if not target_path.is_empty() else ""

@@ -37,7 +37,10 @@ func parse_object(chart: Chart) -> ParseResult:
 		parser = ObjectParserV1.new()
 
 	if parser != null:
-		return result.set_success(parser.parse(file, chart))
+		var parsed_chart := parser.parse(file, chart)
+		if parsed_chart != null:
+			chart.play_time_ms = parsed_chart.get_play_time_ms()
+		return result.set_success(parsed_chart)
 
 	message = "Unsupported chart version ! : %s" % version
 	Notification.notice(message, Notification.Type.ERROR)

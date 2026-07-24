@@ -3,7 +3,7 @@ class_name ChartWriter
 
 const CHART_FILE_VERSION := 1
 
-func write_chart(parsed_chart: ParsedChart) -> bool:
+func write_chart(parsed_chart: ParsedChart, destination_path := "") -> bool:
 	if parsed_chart == null or parsed_chart.chart == null:
 		push_error("Failed to write chart: parsed chart is missing chart metadata")
 		return false
@@ -14,9 +14,10 @@ func write_chart(parsed_chart: ParsedChart) -> bool:
 		return false
 	if chart.chart_set.uuid.is_empty():
 		chart.chart_set.build_uuid()
-	var file := FileAccess.open(chart.file_path, FileAccess.WRITE)
+	var output_path := chart.file_path if destination_path.is_empty() else destination_path
+	var file := FileAccess.open(output_path, FileAccess.WRITE)
 	if file == null:
-		push_error("Failed to open chart file for writing: %s" % chart.file_path)
+		push_error("Failed to open chart file for writing: %s" % output_path)
 		return false
 
 	_write_header(file)
@@ -27,6 +28,7 @@ func write_chart(parsed_chart: ParsedChart) -> bool:
 	_write_events(file, parsed_chart.events)
 	_write_rails(file, parsed_chart.rails)
 	file.flush()
+	file.close()
 	return true
 
 func _write_header(file: FileAccess) -> void:

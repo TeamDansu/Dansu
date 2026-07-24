@@ -106,7 +106,7 @@ func rebuild_playback_notes() -> void:
 			if int(note.length) > 0:
 				_release_notes.append(note)
 	_playback_notes.sort_custom(func(a: Note, b: Note) -> bool: return a.time < b.time)
-	_release_notes.sort_custom(func(a: Note, b: Note) -> bool: return (a.time + a.length) < (b.time + b.length))
+	_release_notes.sort_custom(func(a: Note, b: Note) -> bool: return a.end_time < b.end_time)
 	_reset_sfx_cursor(Game.current_time)
 
 func _tick() -> void:
@@ -197,7 +197,7 @@ func _play_release_sfx_between(from_time: float, to_time: float) -> void:
 		_reset_sfx_cursor(from_time)
 	while _release_note_index < _release_notes.size():
 		var note := _release_notes[_release_note_index]
-		var release_time := note.time + note.length
+		var release_time := note.end_time
 		if release_time > to_time:
 			break
 		if release_time > from_time:
@@ -220,6 +220,6 @@ func _reset_sfx_cursor(time_ms: float) -> void:
 	_last_sfx_time = time_ms - 0.001
 
 	_release_note_index = 0
-	while _release_note_index < _release_notes.size() and (_release_notes[_release_note_index].time + _release_notes[_release_note_index].length) < time_ms:
+	while _release_note_index < _release_notes.size() and _release_notes[_release_note_index].end_time < time_ms:
 		_release_note_index += 1
 	_last_release_sfx_time = time_ms - 0.001

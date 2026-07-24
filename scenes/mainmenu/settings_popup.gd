@@ -1,4 +1,5 @@
 extends Control
+class_name SettingsPopup
 
 const HIDDEN_SCALE := Vector2(0.38, 0.38)
 const OPEN_OVERSHOOT_SCALE := Vector2(1.035, 1.035)

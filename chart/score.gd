@@ -2,7 +2,7 @@ extends RefCounted
 class_name Score
 
 # name
-enum {NONE,MISS,PERPECT_PLUS,PERFECT,GREAT,OK,BAD}
+enum {NONE,MISS,PERFECT_PLUS,PERFECT,GREAT,OK,BAD}
 # Timing
 enum T {NONE=-1,MISS=105,PERFECT_PLUS=21,PERFECT=42,GREAT=63,OK=84,BAD=105}
 # Scores
@@ -40,7 +40,7 @@ var object_hash = ""
 var db_id := -1
 var chart_db_id := -1
 var played_at := 0
-var scoring_version := 1
+var scoring_version := 2
 var unstable_rate := 0.0 # TODO: calculate from signed_timings
 var stored_total_score := -1.0
 var chart_title := ""
@@ -51,7 +51,7 @@ var chart_file_name := ""
 
 func get_judgement(time_gap) -> int:
 	if abs(time_gap) < T.PERFECT_PLUS:
-		return PERPECT_PLUS
+		return PERFECT_PLUS
 	elif abs(time_gap) < T.PERFECT:
 		return PERFECT
 	elif abs(time_gap) < T.GREAT:
@@ -69,13 +69,12 @@ func add_note_result(note: Note, judgement: int, gap: float) -> void:
 	
 	if [Note.NoteType.HIT,Note.NoteType.MOVE].has(note.type) and judgement != MISS:
 		signed_timings.append(gap)
-		print("gap: " + str(gap), " avg: " + str(avg_signed_timings))
 	max_score += max_points
 	notes += 1
 
 	var awarded_points := _get_awarded_points_for_note(note, judgement)
 
-	if judgement == PERPECT_PLUS:
+	if judgement == PERFECT_PLUS:
 		perfect_plus += 1
 	elif judgement == PERFECT:
 		perfect += 1
@@ -120,7 +119,7 @@ func _get_awarded_points_for_note(note: Note, judgement: int) -> float:
 	if note != null:
 		match int(note.type):
 			int(Note.NoteType.TRACE):
-				if judgement == PERPECT_PLUS:
+				if judgement == PERFECT_PLUS:
 					return TRACE_TOP_SCORE
 				if judgement == MISS:
 					return S.MISS
@@ -131,7 +130,7 @@ func _get_awarded_points_for_note(note: Note, judgement: int) -> float:
 				return 0.0
 
 	match judgement:
-		PERPECT_PLUS:
+		PERFECT_PLUS:
 			return S.PERFECT_PLUS
 		PERFECT:
 			return S.PERFECT
@@ -146,39 +145,11 @@ func _get_awarded_points_for_note(note: Note, judgement: int) -> float:
 
 var rank_color: Color:
 	get:
-		if total_score >= 101.0:
-			return Color(0.702, 0.846, 0.935, 1.0)
-		if total_score >= 100.0:
-			return Color(0.915, 0.643, 0.895, 1.0)
-		if total_score >= 99.0:
-			return Color(0.977, 0.872, 0.698, 1.0)
-		if total_score >= 95.0:
-			return Color(0.965, 0.925, 0.745, 1.0)
-		if total_score >= 90.0:
-			return Color("c6fbb7ff")
-		if total_score >= 85.0:
-			return Color(0.902, 0.518, 0.565, 1.0)
-		if total_score >= 70.0:
-			return Color(0.22, 0.191, 0.215, 1.0)
-		return Color(0.274, 0.062, 0.071, 1.0)
+		return ScoreRank.color_for_score(total_score)
 
 var rank_str: String:
 	get:
-		if total_score >= 101.0:
-			return "X"
-		if total_score >= 100.0:
-			return "SS"
-		if total_score >= 99.0:
-			return "S+"
-		if total_score >= 95.0:
-			return "S"
-		if total_score >= 90.0:
-			return "A"
-		if total_score >= 85.0:
-			return "B"
-		if total_score >= 70.0:
-			return "C"
-		return "D"
+		return ScoreRank.label_for_score(total_score)
 
 var total_score: float:
 	get:

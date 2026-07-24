@@ -22,6 +22,12 @@ func get_notes() -> Array[Note]:
 				result.append(note)
 	return result
 
+func get_play_time_ms() -> int:
+	var end_time_ms := 0
+	for note in get_notes():
+		end_time_ms = maxi(end_time_ms, note.end_time)
+	return end_time_ms
+
 func sort_events() -> void:
 	for event in events:
 		if event != null:

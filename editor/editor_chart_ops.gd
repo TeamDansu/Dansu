@@ -98,6 +98,43 @@ static func remove_note(rail: Rail, note: Note) -> void:
 	if rail != null:
 		rail.notes.erase(note)
 
+
+static func remove_note_placement_conflicts(
+	rails: Array[Rail],
+	target_rail: Rail,
+	time_ms: int,
+	note_type: Note.NoteType
+) -> void:
+	for rail in rails:
+		if rail == null:
+			continue
+		for note_index in range(rail.notes.size() - 1, -1, -1):
+			var existing_note: Note = rail.notes[note_index]
+			if not _notes_conflict_at_placement(
+				existing_note,
+				rail == target_rail,
+				time_ms,
+				note_type
+			):
+				continue
+			rail.notes.remove_at(note_index)
+
+
+static func _notes_conflict_at_placement(
+	existing_note: Note,
+	is_same_rail: bool,
+	time_ms: int,
+	new_note_type: Note.NoteType
+) -> bool:
+	if existing_note == null or existing_note.time != time_ms:
+		return false
+	if is_same_rail:
+		return true
+	return (
+		existing_note.type != Note.NoteType.SPIKE
+		and new_note_type != Note.NoteType.SPIKE
+	)
+
 static func remove_point(rail: Rail, point_index: int) -> void:
 	if rail == null or rail.points.size() <= 2:
 		return
@@ -149,25 +186,23 @@ static func save_chart(chart: Chart, previous_file_path: String) -> bool:
 	if chart.folder_name.is_empty():
 		chart.folder_name = chart.chart_set.folder_name
 
-	chart.file_name = chart.difficulty.strip_edges() + Config.FILE_EXTENSION
+	var safe_difficulty := chart.difficulty.strip_edges().validate_filename()
+	if safe_difficulty.is_empty():
+		Notification.notice("difficulty cannot be used as a file name", Notification.Type.WARNING)
+		return false
+	chart.file_name = safe_difficulty + Config.FILE_EXTENSION
 	FileSystem.ensure_dir(chart.folder_path)
-
-	if not previous_file_path.is_empty() and FileAccess.file_exists(previous_file_path):
-		DirAccess.remove_absolute(previous_file_path)
-	if FileAccess.file_exists(chart.file_path):
-		DirAccess.remove_absolute(chart.file_path)
 
 	if CM.parsed_chart == null:
 		CM.parsed_chart = ParsedChart.new(chart)
 	else:
 		CM.parsed_chart.chart = chart
 
-	var writer := ChartWriter.new()
 	CM.parsed_chart.chart.rating = Rating.calculate_rating(CM.parsed_chart)
-	var success := writer.write_chart(CM.parsed_chart)
+	var success := ChartFileStore.save(CM.parsed_chart, previous_file_path)
 	if success:
 		chart.build_search_string()
-		CM.register_saved_chart(chart)
+		success = CM.register_saved_chart(chart)
 	return success
 
 static func prepare_new_chartset_chart() -> Chart:
@@ -200,18 +235,8 @@ static func prepare_new_difficulty_chart() -> Chart:
 	chart.build_uuid()
 	chart.chart_set = chart_set
 	chart.folder_name = chart_set.folder_name
-	chart.version = source_chart.version
-	chart.title = source_chart.title
-	chart.artist = source_chart.artist
-	chart.creator = source_chart.creator
-	chart.source = source_chart.source
-	chart.tags = source_chart.tags
+	chart.copy_shared_metadata_from(source_chart)
 	chart.rating = 0.0
-	chart.preview_time = source_chart.preview_time
-	chart.file_audio = source_chart.file_audio
-	chart.file_cover_art = source_chart.file_cover_art
-	chart.file_skin = source_chart.file_skin
-	chart.cover_image = source_chart.cover_image
 
 	CM.parsed_chart = ParsedChart.new(chart)
 

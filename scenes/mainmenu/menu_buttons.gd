@@ -7,20 +7,17 @@ func _ready() -> void:
 	$Exit.button.pressed.connect(_exit_game)
 
 func _play() -> void:
-	var menu := get_parent()
-	if menu != null and menu.has_method("begin_song_select"):
+	var menu := get_parent() as DansuMainMenu
+	if menu != null:
 		menu.begin_song_select()
 
-func _chart() -> void:
-	$"../Animations".clean_menu_things()
-
 func _open_options() -> void:
-	var popup := $"../SettingsPopup"
-	if popup != null and popup.has_method("show_popup"):
+	var popup := $"../SettingsPopup" as SettingsPopup
+	if popup != null:
 		popup.show_popup()
 
 
 func _exit_game() -> void:
-	var menu := get_parent()
-	if menu != null and menu.has_method("begin_exit"):
+	var menu := get_parent() as DansuMainMenu
+	if menu != null:
 		menu.begin_exit()

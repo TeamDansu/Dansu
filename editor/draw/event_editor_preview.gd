@@ -12,14 +12,6 @@ const DRAG_MODE_MOVE := "move"
 const DRAG_MODE_SCALE := "scale"
 const DRAG_MODE_ROTATE := "rotate"
 
-class OverlayPreviewState:
-	var sprite := ""
-	var position := Vector2.ZERO
-	var scale := Vector2.ONE
-	var rotation := 0.0
-	var opacity := 1.0
-	var frame_index := -1
-
 class OverlayDrawState:
 	var event: OverlayEvent = null
 	var frame_index := -1
@@ -182,7 +174,7 @@ func _draw_overlays(chart: Chart, events: Array, time_ms: float) -> void:
 		return a.layer < b.layer
 	)
 	for overlay in overlays:
-		var state := _evaluate_overlay(overlay, time_ms - overlay.time)
+		var state := ChartEventEvaluator.evaluate_overlay(overlay, time_ms - overlay.time)
 		if state == null:
 			continue
 		var texture := _load_event_texture(chart, state.sprite)
@@ -216,78 +208,13 @@ func _evaluate_theme(events: Array, time_ms: float) -> Array[Color]:
 				active = event
 	if active == null or active.frames.is_empty():
 		return result
-	var pair_indices := _find_frame_pair_indices(active.frames, time_ms - active.time)
+	var pair_indices := ChartEventEvaluator.frame_pair_indices(active.frames, time_ms - active.time)
 	var previous: ThemeEventFrame = active.frames[pair_indices.x]
 	var next: ThemeEventFrame = active.frames[pair_indices.y]
-	var alpha := _frame_alpha(previous, next, time_ms - active.time)
+	var alpha := ChartEventEvaluator.frame_alpha(previous, next, time_ms - active.time)
 	result[0] = previous.bg_color.lerp(next.bg_color, alpha)
 	result[1] = previous.bg_color_2.lerp(next.bg_color_2, alpha)
 	return result
-
-func _evaluate_overlay(event: OverlayEvent, local_time: float) -> OverlayPreviewState:
-	if event.frames.is_empty():
-		return null
-	var pair_indices := _find_frame_pair_indices(event.frames, local_time)
-	var previous: OverlayEventFrame = event.frames[pair_indices.x]
-	var next: OverlayEventFrame = event.frames[pair_indices.y]
-	var alpha := _frame_alpha(previous, next, local_time)
-	var previous_state := _overlay_state_at(event.frames, pair_indices.x)
-	var next_state := _overlay_state_at(event.frames, pair_indices.y)
-	var state := OverlayPreviewState.new()
-	state.sprite = previous_state.sprite
-	state.position = previous_state.position.lerp(next_state.position, alpha)
-	state.scale = previous_state.scale.lerp(next_state.scale, alpha)
-	state.rotation = lerpf(previous_state.rotation, next_state.rotation, alpha)
-	state.opacity = lerpf(previous_state.opacity, next_state.opacity, alpha)
-	state.frame_index = pair_indices.x
-	if pair_indices.x != pair_indices.y and absf(local_time - previous.time) > absf(next.time - local_time):
-		state.frame_index = pair_indices.y
-	return state
-
-func _overlay_state_at(frames: Array[OverlayEventFrame], target_index: int) -> OverlayPreviewState:
-	var state := OverlayPreviewState.new()
-	for index in range(clampi(target_index, 0, frames.size() - 1) + 1):
-		if not frames[index].sprite.is_empty():
-			state.sprite = frames[index].sprite
-		if frames[index].has_opacity:
-			state.opacity = frames[index].opacity
-	var frame := frames[clampi(target_index, 0, frames.size() - 1)]
-	state.position = frame.position
-	state.scale = frame.scale
-	state.rotation = frame.rotation
-	return state
-
-func _find_frame_pair_indices(frames: Array, local_time: float) -> Vector2i:
-	var previous_index := 0
-	var next_index := frames.size() - 1
-	for index in range(frames.size()):
-		var frame = frames[index]
-		if frame.time <= local_time:
-			previous_index = index
-		if frame.time >= local_time:
-			next_index = index
-			break
-	return Vector2i(previous_index, next_index)
-
-func _frame_alpha(previous: ChartEventFrame, next: ChartEventFrame, local_time: float) -> float:
-	if previous == next or next.time <= previous.time:
-		return 0.0
-	var alpha := clampf((local_time - previous.time) / float(next.time - previous.time), 0.0, 1.0)
-	return _apply_ease(alpha, next.ease)
-
-func _apply_ease(value: float, ease_name: String) -> float:
-	match ease_name:
-		"in_sine": return 1.0 - cos(value * PI * 0.5)
-		"out_sine": return sin(value * PI * 0.5)
-		"in_out_sine": return -(cos(PI * value) - 1.0) * 0.5
-		"in_quad": return value * value
-		"out_quad": return 1.0 - (1.0 - value) * (1.0 - value)
-		"in_out_quad": return 2.0 * value * value if value < 0.5 else 1.0 - pow(-2.0 * value + 2.0, 2.0) * 0.5
-		"in_cubic": return value * value * value
-		"out_cubic": return 1.0 - pow(1.0 - value, 3.0)
-		"in_out_cubic": return 4.0 * value * value * value if value < 0.5 else 1.0 - pow(-2.0 * value + 2.0, 3.0) * 0.5
-		_:
-			return value
 
 func _load_event_texture(chart: Chart, reference: String) -> Texture2D:
 	if chart == null or reference.is_empty() or not EventResourceRef.is_valid(reference):

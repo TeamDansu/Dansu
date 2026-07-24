@@ -8,7 +8,6 @@ const SkinEditorRouterScript = preload("res://skin/skin_editor_router.gd")
 const EVENT_EDITOR_SCENE_PATH := "res://scenes/editor/event_editor_scene.tscn"
 const PIXELS_PER_MS := 1
 const TRANSPORT_UI_UPDATE_USEC := 33333
-const MAX_HISTORY_STEPS := 128
 
 @export var chart_root: Control
 @export var chart_panel: Control
@@ -40,7 +39,6 @@ const MAX_HISTORY_STEPS := 128
 @export var open_event_editor_button: Button
 @export var view_controller: EditorViewController
 @export var inspector_controller: EditorInspectorController
-@export var save_controller: EditorSaveController
 @export var edit_controller: EditorEditController
 
 var timeline: EditorTimeline = null
@@ -56,8 +54,7 @@ var note_passthrough := false
 var _syncing_song_slider := false
 var _last_transport_ui_usec := 0
 
-var _undo_stack: Array[Dictionary] = []
-var _redo_stack: Array[Dictionary] = []
+var _history := EditorHistoryStack.new()
 var _is_restoring_history := false
 var _point_drag_history_pending := false
 var _saved_snapshot: Dictionary = {}
@@ -84,11 +81,9 @@ func _ready() -> void:
 	_configure_chart_input()
 	_load_chart_data()
 	_connect_ui()
-	_refresh_metadata_fields()
-	_rebuild_timing_ui()
+	refresh_inspector()
 	_update_slider_range()
-	_update_beat_division_ui()
-	_refresh_views()
+	refresh_views()
 	_update_save_button_state()
 	mark_saved_state()
 	UIFocusUtils.disable_focus_recursive(self)
@@ -135,7 +130,17 @@ func _input(event: InputEvent) -> void:
 			_handle_key_input(event)
 
 func refresh_views() -> void:
-	_refresh_views()
+	if view_controller != null:
+		view_controller.refresh_views()
+	if bpm_lines != null:
+		bpm_lines.queue_redraw()
+
+func refresh_inspector() -> void:
+	if inspector_controller == null:
+		return
+	inspector_controller.refresh_metadata_fields()
+	inspector_controller.rebuild_timing_ui()
+	inspector_controller.update_beat_division_ui()
 
 # Init helpers
 
@@ -185,34 +190,36 @@ func _connect_ui() -> void:
 		back_button.pressed.connect(exit)
 	if save_button != null:
 		save_button.pressed.connect(_save_chart)
-	if delete_button != null:
-		delete_button.pressed.connect(_delete_selected)
-	if hit_button != null:
-		hit_button.pressed.connect(_create_hit_note)
-	if trace_button != null:
-		trace_button.pressed.connect(_create_trace_note)
-	if left_button != null:
-		left_button.pressed.connect(_create_left_note)
-	if right_button != null:
-		right_button.pressed.connect(_create_right_note)
-	if spike_button != null:
-		spike_button.pressed.connect(_create_spike_note)
-	if title_line_edit != null:
-		title_line_edit.text_changed.connect(_on_title_changed)
-	if artist_line_edit != null:
-		artist_line_edit.text_changed.connect(_on_artist_changed)
-	if difficulty_line_edit != null:
-		difficulty_line_edit.text_changed.connect(_on_difficulty_changed)
-	if source_line_edit != null:
-		source_line_edit.text_changed.connect(_on_source_changed)
-	if tags_line_edit != null:
-		tags_line_edit.text_changed.connect(_on_tags_changed)
-	if beat_division_slider != null:
-		beat_division_slider.value_changed.connect(_on_beat_division_slider_changed)
-	if add_timing_button != null:
-		add_timing_button.pressed.connect(_add_timing)
-	if skin_browser_button != null:
-		skin_browser_button.pressed.connect(_on_skin_browser_pressed)
+	if edit_controller != null:
+		if delete_button != null:
+			delete_button.pressed.connect(edit_controller.delete_selected)
+		if hit_button != null:
+			hit_button.pressed.connect(edit_controller.create_hit_note)
+		if trace_button != null:
+			trace_button.pressed.connect(edit_controller.create_trace_note)
+		if left_button != null:
+			left_button.pressed.connect(edit_controller.create_left_note)
+		if right_button != null:
+			right_button.pressed.connect(edit_controller.create_right_note)
+		if spike_button != null:
+			spike_button.pressed.connect(edit_controller.create_spike_note)
+	if inspector_controller != null:
+		if title_line_edit != null:
+			title_line_edit.text_changed.connect(inspector_controller.on_title_changed)
+		if artist_line_edit != null:
+			artist_line_edit.text_changed.connect(inspector_controller.on_artist_changed)
+		if difficulty_line_edit != null:
+			difficulty_line_edit.text_changed.connect(inspector_controller.on_difficulty_changed)
+		if source_line_edit != null:
+			source_line_edit.text_changed.connect(inspector_controller.on_source_changed)
+		if tags_line_edit != null:
+			tags_line_edit.text_changed.connect(inspector_controller.on_tags_changed)
+		if beat_division_slider != null:
+			beat_division_slider.value_changed.connect(inspector_controller.on_beat_division_slider_changed)
+		if add_timing_button != null:
+			add_timing_button.pressed.connect(inspector_controller.add_timing)
+		if skin_browser_button != null:
+			skin_browser_button.pressed.connect(inspector_controller.open_skin_browser)
 	if open_skin_editor_button != null:
 		open_skin_editor_button.pressed.connect(_open_skin_editor)
 	if open_event_editor_button != null:
@@ -224,16 +231,6 @@ func _create_dialogs() -> void:
 	_create_unsaved_exit_dialog()
 
 # — View —
-
-func _refresh_views() -> void:
-	if view_controller != null:
-		view_controller.refresh_views()
-	if bpm_lines != null:
-		bpm_lines.queue_redraw()
-
-func _clear_layers() -> void:
-	if view_controller != null:
-		view_controller.clear_layers()
 
 func _sync_view_layouts() -> void:
 	if view_controller != null:
@@ -259,46 +256,6 @@ func _set_current_time(value: float) -> void:
 	if edit_controller != null:
 		edit_controller.set_current_time(value)
 
-func _create_rail() -> void:
-	if edit_controller != null:
-		edit_controller.create_rail()
-
-func _create_hit_note() -> void:
-	if edit_controller != null:
-		edit_controller.create_hit_note()
-
-func _create_trace_note() -> void:
-	if edit_controller != null:
-		edit_controller.create_trace_note()
-
-func _create_spike_note() -> void:
-	if edit_controller != null:
-		edit_controller.create_spike_note()
-
-func _create_left_note() -> void:
-	if edit_controller != null:
-		edit_controller.create_left_note()
-
-func _create_right_note() -> void:
-	if edit_controller != null:
-		edit_controller.create_right_note()
-
-func _create_note(note_type: Note.NoteType, dir: int) -> void:
-	if edit_controller != null:
-		edit_controller.create_note(note_type, dir)
-
-func _delete_selected() -> void:
-	if edit_controller != null:
-		edit_controller.delete_selected()
-
-func _add_point_at_mouse(global_mouse_pos: Vector2) -> void:
-	if edit_controller != null:
-		edit_controller.add_point_at_mouse(global_mouse_pos)
-
-func _adjust_selected_object(is_positive: bool) -> void:
-	if edit_controller != null:
-		edit_controller.adjust_selected_object(is_positive)
-
 # Hit testing 
 
 func _find_note_at(global_mouse_pos: Vector2) -> Dictionary:
@@ -317,9 +274,14 @@ func _drag_selected_point(global_mouse_pos: Vector2) -> void:
 # Save
 
 func _save_chart() -> bool:
-	if save_controller != null:
-		return save_controller.save_chart()
-	return false
+	if chart == null or not EditorChartOps.can_save(chart):
+		return false
+	if not EditorChartOps.save_chart(chart, previous_file_path):
+		return false
+	previous_file_path = chart.file_path
+	_update_save_button_state()
+	mark_saved_state()
+	return true
 
 func _open_skin_editor() -> void:
 	if chart == null:
@@ -352,23 +314,7 @@ func _open_event_editor() -> void:
 	Game.reopen_editor_without_chart_reload = true
 	Transition.transition_to(EVENT_EDITOR_SCENE_PATH, 0.45)
 
-func _on_skin_browser_pressed() -> void:
-	if inspector_controller != null:
-		inspector_controller.open_skin_browser()
-
 # UI state
-
-func _refresh_metadata_fields() -> void:
-	if inspector_controller != null:
-		inspector_controller.refresh_metadata_fields()
-
-func _update_skin_file_ui() -> void:
-	if inspector_controller != null:
-		inspector_controller.update_skin_file_ui()
-
-func _rebuild_timing_ui() -> void:
-	if inspector_controller != null:
-		inspector_controller.rebuild_timing_ui()
 
 func _update_slider_range() -> void:
 	if song_slider == null:
@@ -378,13 +324,9 @@ func _update_slider_range() -> void:
 	song_slider.step = 1.0
 	_update_time_ui(true)
 
-func _update_beat_division_ui() -> void:
-	if inspector_controller != null:
-		inspector_controller.update_beat_division_ui()
-
 func _update_save_button_state() -> void:
-	if save_controller != null:
-		save_controller.update_save_button_state()
+	if save_button != null:
+		save_button.disabled = not EditorChartOps.can_save(chart)
 
 func _update_time_ui(force: bool) -> void:
 	var now_usec := Time.get_ticks_usec()
@@ -420,46 +362,6 @@ func _on_song_slider_value_changed(value: float) -> void:
 	if not _syncing_song_slider:
 		_set_current_time(value)
 
-func _on_title_changed(new_text: String) -> void:
-	if inspector_controller != null:
-		inspector_controller.on_title_changed(new_text)
-
-func _on_artist_changed(new_text: String) -> void:
-	if inspector_controller != null:
-		inspector_controller.on_artist_changed(new_text)
-
-func _on_difficulty_changed(new_text: String) -> void:
-	if inspector_controller != null:
-		inspector_controller.on_difficulty_changed(new_text)
-
-func _on_source_changed(new_text: String) -> void:
-	if inspector_controller != null:
-		inspector_controller.on_source_changed(new_text)
-
-func _on_tags_changed(new_text: String) -> void:
-	if inspector_controller != null:
-		inspector_controller.on_tags_changed(new_text)
-
-func _on_beat_division_slider_changed(value: float) -> void:
-	if inspector_controller != null:
-		inspector_controller.on_beat_division_slider_changed(value)
-
-func _add_timing() -> void:
-	if inspector_controller != null:
-		inspector_controller.add_timing()
-
-func _on_timing_item_change_started(_item: EditorTimingItem) -> void:
-	if inspector_controller != null:
-		inspector_controller.on_timing_item_change_started(_item)
-
-func _on_timing_item_changed(_item: EditorTimingItem) -> void:
-	if inspector_controller != null:
-		inspector_controller.on_timing_item_changed(_item)
-
-func _on_timing_remove_requested(item: EditorTimingItem) -> void:
-	if inspector_controller != null:
-		inspector_controller.on_timing_remove_requested(item)
-
 # History
 
 func push_history_snapshot() -> void:
@@ -468,27 +370,17 @@ func push_history_snapshot() -> void:
 func _push_history_snapshot() -> void:
 	if _is_restoring_history:
 		return
-	var snapshot := EditorHistory.capture(self)
-	if not _undo_stack.is_empty() and EditorHistory.same_snapshot(_undo_stack.back(), snapshot):
-		return
-	_undo_stack.append(snapshot)
-	if _undo_stack.size() > MAX_HISTORY_STEPS:
-		_undo_stack.remove_at(0)
-	_redo_stack.clear()
+	_history.push(EditorHistory.capture(self))
 
 func _undo_history() -> void:
-	if _undo_stack.is_empty():
-		return
-	var current := EditorHistory.capture(self)
-	_redo_stack.append(current)
-	_restore_history_snapshot(_undo_stack.pop_back())
+	var snapshot := _history.undo(EditorHistory.capture(self))
+	if not snapshot.is_empty():
+		_restore_history_snapshot(snapshot)
 
 func _redo_history() -> void:
-	if _redo_stack.is_empty():
-		return
-	var current := EditorHistory.capture(self)
-	_undo_stack.append(current)
-	_restore_history_snapshot(_redo_stack.pop_back())
+	var snapshot := _history.redo(EditorHistory.capture(self))
+	if not snapshot.is_empty():
+		_restore_history_snapshot(snapshot)
 
 func _restore_history_snapshot(snapshot: Dictionary) -> void:
 	if transport.playing:

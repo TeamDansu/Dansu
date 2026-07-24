@@ -2,7 +2,6 @@ extends Control
 class_name EventEditor
 
 const MAP_EDITOR_SCENE_PATH := "res://scenes/editor/editor_scene.tscn"
-const MAX_HISTORY_STEPS := 128
 const GAMEPLAY_ENTRY_LEAD_IN_MS := 3000
 const EVENT_EDITOR_PRE_ENTRY_PADDING_MS := 100
 const EVENT_EDITOR_POST_SONG_PADDING_MS := 3000
@@ -21,9 +20,10 @@ var timeline: EditorTimeline = null
 var selection := ChartEditorSelection.new()
 var transport := EditorTransport.new()
 
-var _undo_stack: Array[Dictionary] = []
-var _redo_stack: Array[Dictionary] = []
+var _history := EditorHistoryStack.new()
 var _restoring := false
+var _saved_snapshot: Dictionary = {}
+var _exit_dialog: ConfirmationDialog
 
 func _ready() -> void:
 	chart = CM.selected_chart
@@ -35,6 +35,8 @@ func _ready() -> void:
 	_connect_ui()
 	if event_controller != null:
 		event_controller.setup()
+	_create_exit_dialog()
+	mark_saved_state()
 	_update_toolbar()
 	UIFocusUtils.disable_focus_recursive(self)
 
@@ -113,13 +115,7 @@ func _set_current_time(value: float) -> void:
 func _push_history_snapshot() -> void:
 	if _restoring or CM.parsed_chart == null:
 		return
-	var snapshot := _capture_snapshot()
-	if not _undo_stack.is_empty() and EditorHistory.same_snapshot(_undo_stack.back(), snapshot):
-		return
-	_undo_stack.append(snapshot)
-	if _undo_stack.size() > MAX_HISTORY_STEPS:
-		_undo_stack.remove_at(0)
-	_redo_stack.clear()
+	_history.push(_capture_snapshot())
 
 func _capture_snapshot() -> Dictionary:
 	var event_index := -1
@@ -133,16 +129,14 @@ func _capture_snapshot() -> Dictionary:
 	}
 
 func _undo_history() -> void:
-	if _undo_stack.is_empty():
-		return
-	_redo_stack.append(_capture_snapshot())
-	_restore_snapshot(_undo_stack.pop_back())
+	var snapshot := _history.undo(_capture_snapshot())
+	if not snapshot.is_empty():
+		_restore_snapshot(snapshot)
 
 func _redo_history() -> void:
-	if _redo_stack.is_empty():
-		return
-	_undo_stack.append(_capture_snapshot())
-	_restore_snapshot(_redo_stack.pop_back())
+	var snapshot := _history.redo(_capture_snapshot())
+	if not snapshot.is_empty():
+		_restore_snapshot(snapshot)
 
 func _restore_snapshot(snapshot: Dictionary) -> void:
 	if transport.playing:
@@ -160,20 +154,59 @@ func _restore_snapshot(snapshot: Dictionary) -> void:
 	if event_controller != null:
 		event_controller.on_history_restored()
 
-func _save_chart() -> void:
+func _save_chart() -> bool:
 	if CM.parsed_chart == null:
-		return
+		return false
 	CM.parsed_chart.chart = chart
-	var success := ChartWriter.new().write_chart(CM.parsed_chart)
+	var success := EditorChartOps.save_chart(chart, chart.file_path)
 	if status_label != null:
 		status_label.text = "Chart saved" if success else "Save failed"
 		status_label.add_theme_color_override("font_color", Color("75d5a4") if success else Color("ff7c86"))
+	if success:
+		mark_saved_state()
+	return success
 
 func _return_to_chart() -> void:
+	if _has_unsaved_changes():
+		_exit_dialog.popup_centered()
+		return
+	_return_to_chart_now()
+
+func _return_to_chart_now() -> void:
 	if transport.playing:
 		transport.pause()
 	Game.reopen_editor_without_chart_reload = true
 	Transition.transition_to(MAP_EDITOR_SCENE_PATH, 0.45)
+
+func mark_saved_state() -> void:
+	_saved_snapshot = _capture_saved_state()
+
+func _has_unsaved_changes() -> bool:
+	return not _saved_snapshot.is_empty() and not EditorHistory.same_snapshot(_saved_snapshot, _capture_saved_state())
+
+func _capture_saved_state() -> Dictionary:
+	var snapshot := _capture_snapshot()
+	snapshot.erase("event_index")
+	snapshot.erase("frame_index")
+	snapshot.erase("current_time")
+	return snapshot
+
+func _create_exit_dialog() -> void:
+	_exit_dialog = ConfirmationDialog.new()
+	_exit_dialog.title = "Unsaved changes"
+	_exit_dialog.dialog_text = "Save event changes before returning?"
+	_exit_dialog.ok_button_text = "Save and return"
+	_exit_dialog.cancel_button_text = "Cancel"
+	_exit_dialog.confirmed.connect(func() -> void:
+		if _save_chart():
+			_return_to_chart_now()
+	)
+	_exit_dialog.custom_action.connect(func(action: StringName) -> void:
+		if action == &"discard":
+			_return_to_chart_now()
+	)
+	_exit_dialog.add_button("Return without saving", false, "discard")
+	add_child(_exit_dialog)
 
 func _update_toolbar() -> void:
 	if play_button != null:

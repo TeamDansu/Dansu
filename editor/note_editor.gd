@@ -126,7 +126,7 @@ func _sample_trail_points() -> PackedVector2Array:
 	var points := PackedVector2Array()
 	var visible_range := _get_visible_time_range()
 	var start_time := maxi(note.time, int(floor(visible_range.x)))
-	var end_time: int = mini(int(note.time + note.length), int(ceil(visible_range.y)))
+	var end_time: int = mini(note.end_time, int(ceil(visible_range.y)))
 	if end_time < start_time:
 		return points
 	var duration = max(1, end_time - start_time)
@@ -165,5 +165,5 @@ func _is_visible_in_view() -> bool:
 		return false
 	var visible_range := _get_visible_time_range()
 	var note_start := int(note.time)
-	var note_end := int(note.time + max(note.length, 0))
+	var note_end := note.end_time
 	return note_end >= visible_range.x and note_start <= visible_range.y

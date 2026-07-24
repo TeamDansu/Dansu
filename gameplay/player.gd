@@ -1,8 +1,6 @@
 extends Node3D
 class_name Player
 
-const SkinSerializationScript = preload("res://skin/skin_serialization.gd")
-
 @onready var sprite: PlayerSprite = $Sprite3D
 
 @export var hit_star_effect_scene: PackedScene
@@ -15,30 +13,9 @@ func _ready() -> void:
 	_setup_skin()
 
 func _setup_skin() -> void:
-	var skin := PlayerSkinData.new()
-	var loaded := false
-
-	if not Config.ignore_chart_skin and CM.selected_chart != null:
-		if CM.selected_chart.file_skin != "":
-			var chart_skin_path := SkinSerializationScript.ensure_chart_skin_path(CM.selected_chart)
-			if chart_skin_path != "":
-				loaded = skin.parse_objects(PlayerSkinData.TYPE.IN_CHART, "", chart_skin_path.get_file())
-
-	if not loaded and Config.custom_skin_path != "":
-		var custom_skin_path := SkinSerializationScript.get_custom_skin_file_path()
-		loaded = skin.parse_objects(
-			PlayerSkinData.TYPE.IN_SKIN_FOLDER,
-			custom_skin_path.get_base_dir().get_file(),
-			custom_skin_path.get_file()
-		)
-
-	if not loaded:
-		skin.parse_objects(
-			PlayerSkinData.TYPE.BUILT_IN,
-			"danshe",
-			"skin.json"
-		)
-
+	var skin := PlayerSkinResolver.load_active()
+	if skin == null:
+		return
 	sprite.skin = skin
 	sprite._setup()
 
@@ -116,10 +93,8 @@ func play_move_note_animation(note: Note, dir: Note.Dir = Note.Dir.NONE) -> void
 
 	if dir == Note.Dir.LEFT and sprite.skin.left != null:
 		sprite.play_animation(sprite.skin.left)
-		pass
 	elif dir == Note.Dir.RIGHT and sprite.skin.right != null:
 		sprite.play_animation(sprite.skin.right)
-		pass
 
 func _should_return_to_idle_after_move() -> bool:
 	if not sprite.skin:

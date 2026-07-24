@@ -120,11 +120,9 @@ static func import_sprite_files(document, source_paths: PackedStringArray) -> Ar
 	for source_path in source_paths:
 		if source_path == "":
 			continue
-		var target_file_name := _make_unique_file_name(document.sprite_directory_path, source_path.get_file())
-		var target_path: String = document.sprite_directory_path.path_join(target_file_name)
-		var error := _copy_file(source_path, target_path)
-		if error == OK:
-			imported.append(target_file_name)
+		var target_path := FileSystem.copy_file_unique(source_path, document.sprite_directory_path, "sprite")
+		if not target_path.is_empty():
+			imported.append(target_path.get_file())
 	return imported
 
 static func ensure_custom_skin_path() -> String:
@@ -258,16 +256,6 @@ static func _make_unique_chart_skin_directory_path(chart_folder_path: String, pr
 		candidate = "%s(%d)" % [base_name, index]
 		index += 1
 	return skins_root_path.path_join(candidate)
-
-static func _make_unique_file_name(directory_path: String, file_name: String) -> String:
-	var base_name := file_name.get_basename()
-	var extension := file_name.get_extension()
-	var candidate := file_name
-	var index := 2
-	while FileAccess.file_exists(directory_path.path_join(candidate)):
-		candidate = "%s(%d).%s" % [base_name, index, extension]
-		index += 1
-	return candidate
 
 static func _copy_file(source_path: String, target_path: String) -> int:
 	var bytes := FileAccess.get_file_as_bytes(source_path)

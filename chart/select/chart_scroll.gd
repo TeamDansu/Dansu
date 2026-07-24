@@ -1,4 +1,7 @@
 extends Control
+class_name ChartScroll
+
+signal single_chart_mode_changed(enabled: bool)
 
 @export var content : Control
 
@@ -9,7 +12,7 @@ enum SortMode {
 	RECENT,
 }
 
-var nodes: Array[Node] = []
+var nodes: Array[MenuChartButton] = []
 var visible_items: Array[SongListItem] = []
 
 var data_count := 0
@@ -34,9 +37,13 @@ func _init_charts() -> void:
 	if content.get_child_count() == 0:
 		return
 
-	nodes = content.get_children()
+	nodes.clear()
+	for child in content.get_children():
+		var item_node := child as MenuChartButton
+		if item_node != null:
+			nodes.append(item_node)
 
-	var first := nodes[0] as Control
+	var first := nodes[0]
 	item_height = first.size.y
 	step = item_height + 10.0
 
@@ -57,7 +64,7 @@ func rebuild_items() -> void:
 	if selected_index == -1 and data_count > 0:
 		selected_index = 0
 
-	_apply_selection_from_index(selected_index)
+	_apply_selection_from_index(selected_index, previous_chart)
 	_center_on_index(selected_index)
 	_apply_all()
 	_queue_visible_cover_requests()
@@ -75,8 +82,16 @@ func set_search_text(value: String) -> void:
 
 
 func set_sort_mode(value: int) -> void:
+	var was_single_chart_mode := is_single_chart_mode()
 	sort_mode = value as SortMode
+	var single_chart_mode := is_single_chart_mode()
+	if single_chart_mode != was_single_chart_mode:
+		single_chart_mode_changed.emit(single_chart_mode)
 	rebuild_items()
+
+
+func is_single_chart_mode() -> bool:
+	return sort_mode == SortMode.RATING or sort_mode == SortMode.RECENT
 
 
 func _input(event: InputEvent) -> void:
@@ -112,38 +127,36 @@ func _recycle() -> void:
 
 		if global_y > size.y + step:
 			n.position.y -= step * nodes.size()
-			_update_node(n as Control)
+			_update_node(n)
 			changed = true
 		elif global_y < -step:
 			n.position.y += step * nodes.size()
-			_update_node(n as Control)
+			_update_node(n)
 			changed = true
 
 	if changed:
 		_queue_visible_cover_requests()
 
 
-func _update_node(node: Control) -> void:
+func _update_node(node: MenuChartButton) -> void:
 	if node == null:
 		return
 
 	var index := int(round(node.position.y / step))
 	if index < 0 or index >= data_count:
 		node.visible = false
-		if node.has_method("set_item"):
-			node.set_item(null)
+		node.set_item(null)
 		return
 
 	node.visible = true
 	node.name = str(index)
 
-	if node.has_method("set_item"):
-		node.set_item(visible_items[index])
+	node.set_item(visible_items[index])
 
 
 func _apply_all() -> void:
 	for i in range(nodes.size()):
-		_update_node(nodes[i] as Control)
+		_update_node(nodes[i])
 	_sync_visible_hover_states()
 
 
@@ -167,8 +180,8 @@ func _collect_visible_cover_charts() -> Array[Chart]:
 	var selected_chart := CM.selected_chart
 
 	for node in nodes:
-		var control := node as Control
-		if control == null or not control.visible:
+		var control := node as MenuChartButton
+		if not control.visible:
 			continue
 
 		var chart := _get_node_primary_chart(control)
@@ -224,7 +237,7 @@ func _build_visible_items() -> Array[SongListItem]:
 
 		matched_charts.sort_custom(_sort_chart_by_rating)
 
-		if sort_mode == SortMode.RATING or sort_mode == SortMode.RECENT:
+		if is_single_chart_mode():
 			for chart in matched_charts:
 				var chart_item := SongListItem.new()
 				chart_item.type = SongListItem.ItemType.CHART
@@ -327,15 +340,18 @@ func _find_best_selection_index(previous_chart: Chart, previous_chartset: ChartS
 	return -1
 
 
-func _apply_selection_from_index(index: int) -> void:
+func _apply_selection_from_index(index: int, preferred_chart: Chart = null) -> void:
 	if index < 0 or index >= visible_items.size():
 		CM.select_chartset(null)
 		CM.select_chart(null)
 		return
 
 	var item := visible_items[index]
+	var chart_to_select: Chart = item.primary_chart
+	if preferred_chart != null and item.charts.has(preferred_chart):
+		chart_to_select = preferred_chart
 	CM.select_chartset(item.chartset)
-	CM.select_chart(item.primary_chart)
+	CM.select_chart(chart_to_select)
 
 
 func _center_on_index(index: int) -> void:
@@ -355,5 +371,5 @@ func _sync_visible_hover_states() -> void:
 	var mouse_position := get_viewport().get_mouse_position()
 
 	for node in nodes:
-		if node != null and node.has_method("sync_hover_state"):
+		if node != null:
 			node.sync_hover_state(mouse_position)
