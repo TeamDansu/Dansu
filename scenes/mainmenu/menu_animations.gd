@@ -20,13 +20,8 @@ func song_select_scene() -> void:
 	$Charts.play("fade")
 	$BottomButtons.play("fade")
 	$SongInfo_Play.play("fade")
-	pass
 
 func main_menu() -> void:
 	$Charts.play("fade",-1,-2,true)
 	$SongInfo_Play.play("fade",-1,-4,true)
 	$BottomButtons.play_backwards("fade")
-	pass
-
-func options() -> void:
-	pass

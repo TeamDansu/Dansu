@@ -48,7 +48,7 @@ func _apply_texture() -> void:
 			texture = OK_TEXTURE
 		Score.BAD:
 			texture = BAD_TEXTURE
-		Score.PERPECT_PLUS:
+		Score.PERFECT_PLUS:
 			texture = JUST_PLUS_TEXTURE
 		_:
 			texture = null

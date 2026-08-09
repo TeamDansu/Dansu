@@ -4,18 +4,19 @@ class_name SkinEditor
 const EDITOR_SCENE_PATH := "res://scenes/editor/editor_scene.tscn"
 const EFFECT_OPTIONS := ["none", "groove", "spin"]
 const PREVIEW_SCALE_DIVISOR := 4.0
-const UIFocusUtils = preload("res://global/ui_focus_utils.gd")
+const CALCULATED_SPRITE_HEIGHT := 2000.0
 const SkinDocumentScript = preload("res://skin/skin_document.gd")
 const SkinEditorContextScript = preload("res://skin/skin_editor_context.gd")
 const SkinSerializationScript = preload("res://skin/skin_serialization.gd")
 const SkinValidationScript = preload("res://skin/skin_validation.gd")
 const SkinRefCleanupScript = preload("res://skin/skin_ref_cleanup.gd")
+const HIT_SLOT_ROW_SCENE := preload("res://scenes/skineditor/hit_slot_row.tscn")
 
 @export var name_line_edit: LineEdit
 @export var idle_option: OptionButton
 @export var left_option: OptionButton
 @export var right_option: OptionButton
-@export var scale_bar: HScrollBar
+@export var scale_spinbox: SpinBox
 @export var hits_option: OptionButton
 @export var hits_add_new_button: Button
 @export var skin_contents: VBoxContainer
@@ -43,23 +44,22 @@ const SkinRefCleanupScript = preload("res://skin/skin_ref_cleanup.gd")
 @export var preview_sprite: Sprite2D
 @export var preview_onion_prev: Sprite2D
 @export var preview_onion_next: Sprite2D
+@export var drag_preview: TextureRect
+@export var import_dialog: FileDialog
+@export var unsaved_exit_dialog: EditorUnsavedChangesDialog
 
 var document = SkinDocumentScript.new()
-var _import_dialog: FileDialog
-var _drag_preview: TextureRect
 var _preview_time := 0.0
 var _preview_playing := false
 var _preview_replace_hovered := false
 var _onion_enabled := false
 var _hit_option_rows: Array[OptionButton] = []
 var _syncing := false
-var _unsaved_exit_dialog: ConfirmationDialog
 var _pending_return_target := ""
 
 func _ready() -> void:
 	_configure_templates()
-	_create_dialogs()
-	_create_drag_preview()
+	_connect_dialogs()
 	_configure_static_options()
 	_connect_ui()
 	_load_document()
@@ -71,7 +71,7 @@ func _process(delta: float) -> void:
 
 func _input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_ESCAPE:
-		if _unsaved_exit_dialog != null and _unsaved_exit_dialog.visible:
+		if unsaved_exit_dialog != null and unsaved_exit_dialog.visible:
 			return
 		_return_to_default_target()
 		get_viewport().set_input_as_handled()
@@ -90,34 +90,19 @@ func _configure_templates() -> void:
 	if sprite_template != null:
 		sprite_template.visible = false
 
-func _create_dialogs() -> void:
-	_import_dialog = FileDialog.new()
-	_import_dialog.access = FileDialog.ACCESS_FILESYSTEM
-	_import_dialog.file_mode = FileDialog.FILE_MODE_OPEN_FILES
-	_import_dialog.use_native_dialog = true
-	_import_dialog.filters = PackedStringArray([
-		"*.png ; PNG Image"
-	])
-	_import_dialog.files_selected.connect(_on_sprite_files_selected)
-	add_child(_import_dialog)
-	_create_unsaved_exit_dialog()
-
-func _create_drag_preview() -> void:
-	_drag_preview = TextureRect.new()
-	_drag_preview.visible = false
-	_drag_preview.z_index = 100
-	_drag_preview.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_drag_preview.self_modulate = Color(1.0, 1.0, 1.0, 0.5)
-	_drag_preview.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	_drag_preview.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	_drag_preview.custom_minimum_size = Vector2(96, 96)
-	add_child(_drag_preview)
+func _connect_dialogs() -> void:
+	if import_dialog != null:
+		import_dialog.files_selected.connect(_on_sprite_files_selected)
+	if unsaved_exit_dialog != null:
+		unsaved_exit_dialog.save_requested.connect(_on_unsaved_exit_save_requested)
+		unsaved_exit_dialog.discard_requested.connect(_return_to_pending_target)
 
 func _configure_static_options() -> void:
-	if scale_bar != null:
-		scale_bar.min_value = 0.1
-		scale_bar.max_value = 3.0
-		scale_bar.step = 0.01
+	if scale_spinbox != null:
+		scale_spinbox.min_value = 0.000001
+		scale_spinbox.max_value = 1000.0
+		scale_spinbox.step = 0.000001
+		scale_spinbox.allow_greater = true
 
 	if effect_option != null:
 		effect_option.clear()
@@ -129,7 +114,7 @@ func _connect_ui() -> void:
 	idle_option.item_selected.connect(_on_idle_selected)
 	left_option.item_selected.connect(_on_left_selected)
 	right_option.item_selected.connect(_on_right_selected)
-	scale_bar.value_changed.connect(_on_scale_changed)
+	scale_spinbox.value_changed.connect(_on_scale_changed)
 	hits_option.item_selected.connect(_on_hit_slot_option_selected.bind(0))
 	hits_add_new_button.pressed.connect(_on_add_hit_slot_pressed)
 	new_animation_button.pressed.connect(_on_new_animation_pressed)
@@ -193,7 +178,7 @@ func _refresh_all() -> void:
 
 func _refresh_metadata_ui() -> void:
 	name_line_edit.text = document.skin_data.skin_name
-	scale_bar.value = document.skin_data.scale if document.skin_data != null else 1.0
+	scale_spinbox.value = document.skin_data.scale if document.skin_data != null else 1.0
 	_populate_animation_option(idle_option, false, document.skin_data.idle)
 	_populate_animation_option(left_option, true, document.skin_data.left)
 	_populate_animation_option(right_option, true, document.skin_data.right)
@@ -247,25 +232,14 @@ func _rebuild_hit_slot_rows() -> void:
 	_populate_animation_option(hits_option, false, _get_hit_animation(0))
 
 	for hit_index in range(1, document.skin_data.hits.size()):
-		var row := HBoxContainer.new()
-		var label := Label.new()
-		label.text = "hit %d" % (hit_index + 1)
-		var option_button := OptionButton.new()
-		option_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		var remove_button := Button.new()
-		remove_button.text = "remove"
-
-		row.add_child(label)
-		row.add_child(option_button)
-		row.add_child(remove_button)
+		var row := HIT_SLOT_ROW_SCENE.instantiate() as SkinHitSlotRow
 		skin_contents.add_child(row)
-		skin_contents.move_child(row, hits_add_new_button.get_index() + hit_index)
-
-		option_button.item_selected.connect(_on_hit_slot_option_selected.bind(hit_index))
-		remove_button.pressed.connect(_on_remove_hit_slot_pressed.bind(hit_index))
-		_populate_animation_option(option_button, false, _get_hit_animation(hit_index))
-
-		_hit_option_rows.append(option_button)
+		skin_contents.move_child(row, hits_add_new_button.get_index())
+		row.setup("hit %d" % (hit_index + 1))
+		row.option_selected.connect(_on_hit_slot_option_selected.bind(hit_index))
+		row.remove_requested.connect(_on_remove_hit_slot_pressed.bind(hit_index))
+		_populate_animation_option(row.option_button, false, _get_hit_animation(hit_index))
+		_hit_option_rows.append(row.option_button)
 
 func _get_hit_animation(hit_index: int):
 	if hit_index < 0 or hit_index >= document.skin_data.hits.size():
@@ -610,14 +584,17 @@ func _on_delete_frame_pressed() -> void:
 	_refresh_all()
 
 func _on_calculate_scale_pressed() -> void:
-	if preview_sprite.texture == null:
+	var animation = document.get_selected_animation()
+	if animation == null or animation.frames.is_empty():
 		return
-	var size := preview_sprite.texture.get_size()
-	var max_dimension = max(size.x, size.y)
-	if max_dimension <= 0.0:
+	var selected_frame_index := clampi(document.context.selected_frame_index, 0, animation.frames.size() - 1)
+	var selected_texture: Texture2D = animation.frames[selected_frame_index]
+	if selected_texture == null:
 		return
-	var recommended_scale = clamp(512.0 / max_dimension, 0.1, 3.0)
-	document.skin_data.scale = snapped(recommended_scale, 0.01)
+	var texture_height := selected_texture.get_height()
+	if texture_height <= 0:
+		return
+	document.skin_data.scale = CALCULATED_SPRITE_HEIGHT / float(texture_height)
 	document.mark_dirty()
 	_refresh_all()
 
@@ -656,7 +633,8 @@ func _on_effect_selected(index: int) -> void:
 	document.mark_dirty()
 
 func _on_import_pressed() -> void:
-	_import_dialog.popup_centered_ratio(0.7)
+	if import_dialog != null:
+		import_dialog.popup_centered_ratio(0.7)
 
 func _on_sprite_files_selected(paths: PackedStringArray) -> void:
 	var imported := SkinSerializationScript.import_sprite_files(document, paths)
@@ -684,18 +662,18 @@ func _on_sprite_drag_started(file_name: String) -> void:
 func _show_drag_preview(texture_value: Texture2D) -> void:
 	if texture_value == null:
 		return
-	_drag_preview.texture = texture_value
-	_drag_preview.visible = true
+	drag_preview.texture = texture_value
+	drag_preview.visible = true
 	_update_drag_preview()
 
 func _hide_drag_preview() -> void:
-	_drag_preview.visible = false
-	_drag_preview.texture = null
+	drag_preview.visible = false
+	drag_preview.texture = null
 
 func _update_drag_preview() -> void:
-	if _drag_preview == null or not _drag_preview.visible:
+	if drag_preview == null or not drag_preview.visible:
 		return
-	_drag_preview.global_position = get_global_mouse_position() + Vector2(18, 18)
+	drag_preview.global_position = get_global_mouse_position() + Vector2(18, 18)
 
 func _get_animation_from_option(option_button: OptionButton, index: int):
 	if option_button == null or index < 0:
@@ -773,8 +751,8 @@ func _is_mouse_over_preview(mouse_position: Vector2) -> bool:
 func _get_preview_rect() -> Rect2:
 	if preview_sprite == null or preview_sprite.texture == null:
 		return Rect2()
-	var size := preview_sprite.texture.get_size() * preview_sprite.scale.abs()
-	return Rect2(preview_sprite.global_position - (size * 0.5), size)
+	var _size := preview_sprite.texture.get_size() * preview_sprite.scale.abs()
+	return Rect2(preview_sprite.global_position - (_size * 0.5), _size)
 
 func _get_frame_drop_index(mouse_position: Vector2) -> int:
 	var animation = document.get_selected_animation()
@@ -897,32 +875,15 @@ func _return_to_chart_now() -> void:
 func _has_unsaved_changes() -> bool:
 	return document != null and document.dirty
 
-func _create_unsaved_exit_dialog() -> void:
-	_unsaved_exit_dialog = ConfirmationDialog.new()
-	_unsaved_exit_dialog.title = "Unsaved changes"
-	_unsaved_exit_dialog.dialog_text = "Save skin changes before leaving?"
-	_unsaved_exit_dialog.ok_button_text = "Save and leave"
-	_unsaved_exit_dialog.cancel_button_text = "Cancel"
-	_unsaved_exit_dialog.exclusive = true
-	_unsaved_exit_dialog.confirmed.connect(_on_unsaved_exit_save_confirmed)
-	_unsaved_exit_dialog.custom_action.connect(_on_unsaved_exit_custom_action)
-	_unsaved_exit_dialog.add_button("Leave without saving", false, "discard")
-	add_child(_unsaved_exit_dialog)
-
 func _show_unsaved_exit_dialog(return_target: String) -> void:
 	_pending_return_target = return_target
-	if _unsaved_exit_dialog == null:
+	if unsaved_exit_dialog == null:
 		_return_to_pending_target()
 		return
-	_unsaved_exit_dialog.get_ok_button().disabled = document == null or document.skin_data.animations.is_empty()
-	_unsaved_exit_dialog.popup_centered()
+	unsaved_exit_dialog.open(document != null and not document.skin_data.animations.is_empty())
 
-func _on_unsaved_exit_save_confirmed() -> void:
+func _on_unsaved_exit_save_requested() -> void:
 	if _on_save_pressed():
-		_return_to_pending_target()
-
-func _on_unsaved_exit_custom_action(action: StringName) -> void:
-	if action == &"discard":
 		_return_to_pending_target()
 
 func _return_to_pending_target() -> void:

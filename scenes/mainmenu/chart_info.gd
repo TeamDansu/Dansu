@@ -13,13 +13,13 @@ const SHADOW_REST_COLOR := Color(0, 0, 0, 0)
 const SHADOW_HOVER_COLOR := Color(0, 0, 0, 0.32)
 const VISUAL_LERP_SPEED := 12.0
 const HOVER_LERP_SPEED := 10.0
-const THUMB_HIDDEN_ALPHA := 0.0
 const THUMB_VISIBLE_ALPHA := 0.8
-const THUMB_FADE_DURATION := 0.18
+const THUMB_CROSSFADE_DURATION := 0.24
 
-static var _stream_length_cache := {}
 
 @onready var thumb: TextureRect = %Thumb
+@onready var previous_thumb: TextureRect = %PreviousThumb
+@onready var cover_layer: Control = $CoverLayer
 @onready var content: Control = $Content
 @onready var title_label: Label = %Title
 @onready var artist_label: Label = %Artist
@@ -55,7 +55,7 @@ func _ready() -> void:
 	CoverLoader.cover_loaded.connect(_on_cover_loaded)
 	CoverLoader.cover_failed.connect(_on_cover_failed)
 	offset_transform_enabled = true
-	thumb.offset_transform_enabled = true
+	cover_layer.offset_transform_enabled = true
 	content.offset_transform_enabled = true
 
 	_setup_stylebox()
@@ -105,7 +105,7 @@ func _process(delta: float) -> void:
 
 	offset_transform_scale = offset_transform_scale.lerp(target_scale, visual_weight)
 	offset_transform_rotation = lerpf(offset_transform_rotation, target_rotation, visual_weight)
-	thumb.offset_transform_position = thumb.offset_transform_position.lerp(target_thumb_offset, visual_weight)
+	cover_layer.offset_transform_position = cover_layer.offset_transform_position.lerp(target_thumb_offset, visual_weight)
 	content.offset_transform_position = content.offset_transform_position.lerp(target_content_offset, visual_weight)
 	shine_uv = shine_uv.lerp(target_uv, visual_weight)
 	hover_strength = lerpf(hover_strength, target_hover_strength, hover_weight)
@@ -132,20 +132,18 @@ func _refresh(chart: Chart) -> void:
 		title_label.text = ""
 		artist_label.text = ""
 		desc_label.text = ""
-		thumb.texture = null
-		_set_thumb_alpha(THUMB_HIDDEN_ALPHA)
+		_crossfade_thumb(null)
 		return
 
 	title_label.text = chart.title
 	artist_label.text = _build_artist_text(chart)
 	desc_label.text = _build_desc_text(chart)
-	_set_thumb_alpha(THUMB_HIDDEN_ALPHA)
 
 	if chart.cover_image != null:
-		thumb.texture = chart.cover_image
-		_fade_in_thumb()
+		_crossfade_thumb(chart.cover_image)
+	elif chart.file_cover_art.is_empty():
+		_crossfade_thumb(null)
 	else:
-		thumb.texture = null
 		CoverLoader.request_cover(chart)
 
 
@@ -159,7 +157,6 @@ func _refresh_best_play(chart: Chart) -> void:
 	all_just_label.visible = false
 	perfect_label.visible = false
 	never_played_label.visible = chart != null and not has_record
-	ranked_label.visible = false
 
 	if not has_record:
 		return
@@ -173,21 +170,7 @@ func _refresh_best_play(chart: Chart) -> void:
 		return
 
 	var is_full_combo := best_play.miss == 0 and best_play.high_combo >= best_play.notes
-	var is_all_just := (
-		best_play.great == 0
-		and best_play.ok == 0
-		and best_play.bad == 0
-		and best_play.miss == 0
-	)
-	var is_impeccable := (
-		is_all_just
-		and best_play.perfect == 0
-		and best_play.perfect_plus >= best_play.notes
-	)
-
 	full_combo_label.visible = is_full_combo
-	all_just_label.visible = is_all_just and not is_impeccable
-	perfect_label.visible = is_impeccable
 
 
 func _on_mouse_entered() -> void:
@@ -216,15 +199,13 @@ func _on_cover_loaded(chart: Chart, texture: Texture2D) -> void:
 		return
 	if chart != current_cover_chart:
 		return
-	thumb.texture = texture
-	_fade_in_thumb()
+	_crossfade_thumb(texture)
 
 
 func _on_cover_failed(chart: Chart) -> void:
 	if chart != current_cover_chart:
 		return
-	thumb.texture = null
-	_set_thumb_alpha(THUMB_HIDDEN_ALPHA)
+	_crossfade_thumb(null)
 
 
 func _setup_stylebox() -> void:
@@ -271,20 +252,52 @@ func _set_press_scale_multiplier(value: float) -> void:
 	set_process(true)
 
 
-func _fade_in_thumb() -> void:
+func _crossfade_thumb(texture: Texture2D) -> void:
 	if thumb_tween != null:
 		thumb_tween.kill()
+
+	var outgoing_texture := thumb.texture
+	var outgoing_alpha := thumb.modulate.a
+	if previous_thumb.modulate.a > outgoing_alpha:
+		outgoing_texture = previous_thumb.texture
+		outgoing_alpha = previous_thumb.modulate.a
+
+	if texture == outgoing_texture:
+		previous_thumb.texture = null
+		previous_thumb.modulate.a = 0.0
+		thumb.texture = texture
+		thumb.modulate.a = THUMB_VISIBLE_ALPHA if texture != null else 0.0
+		thumb_tween = null
+		return
+
+	previous_thumb.texture = outgoing_texture
+	previous_thumb.modulate.a = outgoing_alpha
+	thumb.texture = texture
+	thumb.modulate.a = 0.0
+
+	if texture == null and outgoing_texture == null:
+		thumb_tween = null
+		return
 
 	thumb_tween = create_tween()
+	var active_tween := thumb_tween
+	thumb_tween.set_parallel(true)
 	thumb_tween.set_trans(Tween.TRANS_SINE)
-	thumb_tween.set_ease(Tween.EASE_OUT)
-	thumb_tween.tween_property(thumb, "modulate:a", THUMB_VISIBLE_ALPHA, THUMB_FADE_DURATION)
-
-
-func _set_thumb_alpha(value: float) -> void:
-	if thumb_tween != null:
-		thumb_tween.kill()
-	thumb.modulate.a = value
+	thumb_tween.set_ease(Tween.EASE_IN_OUT)
+	thumb_tween.tween_property(previous_thumb, "modulate:a", 0.0, THUMB_CROSSFADE_DURATION)
+	thumb_tween.tween_property(
+		thumb,
+		"modulate:a",
+		THUMB_VISIBLE_ALPHA if texture != null else 0.0,
+		THUMB_CROSSFADE_DURATION
+	)
+	thumb_tween.finished.connect(func() -> void:
+		if thumb_tween != active_tween:
+			return
+		previous_thumb.texture = null
+		previous_thumb.modulate.a = 0.0
+		thumb_tween = null
+	)
 
 
 func _build_artist_text(chart: Chart) -> String:
@@ -307,10 +320,10 @@ func _build_desc_text(chart: Chart) -> String:
 		parts.append(difficulty_text)
 	if chart.rating > 0.0:
 		parts.append("%.1f★" % chart.rating)
-	if not chart.source.is_empty() and chart.source != "?":
+	if not chart.source.is_empty() and chart.source != "":
 		parts.append(chart.source)
 
-	return " • ".join(parts)
+	return "      ".join(parts)
 
 
 func _build_timing_text(chart: Chart) -> String:
@@ -356,23 +369,9 @@ func _format_bpm(value: float) -> String:
 
 
 func _get_chart_length_text(chart: Chart) -> String:
-	if chart == null:
+	if chart == null or chart.play_time_ms <= 0:
 		return ""
-
-	var cache_key := chart.uuid if not chart.uuid.is_empty() else chart.file_path
-	if _stream_length_cache.has(cache_key):
-		return _format_duration(_stream_length_cache[cache_key])
-
-	var stream := chart.get_stream()
-	if stream == null:
-		return ""
-
-	var length_sec := stream.get_length()
-	if length_sec <= 0.0:
-		return ""
-
-	_stream_length_cache[cache_key] = length_sec
-	return _format_duration(length_sec)
+	return _format_duration(float(chart.play_time_ms) / 1000.0)
 
 
 func _format_duration(length_sec: float) -> String:
@@ -392,7 +391,7 @@ func _build_difficulty_text(chart: Chart) -> String:
 	var has_creator := not creator.is_empty() and creator != "?"
 
 	if has_difficulty and has_creator:
-		return "%s (%s)" % [difficulty, creator]
+		return "%s by %s" % [difficulty, creator]
 	if has_difficulty:
 		return difficulty
 	if has_creator:
@@ -405,7 +404,7 @@ func _is_visual_resting() -> bool:
 		return false
 	if offset_transform_scale.distance_to(Vector2.ONE) > 0.001:
 		return false
-	if thumb.offset_transform_position.length() > 0.2:
+	if cover_layer.offset_transform_position.length() > 0.2:
 		return false
 	if content.offset_transform_position.length() > 0.2:
 		return false
@@ -420,7 +419,7 @@ func _snap_to_rest_state() -> void:
 	press_scale_multiplier = 1.0
 	offset_transform_scale = Vector2.ONE
 	offset_transform_rotation = 0.0
-	thumb.offset_transform_position = Vector2.ZERO
+	cover_layer.offset_transform_position = Vector2.ZERO
 	content.offset_transform_position = Vector2.ZERO
 	shine_uv = Vector2(0.5, 0.5)
 	hover_strength = 0.0

@@ -26,9 +26,6 @@ class_name MenuBigButton
 
 var tween: Tween
 
-var background_width: float = 0.0
-var background_height: float = 0.0
-
 func _ready() -> void:
 	await get_tree().process_frame
 	

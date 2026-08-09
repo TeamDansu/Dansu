@@ -79,6 +79,7 @@ var play_count: int = 0
 var current_version_play_count: int = 0
 
 var preview_time := -1.0
+var play_time_ms := 0
 var timings: Array[Timing]
 var default_hitsounds: PackedInt32Array
 
@@ -87,6 +88,21 @@ var file_cover_art: String = ""
 var file_skin: String = ""
 
 var cover_image: Texture2D
+
+func copy_shared_metadata_from(source_chart: Chart) -> void:
+	if source_chart == null:
+		return
+	version = source_chart.version
+	title = source_chart.title
+	artist = source_chart.artist
+	creator = source_chart.creator
+	source = source_chart.source
+	tags = source_chart.tags
+	preview_time = source_chart.preview_time
+	file_audio = source_chart.file_audio
+	file_cover_art = source_chart.file_cover_art
+	file_skin = source_chart.file_skin
+	cover_image = source_chart.cover_image
 
 func get_cover_path() -> String:
 	if file_cover_art.is_empty():
@@ -150,9 +166,4 @@ func get_default_hitsound_slot_for_note(note: Note) -> int:
 			return DEFAULT_HITSOUND_HIT
 
 func build_uuid() -> void:
-	var hex_chars = "0123456789abcdef"
-	uuid = ""
-	for i in range(32):
-		uuid += hex_chars[randi() % 16]
-		if i in [7, 11, 15, 19]:
-			uuid += "-"
+	uuid = ChartIdentity.generate_uuid()

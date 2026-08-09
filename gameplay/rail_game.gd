@@ -68,9 +68,9 @@ static func prebake_for_rail(_rail: Rail, rail_width: float = DEFAULT_WIDTH, rai
 	new_entry.rail = _rail
 	new_entry.rail_width = rail_width
 	new_entry.rail_outline_size = rail_outline_size
-	new_entry.fill_mesh = _build_ribbon_mesh(path, rail_width)
-	new_entry.outline_mesh = _build_ribbon_mesh(path, rail_width + (rail_outline_size * 2.0))
-	new_entry.shadow_mesh = _build_ribbon_mesh(
+	new_entry.fill_mesh = build_ribbon_mesh(path, rail_width)
+	new_entry.outline_mesh = build_ribbon_mesh(path, rail_width + (rail_outline_size * 2.0))
+	new_entry.shadow_mesh = build_ribbon_mesh(
 		path,
 		rail_width + ((rail_outline_size + SHADOW_EXTRA_SIZE) * 2.0)
 	)
@@ -243,7 +243,12 @@ static func _find_cached_mesh_entry(_rail: Rail, rail_width: float, rail_outline
 	return null
 
 
-static func _build_ribbon_mesh(path: Array[Vector3], rail_width: float) -> ArrayMesh:
+static func build_ribbon_mesh(
+	path: Array[Vector3],
+	rail_width: float,
+	round_start: bool = true,
+	round_end: bool = true
+) -> ArrayMesh:
 	var st := SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
 
@@ -273,13 +278,57 @@ static func _build_ribbon_mesh(path: Array[Vector3], rail_width: float) -> Array
 		st.set_uv(Vector2(0, 1)); st.add_vertex(c)
 		st.set_uv(Vector2(1, 1)); st.add_vertex(d)
 
-	var start_dir := (path[1] - path[0]).normalized()
-	var end_dir := (path[path.size() - 1] - path[path.size() - 2]).normalized()
-	_append_cap(st, path[0], start_dir, half_width, true)
-	_append_cap(st, path[path.size() - 1], end_dir, half_width, false)
+	if round_start:
+		var start_dir := (path[1] - path[0]).normalized()
+		_append_cap(st, path[0], start_dir, half_width, true)
+	if round_end:
+		var end_dir := (path[path.size() - 1] - path[path.size() - 2]).normalized()
+		_append_cap(st, path[path.size() - 1], end_dir, half_width, false)
 
-	st.generate_normals()
 	return st.commit()
+
+
+static func build_open_ribbon_mesh(path: Array[Vector3], ribbon_width: float) -> ArrayMesh:
+	var mesh := ArrayMesh.new()
+	if path.size() < 2 or ribbon_width <= 0.0:
+		return mesh
+
+	var point_count := path.size()
+	var vertices := PackedVector3Array()
+	var uvs := PackedVector2Array()
+	var indices := PackedInt32Array()
+	vertices.resize(point_count * 2)
+	uvs.resize(point_count * 2)
+	indices.resize((point_count - 1) * 6)
+
+	var half_width := ribbon_width * 0.5
+	for point_index in range(point_count):
+		var offset := _get_join_offset(path, point_index, half_width)
+		var vertex_index := point_index * 2
+		var path_alpha := float(point_index) / float(point_count - 1)
+		vertices[vertex_index] = path[point_index] - offset
+		vertices[vertex_index + 1] = path[point_index] + offset
+		uvs[vertex_index] = Vector2(0.0, path_alpha)
+		uvs[vertex_index + 1] = Vector2(1.0, path_alpha)
+
+	for segment_index in range(point_count - 1):
+		var vertex_index := segment_index * 2
+		var next_vertex_index := vertex_index + 2
+		var index_offset := segment_index * 6
+		indices[index_offset] = vertex_index
+		indices[index_offset + 1] = next_vertex_index
+		indices[index_offset + 2] = vertex_index + 1
+		indices[index_offset + 3] = vertex_index + 1
+		indices[index_offset + 4] = next_vertex_index
+		indices[index_offset + 5] = next_vertex_index + 1
+
+	var arrays := []
+	arrays.resize(Mesh.ARRAY_MAX)
+	arrays[Mesh.ARRAY_VERTEX] = vertices
+	arrays[Mesh.ARRAY_TEX_UV] = uvs
+	arrays[Mesh.ARRAY_INDEX] = indices
+	mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
+	return mesh
 
 
 static func _append_cap(st: SurfaceTool, center: Vector3, forward: Vector3, radius: float, is_start: bool) -> void:

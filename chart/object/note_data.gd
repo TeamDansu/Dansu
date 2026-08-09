@@ -9,5 +9,9 @@ var dir: Dir
 
 var length: int
 
+var end_time: int:
+	get:
+		return time + maxi(length, 0)
+
 var animation: int
 var hitsound: int = -1

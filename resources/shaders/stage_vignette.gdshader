@@ -1,7 +1,7 @@
 shader_type canvas_item;
 render_mode unshaded;
 
-uniform vec4 edge_color : source_color = vec4(0.035, 0.035, 0.045, 1.0);
+uniform vec4 edge_color : source_color;
 uniform float strength : hint_range(0.0, 1.0) = 0.46;
 
 void fragment() {

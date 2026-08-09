@@ -1,7 +1,5 @@
 extends Control
 
-const SkinSerializationScript = preload("res://skin/skin_serialization.gd")
-
 const RESULT_TICK_STREAM := preload("res://resources/audio/buttons/switch8.ogg")
 const RESULT_START_DELAY := 1.0
 const FULL_RANK_SEGMENT_DURATION := 0.28
@@ -9,20 +7,8 @@ const FINAL_SEGMENT_DURATION := 0.95
 const FINAL_SEGMENT_DURATION_MAX := 1.35
 const TICK_PLAYER_COUNT := 4
 const MAX_SCORE_DISPLAY := 101.0
-const RANK_DATA := [
-	{"label": "D", "min": 0.0},
-	{"label": "C", "min": 70.0},
-	{"label": "B", "min": 85.0},
-	{"label": "A", "min": 90.0},
-	{"label": "S", "min": 95.0},
-	{"label": "S+", "min": 99.0},
-	{"label": "SS", "min": 100.0},
-	{"label": "X", "min": 101.0},
-]
-
 var score = Score.new()
 
-@export var mockup_score = 0
 @export var make_fake_score : bool = false
 @export var fake_score : float = 90.05
 
@@ -173,26 +159,8 @@ func _on_cover_failed(chart: Chart) -> void:
 		cover_image_rect.texture = _default_cover_texture
 
 func _setup_player_sprite() -> void:
-	var skin := PlayerSkinData.new()
-	var loaded := false
-
-	if not Config.ignore_chart_skin and CM.selected_chart != null and CM.selected_chart.file_skin != "":
-		var chart_skin_path := SkinSerializationScript.ensure_chart_skin_path(CM.selected_chart)
-		if chart_skin_path != "":
-			loaded = skin.parse_objects(PlayerSkinData.TYPE.IN_CHART, "", chart_skin_path.get_file())
-
-	if not loaded and Config.custom_skin_path != "":
-		var custom_skin_path := SkinSerializationScript.get_custom_skin_file_path()
-		loaded = skin.parse_objects(
-			PlayerSkinData.TYPE.IN_SKIN_FOLDER,
-			custom_skin_path.get_base_dir().get_file(),
-			custom_skin_path.get_file()
-		)
-
-	if not loaded:
-		loaded = skin.parse_objects(PlayerSkinData.TYPE.BUILT_IN, "danshe", "skin.json")
-
-	if not loaded:
+	var skin := PlayerSkinResolver.load_active()
+	if skin == null:
 		return
 
 	player_sprite.skin = skin
@@ -235,12 +203,12 @@ func _create_tick_players() -> void:
 
 func _run_result_sequence() -> void:
 	_target_score = clampf(score.total_score, 0.0, MAX_SCORE_DISPLAY)
-	var final_rank_index := _get_rank_index_for_score(_target_score)
+	var final_rank_index := ScoreRank.index_for_score(_target_score)
 	var display_score := 0.0
 
 	for rank_index in range(final_rank_index):
-		var segment_start := _get_rank_min(rank_index)
-		var segment_end := _get_rank_min(rank_index + 1)
+		var segment_start := ScoreRank.minimum(rank_index)
+		var segment_end := ScoreRank.minimum(rank_index + 1)
 
 		display_score = await _animate_score_segment(
 			display_score,
@@ -254,10 +222,10 @@ func _run_result_sequence() -> void:
 		_play_player_dance()
 		await _play_rank_transition(rank_index + 1)
 
-	var final_rank_min := _get_rank_min(final_rank_index)
+	var final_rank_min := ScoreRank.minimum(final_rank_index)
 	var final_ratio := 0.0
 	if _target_score > final_rank_min:
-		final_ratio = inverse_lerp(final_rank_min, _get_rank_max(final_rank_index), _target_score)
+		final_ratio = inverse_lerp(final_rank_min, ScoreRank.maximum(final_rank_index), _target_score)
 
 	var final_duration := lerpf(FINAL_SEGMENT_DURATION, FINAL_SEGMENT_DURATION_MAX, final_ratio)
 	await _animate_score_segment(
@@ -434,16 +402,16 @@ func _pulse_rank_score_labels() -> void:
 
 func _apply_rank_state(rank_index: int) -> void:
 	_current_rank_index = rank_index
-	var current_rank_label := _get_rank_label(rank_index)
-	var current_rank_min := _get_rank_min(rank_index)
+	var current_rank_label := ScoreRank.label(rank_index)
+	var current_rank_min := ScoreRank.minimum(rank_index)
 
 	rank.text = current_rank_label
 	current_rank_score.text = "%s\n%s" % [current_rank_label, _format_rank_score(current_rank_min)]
 
-	if rank_index + 1 < RANK_DATA.size():
+	if rank_index + 1 < ScoreRank.DATA.size():
 		next_rank_score.text = "%s\n%s" % [
-			_get_rank_label(rank_index + 1),
-			_format_rank_score(_get_rank_min(rank_index + 1))
+			ScoreRank.label(rank_index + 1),
+			_format_rank_score(ScoreRank.minimum(rank_index + 1))
 		]
 	else:
 		next_rank_score.text = "MAX\n%s" % _format_rank_score(MAX_SCORE_DISPLAY)
@@ -451,7 +419,7 @@ func _apply_rank_state(rank_index: int) -> void:
 	_apply_rank_colors(rank_index)
 
 func _update_live_score(display_score: float, locked_rank_index: int = -1) -> void:
-	var display_rank_index := _get_rank_index_for_score(display_score)
+	var display_rank_index := ScoreRank.index_for_score(display_score)
 	if locked_rank_index >= 0:
 		display_rank_index = locked_rank_index
 	score_label.text = _format_score(display_score)
@@ -459,8 +427,8 @@ func _update_live_score(display_score: float, locked_rank_index: int = -1) -> vo
 	if display_rank_index != _current_rank_index:
 		_apply_rank_state(display_rank_index)
 
-	var current_rank_min := _get_rank_min(display_rank_index)
-	var current_rank_max := _get_rank_max(display_rank_index)
+	var current_rank_min := ScoreRank.minimum(display_rank_index)
+	var current_rank_max := ScoreRank.maximum(display_rank_index)
 	if current_rank_max <= current_rank_min:
 		progress_bar.value = 1.0
 		return
@@ -472,53 +440,18 @@ func _update_live_score(display_score: float, locked_rank_index: int = -1) -> vo
 	)
 
 func _apply_rank_colors(rank_index: int) -> void:
-	var current_color := _get_rank_color_for_score(_get_rank_min(rank_index))
+	var current_color := ScoreRank.color(rank_index)
 	rank.add_theme_color_override("font_color", current_color)
 	score_label.add_theme_color_override("font_color", current_color)
 	current_rank_score.add_theme_color_override("font_color", current_color)
 
-	if rank_index + 1 < RANK_DATA.size():
+	if rank_index + 1 < ScoreRank.DATA.size():
 		next_rank_score.add_theme_color_override(
 			"font_color",
-			_get_rank_color_for_score(_get_rank_min(rank_index + 1))
+			ScoreRank.color(rank_index + 1)
 		)
 	else:
 		next_rank_score.add_theme_color_override("font_color", current_color)
-
-func _get_rank_index_for_score(value: float) -> int:
-	var result := 0
-	for index in range(RANK_DATA.size()):
-		if value >= float(RANK_DATA[index]["min"]):
-			result = index
-	return result
-
-func _get_rank_color_for_score(value: float) -> Color:
-	if value >= 101.0:
-		return Color(0.702, 0.846, 0.935, 1.0)
-	if value >= 100.0:
-		return Color(0.915, 0.643, 0.895, 1.0)
-	if value >= 99.0:
-		return Color(0.977, 0.872, 0.698, 1.0)
-	if value >= 95.0:
-		return Color(0.965, 0.925, 0.745, 1.0)
-	if value >= 90.0:
-		return Color("c6fbb7ff")
-	if value >= 85.0:
-		return Color(0.826, 0.374, 0.444, 1.0)
-	if value >= 70.0:
-		return Color(0.22, 0.191, 0.215, 1.0)
-	return Color(0.071, 0.063, 0.071, 1.0)
-
-func _get_rank_label(rank_index: int) -> String:
-	return str(RANK_DATA[rank_index]["label"])
-
-func _get_rank_min(rank_index: int) -> float:
-	return float(RANK_DATA[rank_index]["min"])
-
-func _get_rank_max(rank_index: int) -> float:
-	if rank_index + 1 < RANK_DATA.size():
-		return _get_rank_min(rank_index + 1)
-	return MAX_SCORE_DISPLAY
 
 func _format_score(value: float) -> String:
 	return "%.2f%%" % value

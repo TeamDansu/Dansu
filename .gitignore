@@ -1,4 +1,5 @@
-
+*.tmp
 .godot/
 /android/
 .old
+/plugins/

@@ -9,6 +9,6 @@ func _play() -> void:
 	Game.play_selected_chart()
 
 func _back() -> void:
-	var menu := get_parent()
-	if menu != null and menu.has_method("return_to_main_menu"):
+	var menu := get_parent() as DansuMainMenu
+	if menu != null:
 		menu.return_to_main_menu()

@@ -70,14 +70,6 @@ func get_selected_animation():
 		return null
 	return skin_data.animations[context.selected_animation_index]
 
-func get_selected_frame_file_name() -> String:
-	var animation = get_selected_animation()
-	if animation == null:
-		return ""
-	if context.selected_frame_index < 0 or context.selected_frame_index >= animation.frames_file_name.size():
-		return ""
-	return animation.frames_file_name[context.selected_frame_index]
-
 func get_sprite_file_names() -> Array[String]:
 	var result: Array[String] = []
 	if not DirAccess.dir_exists_absolute(sprite_directory_path):

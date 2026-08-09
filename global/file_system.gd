@@ -16,6 +16,77 @@ static func ensure_dir(path: String) -> void:
 		push_error("FILE: failed to make folder : %s", path)
 
 
+static func unique_file_name(directory_path: String, preferred_name: String, fallback_name := "imported") -> String:
+	var safe_name := preferred_name.validate_filename().strip_edges()
+	var extension := safe_name.get_extension().to_lower()
+	var base_name := safe_name.get_basename().strip_edges()
+	if base_name.is_empty():
+		base_name = fallback_name.validate_filename().strip_edges()
+	if base_name.is_empty():
+		base_name = "imported"
+	var candidate := base_name if extension.is_empty() else "%s.%s" % [base_name, extension]
+	var suffix := 2
+	while FileAccess.file_exists(directory_path.path_join(candidate)):
+		candidate = "%s_%d" % [base_name, suffix] if extension.is_empty() else "%s_%d.%s" % [base_name, suffix, extension]
+		suffix += 1
+	return candidate
+
+
+static func copy_file_unique(source_path: String, target_directory: String, fallback_name := "imported") -> String:
+	var normalized_source := source_path.simplify_path()
+	if not FileAccess.file_exists(normalized_source):
+		return ""
+	ensure_dir(target_directory)
+	var target_name := unique_file_name(target_directory, normalized_source.get_file(), fallback_name)
+	var target_path := target_directory.path_join(target_name)
+	var source := FileAccess.open(normalized_source, FileAccess.READ)
+	if source == null:
+		return ""
+	var target := FileAccess.open(target_path, FileAccess.WRITE)
+	if target == null:
+		source.close()
+		return ""
+	target.store_buffer(source.get_buffer(source.get_length()))
+	target.flush()
+	target.close()
+	source.close()
+	return target_path
+
+
+static func write_text_atomic(path: String, content: String) -> bool:
+	var temporary_path := path + ".tmp"
+	if FileAccess.file_exists(temporary_path):
+		DirAccess.remove_absolute(ProjectSettings.globalize_path(temporary_path))
+	var file := FileAccess.open(temporary_path, FileAccess.WRITE)
+	if file == null:
+		return false
+	file.store_string(content)
+	file.flush()
+	file.close()
+	return replace_file(temporary_path, path)
+
+
+static func replace_file(source_path: String, target_path: String) -> bool:
+	if not FileAccess.file_exists(source_path):
+		return false
+	ensure_dir(target_path.get_base_dir())
+	var absolute_source := ProjectSettings.globalize_path(source_path)
+	var absolute_target := ProjectSettings.globalize_path(target_path)
+	var backup_path := absolute_target + ".backup"
+	if FileAccess.file_exists(backup_path):
+		DirAccess.remove_absolute(backup_path)
+	var had_target := FileAccess.file_exists(absolute_target)
+	if had_target and DirAccess.rename_absolute(absolute_target, backup_path) != OK:
+		return false
+	if DirAccess.rename_absolute(absolute_source, absolute_target) != OK:
+		if had_target:
+			DirAccess.rename_absolute(backup_path, absolute_target)
+		return false
+	if had_target:
+		DirAccess.remove_absolute(backup_path)
+	return true
+
+
 static func process_startup_imports() -> void:
 	var import_root := _get_startup_import_root()
 	ensure_dir(import_root)
@@ -53,24 +124,23 @@ static func get_image(full_path: String) -> Image:
 
 
 static func _load_image_from_bytes_loose(bytes: PackedByteArray, extension_hint: String = "") -> Image:
-	var normalized_hint := extension_hint.to_lower()
-	if normalized_hint == "jpeg":
-		normalized_hint = "jpg"
+	var detected_format := _detect_image_format(bytes)
+	if not detected_format.is_empty():
+		return _try_load_image_format(bytes, detected_format)
+	var normalized_hint := extension_hint.to_lower().replace("jpeg", "jpg")
+	return _try_load_image_format(bytes, normalized_hint) if normalized_hint in ["png", "jpg", "webp", "bmp", "tga"] else null
 
-	if not normalized_hint.is_empty():
-		var hinted_image := _try_load_image_format(bytes, normalized_hint)
-		if hinted_image != null:
-			return hinted_image
 
-	for format_name in ["png", "jpg", "webp", "bmp", "tga"]:
-		if format_name == normalized_hint:
-			continue
-
-		var image := _try_load_image_format(bytes, format_name)
-		if image != null:
-			return image
-
-	return null
+static func _detect_image_format(bytes: PackedByteArray) -> String:
+	if bytes.size() >= 8 and bytes[0] == 0x89 and bytes[1] == 0x50 and bytes[2] == 0x4e and bytes[3] == 0x47:
+		return "png"
+	if bytes.size() >= 3 and bytes[0] == 0xff and bytes[1] == 0xd8 and bytes[2] == 0xff:
+		return "jpg"
+	if bytes.size() >= 12 and bytes.slice(0, 4).get_string_from_ascii() == "RIFF" and bytes.slice(8, 12).get_string_from_ascii() == "WEBP":
+		return "webp"
+	if bytes.size() >= 2 and bytes[0] == 0x42 and bytes[1] == 0x4d:
+		return "bmp"
+	return ""
 
 
 static func _try_load_image_format(bytes: PackedByteArray, format_name: String) -> Image:

@@ -3,6 +3,8 @@
 [ext_resource type="Script" uid="uid://yt15g07posb4" path="res://gameplay/note_game.gd" id="1_yi1o8"]
 [ext_resource type="Texture2D" uid="uid://0tsl2wcyjngr" path="res://resources/textures/gameplay/hit_note.png" id="2_6hwfw"]
 [ext_resource type="PackedScene" uid="uid://24osfal67ed8" path="res://scenes/gameplay/note_particle.tscn" id="3_break"]
+[ext_resource type="Script" path="res://gameplay/long_note_visual.gd" id="4_long_note"]
+[ext_resource type="Texture2D" path="res://resources/textures/white-circle.svg" id="5_circle"]
 
 [node name="Note" type="Node3D" unique_id=495088426 node_paths=PackedStringArray("note_sprite", "note_shadow")]
 transform = Transform3D(0.5, 0, 0, 0, 0.5, 0, 0, 0, 0.5, 0, 0, 0)
@@ -25,3 +27,18 @@ modulate = Color(0.37036446, 0.3703645, 0.37036446, 0.9411765)
 pixel_size = 0.003
 double_sided = false
 texture = ExtResource("2_6hwfw")
+
+[node name="LongNoteVisual" type="Node3D" parent="."]
+script = ExtResource("4_long_note")
+
+[node name="Body" type="MeshInstance3D" parent="LongNoteVisual"]
+layers = 4
+cast_shadow = 0
+
+[node name="TailCap" type="Sprite3D" parent="LongNoteVisual"]
+layers = 4
+axis = 1
+no_depth_test = true
+render_priority = 1
+double_sided = true
+texture = ExtResource("5_circle")

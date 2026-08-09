@@ -3,11 +3,8 @@ extends Node
 enum GameStage { Loading, Main, Play, Edit, Browse }
 enum MainMenuState { Home, SongSelect }
 
-signal main_menu_state_changed(state: MainMenuState)
-
 var stage = GameStage.Loading
 var main_menu_state := MainMenuState.Home
-const CHART_FILE_VERSION = 1
 var current_time := 0.0
 var last_result_score: Score = null
 var skin_editor_request = null
@@ -18,21 +15,10 @@ var color_map = {
 	5: Color("6466ccff"),
 	10: Color("91cc53ff"),
 	15: Color("d1bd28ff"),
-	20: Color("964559"),
-	25: Color("602228"),
-	30: Color("492c55"), 
-	35: Color("230215ff"),
-}
-
-var color_map_test = {
-	0: Color("a0a0a0ff"),
-	5: Color("1AC9E6ff"),
-	10: Color("1DE45Dff"),
-	15: Color("eacb00ff"),
-	20: Color("DE542Cff"),
-	25: Color("C02323ff"),
-	30: Color("DE4CB2ff"), 
-	35: Color("8b00ffff"),
+	20: Color("c94324ff"),
+	25: Color("82171fff"),
+	30: Color("845696ff"), 
+	35: Color("501247ff"),
 }
 
 func get_color_from_rating(value: float,fade: bool = false) -> Color:
@@ -60,11 +46,3 @@ func get_color_from_rating(value: float,fade: bool = false) -> Color:
 func play_selected_chart() -> void:
 	if CM.parse_selected_chart():
 		Transition.transition_to("res://scenes/gameplay/gameplay.tscn",1.0)
-
-
-func set_main_menu_state(value: MainMenuState) -> void:
-	if main_menu_state == value:
-		return
-
-	main_menu_state = value
-	main_menu_state_changed.emit(main_menu_state)

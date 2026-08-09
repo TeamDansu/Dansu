@@ -1,10 +1,21 @@
 extends RefCounted
 class_name Rating
 
-const SEGMENT_DURATION_MS := 2000
-const POWER := 10.5
+const SEGMENT_DURATION_MS := 3000
+const POWER := 9.0
 const WEIGHT := 3.2
 const CACHE_VERSION := 1
+
+const SPEED_CONTRIBUTION := 0.55
+const READING_CONTRIBUTION := 0.45
+const READING_FULL_COMPLEXITY := 0.4
+const KEY_COMFORT_IPS := 7.0
+const KEY_BURDEN_CONTRIBUTION := 0.35
+const MAX_KEY_BURDEN := 1.5
+
+const HIGH_RATING_START := 30.0
+const HIGH_RATING_SCALE := 20.0
+const HIGH_RATING_INITIAL_SLOPE := 0.6
 
 const HIT_NOTE_INPUT_WEIGHT := 1.0
 const MOVE_NOTE_INPUT_WEIGHT := 1.1
@@ -38,6 +49,9 @@ static func calculate_rating(chart: ParsedChart) -> float:
 
 	var notes_by_time := _group_notes_by_time(notes)
 	var note_owner_by_note := _build_note_owner_by_note(rails)
+	var reading_complexity := _calculate_reading_complexity(notes, note_owner_by_note)
+	var key_segments := _create_key_segments(segment_count)
+	var hit_key_totals := [0.0, 0.0]
 	var event_times := _build_event_times(notes, rails)
 	if event_times.is_empty():
 		return 0.0
@@ -58,25 +72,48 @@ static func calculate_rating(chart: ParsedChart) -> float:
 				time_ms,
 				notes_by_time[time_ms],
 				segments,
-				start_time
+				start_time,
+				key_segments,
+				hit_key_totals
 			)
 
-	for i in range(segments.size()):
-		segments[i] /= (SEGMENT_DURATION_MS / 1000.0)
+	var key_peak_ips := _calculate_key_peak_ips(key_segments)
+	var weighted_power_sum := 0.0
+	var total_input_weight := 0.0
+	var segment_duration_seconds := SEGMENT_DURATION_MS / 1000.0
 
-	var acc := 0.0
-	var valid_count := 0
+	for input_count in segments:
+		if input_count <= 0.0:
+			continue
+		var ips := input_count / segment_duration_seconds
+		weighted_power_sum += input_count * pow(ips, POWER)
+		total_input_weight += input_count
 
-	for ips in segments:
-		if ips > 0.0:
-			acc += pow(ips, POWER)
-			valid_count += 1
-
-	if valid_count == 0:
+	if total_input_weight <= 0.0:
 		return 0.0
 
-	var mean := pow(acc / valid_count, 1.0 / POWER)
-	return mean * WEIGHT
+	var mean := pow(weighted_power_sum / total_input_weight, 1.0 / POWER)
+	var reading_ratio := clampf(reading_complexity / READING_FULL_COMPLEXITY, 0.0, 1.0)
+	var key_burden := clampf((key_peak_ips / KEY_COMFORT_IPS) - 1.0, 0.0, MAX_KEY_BURDEN)
+	var difficulty_multiplier := (
+		SPEED_CONTRIBUTION
+		+ READING_CONTRIBUTION * reading_ratio
+		+ KEY_BURDEN_CONTRIBUTION * key_burden
+	)
+	var raw_rating := mean * WEIGHT * difficulty_multiplier
+	return _apply_rating_curve(raw_rating)
+
+
+static func _apply_rating_curve(raw_rating: float) -> float:
+	if raw_rating <= 0.0:
+		return 0.0
+	if raw_rating <= HIGH_RATING_START:
+		return raw_rating
+
+	var high_delta := raw_rating - HIGH_RATING_START
+	return HIGH_RATING_START + HIGH_RATING_SCALE * log(
+		1.0 + HIGH_RATING_INITIAL_SLOPE * high_delta / HIGH_RATING_SCALE
+	)
 
 static func _get_first_note_time(notes: Array[Note]) -> int:
 	if notes.is_empty():
@@ -89,7 +126,7 @@ static func _get_last_relevant_time(notes: Array[Note], rails: Array[Rail]) -> i
 
 	for note in notes:
 		last_time = max(last_time, int(note.time))
-		last_time = max(last_time, int(note.time) + int(note.length))
+		last_time = max(last_time, note.end_time)
 
 	for rail in rails:
 		if rail == null:
@@ -124,6 +161,102 @@ static func _build_note_owner_by_note(rails: Array[Rail]) -> Dictionary:
 				result[note] = rail
 
 	return result
+
+
+static func _calculate_reading_complexity(
+	notes: Array[Note],
+	note_owner_by_note: Dictionary
+) -> float:
+	var tokens: Array[String] = []
+	var novel_count := 0
+
+	for note in notes:
+		if note == null:
+			continue
+		var owner_rail: Rail = note_owner_by_note.get(note)
+		if owner_rail == null:
+			continue
+
+		var token := "%d:%d:%d" % [int(note.type), int(note.dir), int(owner_rail.id)]
+		if (
+			tokens.size() >= 2
+			and token != tokens[tokens.size() - 1]
+			and token != tokens[tokens.size() - 2]
+		):
+			novel_count += 1
+		tokens.append(token)
+
+	if tokens.size() <= 2:
+		return 0.0
+	return float(novel_count) / float(tokens.size() - 2)
+
+
+static func _create_key_segments(segment_count: int) -> Array:
+	var key_segments: Array = []
+	key_segments.resize(segment_count)
+	for i in range(segment_count):
+		key_segments[i] = [0.0, 0.0, 0.0, 0.0]
+	return key_segments
+
+
+static func _calculate_key_peak_ips(key_segments: Array) -> float:
+	var peak_ips := 0.0
+	var segment_duration_seconds := SEGMENT_DURATION_MS / 1000.0
+	for key_loads in key_segments:
+		for key_load in key_loads:
+			peak_ips = maxf(peak_ips, float(key_load) / segment_duration_seconds)
+	return peak_ips
+
+
+static func _add_key_inputs_at_time(
+	key_segments: Array,
+	start_time: int,
+	time_ms: int,
+	key_index: int,
+	amount: float
+) -> void:
+	if amount <= 0.0 or key_index < 0 or key_index >= 4:
+		return
+	@warning_ignore("integer_division")
+	var segment_index := int((time_ms - start_time) / SEGMENT_DURATION_MS)
+	if segment_index < 0 or segment_index >= key_segments.size():
+		return
+	key_segments[segment_index][key_index] += amount
+
+
+static func _add_note_key_input(
+	note: Note,
+	key_segments: Array,
+	hit_key_totals: Array,
+	start_time: int,
+	time_ms: int
+) -> void:
+	if note == null:
+		return
+	match note.type:
+		Note.NoteType.HIT:
+			var hit_key_index := 0 if hit_key_totals[0] <= hit_key_totals[1] else 1
+			hit_key_totals[hit_key_index] += HIT_NOTE_INPUT_WEIGHT
+			_add_key_inputs_at_time(
+				key_segments,
+				start_time,
+				time_ms,
+				2 + hit_key_index,
+				HIT_NOTE_INPUT_WEIGHT
+			)
+		Note.NoteType.MOVE:
+			var move_key_index := -1
+			if note.dir == Note.Dir.LEFT:
+				move_key_index = 0
+			elif note.dir == Note.Dir.RIGHT:
+				move_key_index = 1
+			_add_key_inputs_at_time(
+				key_segments,
+				start_time,
+				time_ms,
+				move_key_index,
+				MOVE_NOTE_INPUT_WEIGHT
+			)
 
 
 static func _build_event_times(notes: Array[Note], rails: Array[Rail]) -> Array[int]:
@@ -183,7 +316,9 @@ static func _process_notes_at_time(
 	time_ms: int,
 	note_group: Array,
 	segments: Array[float],
-	start_time: int
+	start_time: int,
+	key_segments: Array,
+	hit_key_totals: Array
 ) -> void:
 	var active_rails := _get_sorted_active_rails_at_time(rails, time_ms)
 	if active_rails.is_empty():
@@ -242,6 +377,17 @@ static func _process_notes_at_time(
 			time_ms,
 			float(hidden_move_steps) * HIDDEN_MOVE_INPUT_WEIGHT
 		)
+		_add_key_inputs_at_time(
+			key_segments,
+			start_time,
+			time_ms,
+			_get_move_key_index_by_order(
+				occupied_rail_id,
+				best_target_rail_id,
+				active_rails
+			),
+			float(hidden_move_steps) * HIDDEN_MOVE_INPUT_WEIGHT
+		)
 
 		var note_input_weight := 0.0
 		var move_note: Note = null
@@ -249,6 +395,7 @@ static func _process_notes_at_time(
 			var owner_rail: Rail = note_owner_by_note.get(note)
 			if owner_rail != null and int(owner_rail.id) == best_target_rail_id:
 				note_input_weight += _get_note_input_weight(note)
+				_add_note_key_input(note, key_segments, hit_key_totals, start_time, time_ms)
 				if move_note == null and note.type == Note.NoteType.MOVE:
 					move_note = note
 
@@ -290,6 +437,17 @@ static func _process_notes_at_time(
 				segments,
 				start_time,
 				time_ms,
+				float(evade_steps) * HIDDEN_MOVE_INPUT_WEIGHT
+			)
+			_add_key_inputs_at_time(
+				key_segments,
+				start_time,
+				time_ms,
+				_get_move_key_index_by_order(
+					occupied_rail_id,
+					safe_target_rail_id,
+					active_rails
+				),
 				float(evade_steps) * HIDDEN_MOVE_INPUT_WEIGHT
 			)
 
@@ -387,6 +545,18 @@ static func _get_required_move_inputs_by_order(
 		return 0
 
 	return abs(target_index - current_index)
+
+
+static func _get_move_key_index_by_order(
+	current_rail_id: int,
+	target_rail_id: int,
+	active_rails: Array
+) -> int:
+	var current_index := _get_rail_index_in_sorted_active(active_rails, current_rail_id)
+	var target_index := _get_rail_index_in_sorted_active(active_rails, target_rail_id)
+	if current_index == -1 or target_index == -1 or current_index == target_index:
+		return -1
+	return 0 if target_index < current_index else 1
 
 
 static func _get_note_input_weight(note: Note) -> float:

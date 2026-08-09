@@ -640,11 +640,8 @@ theme_override_styles/panel = SubResource("StyleBoxFlat_a8qj1")
 script = ExtResource("11_ll1i1")
 metadata/_edit_use_anchors_ = true
 
-[node name="Thumb" type="TextureRect" parent="ChartInfo/Panel" unique_id=1734452956]
-unique_name_in_owner = true
-modulate = Color(1, 1, 1, 0.38431373)
+[node name="CoverLayer" type="Control" parent="ChartInfo/Panel" unique_id=1483692487]
 layout_mode = 1
-anchors_preset = -1
 anchor_left = -0.035172798
 anchor_top = -0.072430216
 anchor_right = 1.0454555
@@ -655,10 +652,36 @@ offset_right = 0.16796875
 offset_bottom = -0.24804688
 grow_horizontal = 2
 grow_vertical = 2
+offset_transform_enabled = true
+mouse_filter = 2
+metadata/_edit_use_anchors_ = true
+
+[node name="PreviousThumb" type="TextureRect" parent="ChartInfo/Panel/CoverLayer" unique_id=1950153817]
+unique_name_in_owner = true
+modulate = Color(1, 1, 1, 0)
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+expand_mode = 1
+stretch_mode = 6
+
+[node name="Thumb" type="TextureRect" parent="ChartInfo/Panel/CoverLayer" unique_id=1734452956]
+unique_name_in_owner = true
+modulate = Color(1, 1, 1, 0.38431373)
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
 texture = SubResource("GradientTexture1D_vhubh")
 expand_mode = 1
 stretch_mode = 6
-metadata/_edit_use_anchors_ = true
 
 [node name="Content" type="Control" parent="ChartInfo/Panel" unique_id=500247412]
 layout_mode = 1
@@ -726,6 +749,9 @@ offset_left = 105.006
 offset_top = -121.712006
 offset_right = -88.0
 offset_bottom = 110.287994
+theme_override_colors/font_color = Color(1, 1, 0.81960785, 1)
+theme_override_colors/font_outline_color = Color(0.4392157, 0.35686275, 0.87058824, 1)
+theme_override_constants/outline_size = 5
 theme_override_fonts/font = ExtResource("12_a8qj1")
 theme_override_font_sizes/font_size = 24
 text = "99:99 (50-250bpm)"
@@ -775,10 +801,10 @@ vertical_alignment = 1
 [node name="FullCombo" type="Label" parent="ChartInfo" unique_id=708357602]
 material = SubResource("ShaderMaterial_a8qj1")
 layout_mode = 0
-offset_left = 100.168015
-offset_top = 42.99997
-offset_right = 475.0315
-offset_bottom = 111.34526
+offset_left = -52.00003
+offset_top = 70.0
+offset_right = 322.86343
+offset_bottom = 138.34529
 rotation = -0.2012667
 theme_override_colors/font_color = Color(0.10980392, 0.101960786, 0.1764706, 1)
 theme_override_colors/font_shadow_color = Color(0.8156863, 0.65882355, 0.38431373, 1)
@@ -793,13 +819,12 @@ horizontal_alignment = 1
 vertical_alignment = 1
 
 [node name="AllJust" type="Label" parent="ChartInfo" unique_id=858703156]
-visible = false
 material = SubResource("ShaderMaterial_a8qj1")
 layout_mode = 0
-offset_left = -63.0
-offset_top = 161.0
-offset_right = 480.0
-offset_bottom = 260.0
+offset_left = -140.0
+offset_top = 69.99999
+offset_right = 403.0
+offset_bottom = 169.0
 rotation = -0.2012667
 theme_override_colors/font_color = Color(0.10980392, 0.101960786, 0.1764706, 1)
 theme_override_colors/font_shadow_color = Color(0.8156863, 0.65882355, 0.38431373, 1)
@@ -814,13 +839,12 @@ horizontal_alignment = 1
 vertical_alignment = 1
 
 [node name="Perfect" type="Label" parent="ChartInfo" unique_id=1076048974]
-visible = false
 material = SubResource("ShaderMaterial_a8qj1")
 layout_mode = 0
-offset_left = -63.0
-offset_top = 161.0
-offset_right = 480.0
-offset_bottom = 260.0
+offset_left = -132.0
+offset_top = 69.99999
+offset_right = 411.0
+offset_bottom = 169.0
 rotation = -0.2012667
 theme_override_colors/font_color = Color(0.10980392, 0.101960786, 0.1764706, 1)
 theme_override_colors/font_shadow_color = Color(0.8156863, 0.65882355, 0.38431373, 1)
@@ -1116,10 +1140,10 @@ layout_mode = 1
 anchors_preset = -1
 anchor_top = 0.41500002
 anchor_bottom = 0.41500002
-offset_left = 127.0
-offset_top = 126.79999
-offset_right = 411.0
-offset_bottom = 494.8
+offset_left = 120.0
+offset_top = 71.79999
+offset_right = 404.0
+offset_bottom = 439.8
 offset_transform_enabled = true
 theme_override_constants/separation = 12
 script = ExtResource("6_xnw7g")
@@ -1131,7 +1155,6 @@ icon_texture = ExtResource("13_hqrtg")
 hover_scale = 1.04
 
 [node name="Browse" parent="MenuButtons" unique_id=274242608 instance=ExtResource("4_da4vi")]
-visible = false
 layout_mode = 2
 button_text = "browse"
 icon_texture = ExtResource("14_dx8qc")
@@ -1193,14 +1216,6 @@ theme_override_fonts/font = ExtResource("4_ridl2")
 theme_override_font_sizes/font_size = 32
 text = "loading charts"
 horizontal_alignment = 1
-
-[node name="Label" type="Label" parent="." unique_id=620383998]
-layout_mode = 0
-offset_left = 1608.0
-offset_right = 1914.0
-offset_bottom = 23.0
-text = "indev 2026.07 ⓒ Team Dansu"
-horizontal_alignment = 2
 
 [node name="SettingsPopup" parent="." unique_id=1336381579 instance=ExtResource("25_settings")]
 visible = false

@@ -14,12 +14,16 @@ var trace_texture : Texture2D = preload("res://resources/textures/gameplay/trace
 @export var note_shadow: Sprite3D
 @export var break_effect_scene: PackedScene
 
+@onready var long_note_visual: GameplayLongNoteVisual = $LongNoteVisual
+
 signal consumed(judge: int, note_node: GameNote)
 
 var note: Note
 var rail: Rail
 var is_consumed := false
+var waiting_for_long_release := false
 var _note_base_modulate := Color.WHITE
+var _note_shadow_base_modulate := Color.WHITE
 var _spawn_fade_active := false
 
 func _ready() -> void:
@@ -32,6 +36,7 @@ func _ready() -> void:
 	_configure_sprite_depth(note_sprite)
 	_set_note_texture()
 	_cache_base_modulates()
+	_setup_long_note_visual()
 	_initialize_spawn_fade()
 
 
@@ -44,6 +49,28 @@ func _configure_sprite_depth(sprite: Sprite3D) -> void:
 func _cache_base_modulates() -> void:
 	if note_sprite != null:
 		_note_base_modulate = note_sprite.modulate
+	if note_shadow != null:
+		_note_shadow_base_modulate = note_shadow.modulate
+
+
+func _setup_long_note_visual() -> void:
+	if long_note_visual == null:
+		return
+	long_note_visual.configure(note, rail, self, note_sprite)
+
+
+func prebake_long_note_visual(note_data: Note, rail_data: Rail) -> void:
+	note = note_data
+	rail = rail_data
+	if note == null or rail == null:
+		return
+	position.x = GameplayPlayfield.normalized_x_to_world(rail._get_rail_x_at_time(note.time))
+	position.y = VISUAL_SURFACE_OFFSET
+	position.z = GameplayPlayfield.local_z_from_start(rail.start_time, note.time)
+	_set_note_texture()
+	var visual := get_node_or_null("LongNoteVisual") as GameplayLongNoteVisual
+	if visual != null:
+		visual.prebake(note, rail, self, note_sprite)
 
 func _set_note_texture() -> void:
 	note_sprite.flip_h = false
@@ -103,6 +130,15 @@ func _update_spawn_fade() -> void:
 func _set_visual_alpha(alpha: float) -> void:
 	if note_sprite != null:
 		note_sprite.modulate = Color(_note_base_modulate.r, _note_base_modulate.g, _note_base_modulate.b, _note_base_modulate.a * alpha)
+	if note_shadow != null:
+		note_shadow.modulate = Color(
+			_note_shadow_base_modulate.r,
+			_note_shadow_base_modulate.g,
+			_note_shadow_base_modulate.b,
+			_note_shadow_base_modulate.a * alpha
+		)
+	if long_note_visual != null:
+		long_note_visual.set_visual_opacity(alpha)
 
 func consume(judge: int) -> void:
 	if is_consumed:
@@ -111,12 +147,44 @@ func consume(judge: int) -> void:
 	is_consumed = true
 	if judge != Score.MISS and judge != Score.NONE:
 		_spawn_break_effect()
+
+	if _is_long_note() and judge != Score.MISS and judge != Score.NONE:
+		waiting_for_long_release = true
+		note_sprite.visible = false
+		note_shadow.visible = false
+		long_note_visual.set_holding(true)
+		consumed.emit(judge, self)
+		return
+
 	consumed.emit(judge, self)
 	queue_free()
 
 
+func finish_long_note(judge: int) -> void:
+	if not waiting_for_long_release:
+		return
+	waiting_for_long_release = false
+	if long_note_visual != null:
+		long_note_visual.set_holding(false)
+		if judge != Score.MISS and judge != Score.NONE:
+			_spawn_break_effect_for_sprite(long_note_visual.get_tail_cap())
+	queue_free()
+
+
+func _is_long_note() -> bool:
+	return (
+		note != null
+		and note.length > 0
+		and (note.type == Note.NoteType.HIT or note.type == Note.NoteType.MOVE)
+	)
+
+
 func _spawn_break_effect() -> void:
-	if break_effect_scene == null or note_sprite == null or note_sprite.texture == null:
+	_spawn_break_effect_for_sprite(note_sprite)
+
+
+func _spawn_break_effect_for_sprite(sprite: Sprite3D) -> void:
+	if break_effect_scene == null or sprite == null or sprite.texture == null:
 		return
 	var effect := break_effect_scene.instantiate() as GameplayNoteBreakEffect
 	var scene_root := get_tree().current_scene
@@ -124,15 +192,15 @@ func _spawn_break_effect() -> void:
 		return
 
 	scene_root.add_child(effect)
-	var effect_transform := note_sprite.global_transform
-	var offset := Vector3(note_sprite.offset.x, note_sprite.offset.y, 0.0) * note_sprite.pixel_size
-	effect_transform.origin = note_sprite.to_global(offset)
+	var effect_transform := sprite.global_transform
+	var offset := Vector3(sprite.offset.x, sprite.offset.y, 0.0) * sprite.pixel_size
+	effect_transform.origin = sprite.to_global(offset)
 	effect.global_transform = effect_transform
 	effect.play(
-		note_sprite.texture,
-		_note_base_modulate,
-		note_sprite.flip_h,
-		note_sprite.pixel_size,
+		sprite.texture,
+		sprite.modulate,
+		sprite.flip_h,
+		sprite.pixel_size,
 		Config.note_speed
 	)
 

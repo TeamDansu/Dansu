@@ -1,9 +1,9 @@
 shader_type spatial;
 render_mode unshaded, cull_disabled, blend_mix, depth_prepass_alpha;
 
-uniform vec4 floor_color : source_color = vec4(0.105, 0.108, 0.125, 1.0);
-uniform vec4 guide_color : source_color = vec4(0.34, 0.35, 0.40, 1.0);
-uniform vec4 accent_color : source_color = vec4(0.50, 0.42, 0.92, 1.0);
+uniform vec4 floor_color : source_color;
+uniform vec4 guide_color : source_color;
+uniform vec4 accent_color : source_color;
 uniform float line_opacity : hint_range(0.0, 1.0) = 0.74;
 uniform float floor_opacity : hint_range(0.0, 1.0) = 0.34;
 uniform float volume_alpha_boost : hint_range(0.0, 1.0) = 0.78;

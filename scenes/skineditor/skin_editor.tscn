@@ -10,6 +10,7 @@
 [ext_resource type="Texture2D" uid="uid://caegtu8bhulxq" path="res://resources/skins/danshe/sprite/danshe_idle.png" id="5_3574f"]
 [ext_resource type="Shader" uid="uid://cflu32au5woaj" path="res://resources/shaders/bg.gdshader" id="6_bg"]
 [ext_resource type="Shader" uid="uid://cnchsob31pe3k" path="res://resources/shaders/liquid.gdshader" id="7_liquid"]
+[ext_resource type="PackedScene" path="res://scenes/editor/ui/unsaved_changes_dialog.tscn" id="8_unsaved"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_background"]
 shader = ExtResource("6_bg")
@@ -39,7 +40,7 @@ bg_color = Color(0.05490196, 0.05882353, 0.08627451, 0.94)
 border_width_bottom = 1
 border_color = Color(0.47058824, 0.40392157, 0.8784314, 0.32)
 
-[node name="SkinEditor" type="Control" unique_id=1593651549 node_paths=PackedStringArray("name_line_edit", "idle_option", "left_option", "right_option", "scale_bar", "hits_option", "hits_add_new_button", "skin_contents", "new_animation_button", "animation_list_container", "animation_template", "frames_container", "frame_template", "delete_frame_button", "calculate_scale_button", "onion_skin_button", "preview_play_button", "fps_line_edit", "effect_option", "save_button", "back_to_menu_button", "back_to_chart_button", "import_sprite_button", "sprite_list_container", "sprite_template", "preview_sprite", "preview_onion_prev", "preview_onion_next")]
+[node name="SkinEditor" type="Control" unique_id=1593651549 node_paths=PackedStringArray("name_line_edit", "idle_option", "left_option", "right_option", "scale_spinbox", "hits_option", "hits_add_new_button", "skin_contents", "new_animation_button", "animation_list_container", "animation_template", "frames_container", "frame_template", "delete_frame_button", "calculate_scale_button", "onion_skin_button", "preview_play_button", "fps_line_edit", "effect_option", "save_button", "back_to_menu_button", "back_to_chart_button", "import_sprite_button", "sprite_list_container", "sprite_template", "preview_sprite", "preview_onion_prev", "preview_onion_next", "drag_preview", "import_dialog", "unsaved_exit_dialog")]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -52,8 +53,8 @@ name_line_edit = NodePath("Inspector/TabContainer/Skin/ScrollContainer/Contents/
 idle_option = NodePath("Inspector/TabContainer/Skin/ScrollContainer/Contents/idle")
 left_option = NodePath("Inspector/TabContainer/Skin/ScrollContainer/Contents/left")
 right_option = NodePath("Inspector/TabContainer/Skin/ScrollContainer/Contents/right2")
-scale_bar = NodePath("Inspector/TabContainer/Skin/ScrollContainer/Contents/right3")
-hits_option = NodePath("Inspector/TabContainer/Skin/ScrollContainer/Contents/hits_option")
+scale_spinbox = NodePath("Inspector/TabContainer/Skin/ScrollContainer/Contents/Scale")
+hits_option = NodePath("Inspector/TabContainer/Skin/ScrollContainer/Contents/HBoxContainer/hits_option")
 hits_add_new_button = NodePath("Inspector/TabContainer/Skin/ScrollContainer/Contents/hits_add_new")
 skin_contents = NodePath("Inspector/TabContainer/Skin/ScrollContainer/Contents")
 new_animation_button = NodePath("Inspector/TabContainer/Animations/ScrollContainer/Contents/Button")
@@ -76,6 +77,9 @@ sprite_template = NodePath("SpritesPanel/MarginContainer/ScrollContainer/VBoxCon
 preview_sprite = NodePath("Sprite")
 preview_onion_prev = NodePath("SpriteOnionPrev")
 preview_onion_next = NodePath("SpriteOnionNext")
+drag_preview = NodePath("DragPreview")
+import_dialog = NodePath("Dialogs/ImportDialog")
+unsaved_exit_dialog = NodePath("Dialogs/UnsavedChangesDialog")
 
 [node name="Background" type="ColorRect" parent="." unique_id=883904287]
 material = SubResource("ShaderMaterial_background")
@@ -175,13 +179,12 @@ horizontal_alignment = 1
 [node name="name" type="LineEdit" parent="Inspector/TabContainer/Skin/ScrollContainer/Contents" unique_id=2030152571]
 unique_name_in_owner = true
 layout_mode = 2
-theme_override_font_sizes/font_size = 14
 placeholder_text = "my skin"
 alignment = 1
 
 [node name="label2" type="Label" parent="Inspector/TabContainer/Skin/ScrollContainer/Contents" unique_id=619402232]
 layout_mode = 2
-text = "idle"
+text = "idle animation"
 horizontal_alignment = 1
 
 [node name="idle" type="OptionButton" parent="Inspector/TabContainer/Skin/ScrollContainer/Contents" unique_id=244902117]
@@ -189,7 +192,7 @@ layout_mode = 2
 
 [node name="label4" type="Label" parent="Inspector/TabContainer/Skin/ScrollContainer/Contents" unique_id=415920648]
 layout_mode = 2
-text = "left"
+text = "move left animation"
 horizontal_alignment = 1
 
 [node name="left" type="OptionButton" parent="Inspector/TabContainer/Skin/ScrollContainer/Contents" unique_id=1343311813]
@@ -197,7 +200,7 @@ layout_mode = 2
 
 [node name="label3" type="Label" parent="Inspector/TabContainer/Skin/ScrollContainer/Contents" unique_id=1939916250]
 layout_mode = 2
-text = "right"
+text = "move right animation"
 horizontal_alignment = 1
 
 [node name="right2" type="OptionButton" parent="Inspector/TabContainer/Skin/ScrollContainer/Contents" unique_id=2072640537]
@@ -208,20 +211,34 @@ layout_mode = 2
 text = "scale"
 horizontal_alignment = 1
 
-[node name="right3" type="HScrollBar" parent="Inspector/TabContainer/Skin/ScrollContainer/Contents" unique_id=820968436]
+[node name="Scale" type="SpinBox" parent="Inspector/TabContainer/Skin/ScrollContainer/Contents" unique_id=820968436]
+custom_minimum_size = Vector2(0, 44)
 layout_mode = 2
+max_value = 1000.0
+step = 1e-06
+value = 1.0
+allow_greater = true
+suffix = "x"
 
 [node name="label5" type="Label" parent="Inspector/TabContainer/Skin/ScrollContainer/Contents" unique_id=684326436]
 layout_mode = 2
-text = "hits"
+text = "note hit animations"
 horizontal_alignment = 1
 
-[node name="hits_option" type="OptionButton" parent="Inspector/TabContainer/Skin/ScrollContainer/Contents" unique_id=2038547040]
+[node name="HBoxContainer" type="HBoxContainer" parent="Inspector/TabContainer/Skin/ScrollContainer/Contents" unique_id=1120306511]
 layout_mode = 2
+
+[node name="Label" type="Label" parent="Inspector/TabContainer/Skin/ScrollContainer/Contents/HBoxContainer" unique_id=644629935]
+layout_mode = 2
+text = "hit 1"
+
+[node name="hits_option" type="OptionButton" parent="Inspector/TabContainer/Skin/ScrollContainer/Contents/HBoxContainer" unique_id=2038547040]
+layout_mode = 2
+size_flags_horizontal = 3
 
 [node name="hits_add_new" type="Button" parent="Inspector/TabContainer/Skin/ScrollContainer/Contents" unique_id=529149328]
 layout_mode = 2
-text = "add more"
+text = "+"
 
 [node name="Animations" type="TabBar" parent="Inspector/TabContainer" unique_id=1174930704]
 visible = false
@@ -382,3 +399,25 @@ texture = ExtResource("4_byoka")
 position = Vector2(968, 496)
 scale = Vector2(0.2, 0.2)
 texture = ExtResource("4_hbx7w")
+
+[node name="DragPreview" type="TextureRect" parent="."]
+visible = false
+z_index = 100
+custom_minimum_size = Vector2(96, 96)
+offset_right = 96.0
+offset_bottom = 96.0
+mouse_filter = 2
+self_modulate = Color(1, 1, 1, 0.5)
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Dialogs" type="Node" parent="."]
+
+[node name="ImportDialog" type="FileDialog" parent="Dialogs"]
+file_mode = 1
+access = 2
+use_native_dialog = true
+filters = PackedStringArray("*.png ; PNG Image")
+
+[node name="UnsavedChangesDialog" parent="Dialogs" instance=ExtResource("8_unsaved")]
+message = "Save skin changes before leaving?"

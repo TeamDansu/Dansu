@@ -1,4 +1,5 @@
 extends Control
+class_name DansuMainMenu
 
 const LOGO_IDLE_SCALE := 1.0
 const LOGO_PEAK_SCALE := 1.15
@@ -12,13 +13,13 @@ const EXIT_FADE_DURATION := 1.5
 @export var current_chartset_label: Label
 @export var search_input: LineEdit
 @export var sort_option_button: OptionButton
-@export var chart_scroll: Control
+@export var chart_scroll: ChartScroll
 
 @onready var exit_overlay: ColorRect = $ExitOverlay
 @onready var audio_1: AudioStreamPlayer = $MenuAudioSwitcher/Audio1
 @onready var audio_2: AudioStreamPlayer = $MenuAudioSwitcher/Audio2
 @onready var menu_audio_switcher: MenuAudioSwitcher = $MenuAudioSwitcher
-@onready var settings_popup: Control = $SettingsPopup
+@onready var settings_popup: SettingsPopup = $SettingsPopup
 @onready var logo: Control = $Logo
 
 var progress: float = 0.0
@@ -102,7 +103,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		return
 
 	if event.is_action_pressed("ui_cancel"):
-		if settings_popup != null and settings_popup.has_method("is_open") and settings_popup.is_open():
+		if settings_popup != null and settings_popup.is_open():
 			return
 
 		if Game.main_menu_state == Game.MainMenuState.SongSelect:
@@ -117,7 +118,7 @@ func begin_song_select() -> void:
 	if Game.main_menu_state == Game.MainMenuState.SongSelect:
 		return
 
-	Game.set_main_menu_state(Game.MainMenuState.SongSelect)
+	Game.main_menu_state = Game.MainMenuState.SongSelect
 	$Animations.clean_menu_things()
 	await get_tree().create_timer(0.5).timeout
 	$Animations.song_select_scene()
@@ -130,7 +131,7 @@ func return_to_main_menu() -> void:
 	if Game.main_menu_state == Game.MainMenuState.Home:
 		return
 
-	Game.set_main_menu_state(Game.MainMenuState.Home)
+	Game.main_menu_state = Game.MainMenuState.Home
 	$Animations.main_menu()
 	$Animations.call_menu_things()
 
@@ -140,9 +141,8 @@ func begin_exit() -> void:
 		return
 
 	is_exiting = true
-	var popup := get_node_or_null("SettingsPopup")
-	if popup != null and popup.has_method("close_popup"):
-		popup.close_popup()
+	if settings_popup != null:
+		settings_popup.close_popup()
 
 	exit_overlay.mouse_filter = Control.MOUSE_FILTER_STOP
 	await get_tree().create_timer(EXIT_START_DELAY).timeout
@@ -171,12 +171,12 @@ func _update_progress(_progress: float) -> void:
 
 func _loading_finished() -> void:
 	print("[charts] load time %f" %loading_timer)
-	if chart_scroll != null and chart_scroll.has_method("rebuild_items"):
+	if chart_scroll != null:
 		chart_scroll.rebuild_items()
 	if current_chartset_label != null:
 		current_chartset_label.text = "enjoy!"
 	Game.stage = Game.GameStage.Main
-	Game.set_main_menu_state(Game.MainMenuState.Home)
+	Game.main_menu_state = Game.MainMenuState.Home
 	$Animations.loading_done()
 	_refresh_chart_browser()
 
@@ -194,7 +194,7 @@ func _setup_sort_options() -> void:
 
 
 func _on_search_text_changed(new_text: String) -> void:
-	if chart_scroll != null and chart_scroll.has_method("set_search_text"):
+	if chart_scroll != null:
 		chart_scroll.set_search_text(new_text)
 
 
@@ -203,11 +203,11 @@ func _on_sort_item_selected(index: int) -> void:
 		return
 
 	var sort_id := sort_option_button.get_item_id(index)
-	if chart_scroll != null and chart_scroll.has_method("set_sort_mode"):
+	if chart_scroll != null:
 		chart_scroll.set_sort_mode(sort_id)
 
 func _refresh_chart_browser() -> void:
-	if chart_scroll != null and chart_scroll.has_method("rebuild_items"):
+	if chart_scroll != null:
 		chart_scroll.rebuild_items()
 
 func _recalculate_all_chart_ratings() -> void:

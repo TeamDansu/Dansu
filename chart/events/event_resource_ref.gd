@@ -60,19 +60,8 @@ static func _import_chart_resource(chart: Chart, source_path: String, allowed_ex
 			return existing_reference
 
 	var target_directory := chart.folder_path.path_join(CHART_DIRECTORY_NAME)
-	FileSystem.ensure_dir(target_directory)
-	var target_file_name := _make_unique_file_name(target_directory, file_name, fallback_name)
-	var target_path := target_directory.path_join(target_file_name)
-	var bytes := FileAccess.get_file_as_bytes(normalized_source)
-	if bytes.is_empty():
-		return ""
-
-	var target_file := FileAccess.open(target_path, FileAccess.WRITE)
-	if target_file == null:
-		return ""
-	target_file.store_buffer(bytes)
-	target_file.close()
-	return target_file_name
+	var target_path := FileSystem.copy_file_unique(normalized_source, target_directory, fallback_name)
+	return target_path.get_file() if not target_path.is_empty() else ""
 
 static func _try_make_existing_chart_reference(chart: Chart, source_path: String) -> String:
 	var target_directory := ProjectSettings.globalize_path(chart.folder_path.path_join(CHART_DIRECTORY_NAME)).simplify_path().replace("\\", "/")
@@ -81,18 +70,3 @@ static func _try_make_existing_chart_reference(chart: Chart, source_path: String
 		return ""
 	var file_name := normalized_source.get_file()
 	return file_name if is_valid(file_name) else ""
-
-static func _make_unique_file_name(target_directory: String, preferred_file_name: String, fallback_name: String) -> String:
-	var extension := preferred_file_name.get_extension().to_lower()
-	var base_name := preferred_file_name.get_basename().validate_filename().strip_edges()
-	if base_name.is_empty():
-		base_name = fallback_name
-	if extension.is_empty():
-		extension = "dat"
-
-	var candidate := "%s.%s" % [base_name, extension]
-	var suffix := 2
-	while FileAccess.file_exists(target_directory.path_join(candidate)):
-		candidate = "%s_%d.%s" % [base_name, suffix, extension]
-		suffix += 1
-	return candidate

@@ -60,17 +60,6 @@ func return_to_menu(duration: float = 2.0) -> void:
 	await _play_transition_out(duration)
 
 
-func invalidate_menu_cache() -> void:
-	if cached_main_menu == null:
-		return
-
-	if get_tree().current_scene != cached_main_menu:
-		cached_main_menu.queue_free()
-	cached_main_menu = null
-	if get_tree().current_scene != main_menu:
-		main_menu = null
-
-
 func _play_transition_in(duration: float) -> void:
 	_is_transitioning = true
 
