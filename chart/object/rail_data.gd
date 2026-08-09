@@ -24,7 +24,20 @@ var end_time: int:
 			points[points.size() - 1].time = value
 
 func sort_points() -> void:
-	points.sort_custom(func(a, b) -> bool: return a.time < b.time)
+	var original_order: Dictionary = {}
+	for index in range(points.size()):
+		original_order[points[index]] = index
+	points.sort_custom(func(a: RailPoint, b: RailPoint) -> bool:
+		if a == b:
+			return false
+		if a == null:
+			return false
+		if b == null:
+			return true
+		if a.time == b.time:
+			return int(original_order[a]) < int(original_order[b])
+		return a.time < b.time
+	)
 
 func sort_notes() -> void:
 	notes.sort_custom(func(a, b) -> bool: return a.time < b.time)

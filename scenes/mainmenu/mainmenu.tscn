@@ -1217,14 +1217,6 @@ theme_override_font_sizes/font_size = 32
 text = "loading charts"
 horizontal_alignment = 1
 
-[node name="Label" type="Label" parent="." unique_id=620383998]
-layout_mode = 0
-offset_left = 1608.0
-offset_right = 1914.0
-offset_bottom = 23.0
-text = "indev 2026.07 ⓒ Team Dansu"
-horizontal_alignment = 2
-
 [node name="SettingsPopup" parent="." unique_id=1336381579 instance=ExtResource("25_settings")]
 visible = false
 layout_mode = 1
