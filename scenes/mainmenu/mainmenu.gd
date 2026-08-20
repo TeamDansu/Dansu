@@ -21,10 +21,13 @@ const EXIT_FADE_DURATION := 1.5
 @onready var menu_audio_switcher: MenuAudioSwitcher = $MenuAudioSwitcher
 @onready var settings_popup: SettingsPopup = $SettingsPopup
 @onready var logo: Control = $Logo
+@onready var menu_buttons: VBoxContainer = $MenuButtons
+@onready var bottom_buttons: HBoxContainer = $BottomButtons
 
 var progress: float = 0.0
 var loading_timer = 0.0
 var is_exiting := false
+var is_menu_transitioning := false
 var _logo_pulse_time := LOGO_PULSE_DURATION
 var _last_logo_half_beat_key := ""
 var _last_logo_chart_key := ""
@@ -50,6 +53,7 @@ func _ready() -> void:
 	exit_overlay.color.a = 0.0
 	logo.offset_transform_enabled = true
 	_refresh_logo_pivot()
+	_set_button_group_interaction(bottom_buttons, false)
 
 	CM.progress_changed.connect(_update_progress)
 	CM.loading_finished.connect(_loading_finished)
@@ -71,7 +75,7 @@ func _process(delta):
 	loading_timer += delta
 	_update_logo_pulse(delta)
 
-	if Game.stage == Game.GameStage.Main:
+	if Game.stage == Game.GameStage.Main and not is_menu_transitioning:
 		if Input.is_action_just_pressed("shortcut_create_chartset"):
 			_open_new_chartset_editor()
 		elif Input.is_action_just_pressed("shortcut_new_difficulty"):
@@ -103,6 +107,10 @@ func _unhandled_input(event: InputEvent) -> void:
 		return
 
 	if event.is_action_pressed("ui_cancel"):
+		if is_menu_transitioning:
+			get_viewport().set_input_as_handled()
+			return
+
 		if settings_popup != null and settings_popup.is_open():
 			return
 
@@ -112,28 +120,55 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 func begin_song_select() -> void:
-	if is_exiting:
+	if is_exiting or is_menu_transitioning:
 		return
 
 	if Game.main_menu_state == Game.MainMenuState.SongSelect:
 		return
 
+	is_menu_transitioning = true
+	_set_button_group_interaction(menu_buttons, false)
+	_set_button_group_interaction(bottom_buttons, false)
 	Game.main_menu_state = Game.MainMenuState.SongSelect
 	$Animations.clean_menu_things()
 	await get_tree().create_timer(0.5).timeout
+	if is_exiting or not is_inside_tree():
+		return
 	$Animations.song_select_scene()
+	await $Animations/BottomButtons.animation_finished
+	if is_exiting or not is_inside_tree():
+		return
+	_set_button_group_interaction(bottom_buttons, true)
+	is_menu_transitioning = false
 
 
 func return_to_main_menu() -> void:
-	if is_exiting:
+	if is_exiting or is_menu_transitioning:
 		return
 
 	if Game.main_menu_state == Game.MainMenuState.Home:
 		return
 
+	is_menu_transitioning = true
+	_set_button_group_interaction(bottom_buttons, false)
+	_set_button_group_interaction(menu_buttons, false)
 	Game.main_menu_state = Game.MainMenuState.Home
 	$Animations.main_menu()
 	$Animations.call_menu_things()
+	await $Animations/BottomButtons.animation_finished
+	if is_exiting or not is_inside_tree():
+		return
+	_set_button_group_interaction(menu_buttons, true)
+	is_menu_transitioning = false
+
+
+func _set_button_group_interaction(group: Control, enabled: bool) -> void:
+	if group == null:
+		return
+
+	for child in group.get_children():
+		if child is MenuBigButton:
+			child.set_interaction_enabled(enabled)
 
 
 func begin_exit() -> void:

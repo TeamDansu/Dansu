@@ -25,6 +25,7 @@ class_name MenuBigButton
 @onready var button: Button = $Pivot/Button
 
 var tween: Tween
+var _interaction_enabled := true
 
 func _ready() -> void:
 	await get_tree().process_frame
@@ -45,6 +46,24 @@ func _ready() -> void:
 		button.mouse_entered.connect(_hover_enter)
 		button.mouse_exited.connect(_hover_exit)
 		button.pressed.connect(_pressed)
+		_apply_interaction_state()
+
+
+func set_interaction_enabled(enabled: bool) -> void:
+	_interaction_enabled = enabled
+	if not is_node_ready():
+		return
+
+	_apply_interaction_state()
+	if not enabled:
+		button.release_focus()
+		_play_hover(false)
+
+
+func _apply_interaction_state() -> void:
+	button.disabled = not _interaction_enabled
+	button.mouse_filter = Control.MOUSE_FILTER_STOP if _interaction_enabled else Control.MOUSE_FILTER_IGNORE
+	button.focus_mode = Control.FOCUS_ALL if _interaction_enabled else Control.FOCUS_NONE
 
 
 func _update_button() -> void:
@@ -63,6 +82,8 @@ func _update_button() -> void:
 
 
 func _hover_enter() -> void:
+	if not _interaction_enabled:
+		return
 	$hover.play()
 	_play_hover(true)
 
@@ -71,6 +92,8 @@ func _hover_exit() -> void:
 
 
 func _pressed() -> void:
+	if not _interaction_enabled:
+		return
 	$click.play(0.1)
 	if tween:
 		tween.kill()
