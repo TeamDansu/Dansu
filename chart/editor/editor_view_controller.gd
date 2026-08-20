@@ -2,7 +2,7 @@ extends Node
 class_name EditorViewController
 
 const POINT_HIT_RADIUS := 12.0
-@export var editor: Editor
+@export var editor: ChartEditor
 @export var chart_root: Control
 @export var chart_panel: Control
 @export var note_pivot: Control
@@ -10,8 +10,8 @@ const POINT_HIT_RADIUS := 12.0
 @export var rail_layer: Control
 @export var note_layer: Control
 
-var rail_scene := preload("res://scenes/editor/editor_rail.tscn")
-var note_scene := preload("res://scenes/editor/editor_note.tscn")
+var rail_scene := preload("res://scenes/chart/editor/editor_rail.tscn")
+var note_scene := preload("res://scenes/chart/editor/editor_note.tscn")
 
 var rail_views: Dictionary = {}
 var note_views: Dictionary = {}

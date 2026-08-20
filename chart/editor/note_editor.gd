@@ -13,7 +13,7 @@ const NOTE_DRAW_SIZE := Vector2(50, 20)
 
 var note: Note = null
 var rail: Rail = null
-var editor: Editor = null
+var editor: ChartEditor = null
 var _panel_size := Vector2.ZERO
 var _judge_y := 0.0
 var _pixels_per_ms := 0.0

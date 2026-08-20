@@ -1,7 +1,7 @@
 extends Control
 class_name EventEditor
 
-const MAP_EDITOR_SCENE_PATH := "res://scenes/editor/editor_scene.tscn"
+const MAP_EDITOR_SCENE_PATH := "res://scenes/chart/editor/editor_scene.tscn"
 const GAMEPLAY_ENTRY_LEAD_IN_MS := 3000
 const EVENT_EDITOR_PRE_ENTRY_PADDING_MS := 100
 const EVENT_EDITOR_POST_SONG_PADDING_MS := 3000

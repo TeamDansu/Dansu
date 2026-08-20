@@ -1,6 +1,6 @@
 [gd_scene format=3]
 
-[ext_resource type="Script" uid="uid://dbx4abkbrdok2" path="res://chart/events/event_editor/event_inspector_item.gd" id="1_item"]
+[ext_resource type="Script" uid="uid://dbx4abkbrdok2" path="res://chart/events/editor/event_inspector_item.gd" id="1_item"]
 
 [node name="EventInspectorItem" type="VBoxContainer" node_paths=PackedStringArray("title_label", "badge_label", "separator", "separator_label", "field_row", "field_label", "line_edit", "spin_box", "check_box", "color_picker", "option_button", "import_button", "action_button")]
 script = ExtResource("1_item")

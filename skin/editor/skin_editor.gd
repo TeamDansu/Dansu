@@ -1,16 +1,11 @@
 extends Control
 class_name SkinEditor
 
-const EDITOR_SCENE_PATH := "res://scenes/editor/editor_scene.tscn"
+const EDITOR_SCENE_PATH := "res://scenes/chart/editor/editor_scene.tscn"
 const EFFECT_OPTIONS := ["none", "groove", "spin"]
 const PREVIEW_SCALE_DIVISOR := 4.0
 const CALCULATED_SPRITE_HEIGHT := 2000.0
-const SkinDocumentScript = preload("res://skin/skin_document.gd")
-const SkinEditorContextScript = preload("res://skin/skin_editor_context.gd")
-const SkinSerializationScript = preload("res://skin/skin_serialization.gd")
-const SkinValidationScript = preload("res://skin/skin_validation.gd")
-const SkinRefCleanupScript = preload("res://skin/skin_ref_cleanup.gd")
-const HIT_SLOT_ROW_SCENE := preload("res://scenes/skineditor/hit_slot_row.tscn")
+const HIT_SLOT_ROW_SCENE := preload("res://scenes/skin/editor/hit_slot_row.tscn")
 
 @export var name_line_edit: LineEdit
 @export var idle_option: OptionButton
@@ -48,7 +43,7 @@ const HIT_SLOT_ROW_SCENE := preload("res://scenes/skineditor/hit_slot_row.tscn")
 @export var import_dialog: FileDialog
 @export var unsaved_exit_dialog: EditorUnsavedChangesDialog
 
-var document = SkinDocumentScript.new()
+var document = SkinDocument.new()
 var _preview_time := 0.0
 var _preview_playing := false
 var _preview_replace_hovered := false
@@ -133,20 +128,20 @@ func _connect_ui() -> void:
 func _load_document() -> void:
 	var request = Game.skin_editor_request
 	if request == null:
-		request = SkinEditorContextScript.new()
-		request.open_mode = SkinEditorContextScript.OpenMode.CUSTOM
-		request.return_target = SkinEditorContextScript.ReturnTarget.MENU
-		request.skin_file_path = SkinSerializationScript.ensure_custom_skin_path()
+		request = SkinEditorContext.new()
+		request.open_mode = SkinEditorContext.OpenMode.CUSTOM
+		request.return_target = SkinEditorContext.ReturnTarget.MENU
+		request.skin_file_path = SkinSerialization.ensure_custom_skin_path()
 		request.previous_custom_skin_path = Config.custom_skin_path
 
 	Game.skin_editor_request = null
 
-	document = SkinDocumentScript.new()
+	document = SkinDocument.new()
 	document.context = request
 	if request.skin_file_path == "":
 		var target_directory = request.chart_folder_path
-		if request.open_mode == SkinEditorContextScript.OpenMode.CHART and target_directory != "":
-			target_directory = SkinSerializationScript.get_chart_skin_root_path(target_directory).path_join("new_skin")
+		if request.open_mode == SkinEditorContext.OpenMode.CHART and target_directory != "":
+			target_directory = SkinSerialization.get_chart_skin_root_path(target_directory).path_join("new_skin")
 		if target_directory == "":
 			target_directory = ProjectSettings.globalize_path("user://skins")
 		document.create_empty(request.open_mode, target_directory)
@@ -161,8 +156,8 @@ func _load_document() -> void:
 
 func _update_back_buttons() -> void:
 	var return_target = document.context.return_target
-	back_to_menu_button.visible = return_target == SkinEditorContextScript.ReturnTarget.MENU
-	back_to_chart_button.visible = return_target == SkinEditorContextScript.ReturnTarget.EDITOR
+	back_to_menu_button.visible = return_target == SkinEditorContext.ReturnTarget.MENU
+	back_to_chart_button.visible = return_target == SkinEditorContext.ReturnTarget.EDITOR
 
 func _refresh_all() -> void:
 	_syncing = true
@@ -285,7 +280,7 @@ func _rebuild_frame_list() -> void:
 		item.released.connect(_on_frame_released)
 		var is_drop_target := false
 		var drop_after := false
-		if document.context.drag_kind == SkinEditorContextScript.DragKind.SPRITE:
+		if document.context.drag_kind == SkinEditorContext.DragKind.SPRITE:
 			is_drop_target = document.context.drag_reorder_target_index == index
 			drop_after = document.context.drag_reorder_target_index == frame_count and index == frame_count - 1
 			if drop_after:
@@ -498,18 +493,18 @@ func _on_frame_selected(index: int) -> void:
 	_refresh_all()
 
 func _on_frame_drag_started(index: int) -> void:
-	document.context.drag_kind = SkinEditorContextScript.DragKind.FRAME
+	document.context.drag_kind = SkinEditorContext.DragKind.FRAME
 	document.context.drag_frame_index = index
 	document.context.drag_reorder_target_index = index
 	_update_drag_feedback(get_global_mouse_position())
 
 func _on_frame_hovered(index: int) -> void:
-	if document.context.drag_kind != SkinEditorContextScript.DragKind.FRAME:
+	if document.context.drag_kind != SkinEditorContext.DragKind.FRAME:
 		return
 	document.context.drag_reorder_target_index = index
 
 func _on_frame_released(index: int) -> void:
-	if document.context.drag_kind == SkinEditorContextScript.DragKind.FRAME:
+	if document.context.drag_kind == SkinEditorContext.DragKind.FRAME:
 		document.context.drag_reorder_target_index = index
 
 func _move_selected_frame(from_index: int, to_index: int) -> void:
@@ -637,7 +632,7 @@ func _on_import_pressed() -> void:
 		import_dialog.popup_centered_ratio(0.7)
 
 func _on_sprite_files_selected(paths: PackedStringArray) -> void:
-	var imported := SkinSerializationScript.import_sprite_files(document, paths)
+	var imported := SkinSerialization.import_sprite_files(document, paths)
 	if imported.is_empty():
 		return
 	document.mark_dirty()
@@ -652,7 +647,7 @@ func _on_sprite_pressed(file_name: String) -> void:
 
 func _on_sprite_drag_started(file_name: String) -> void:
 	document.context.selected_sprite_file_name = file_name
-	document.context.drag_kind = SkinEditorContextScript.DragKind.SPRITE
+	document.context.drag_kind = SkinEditorContext.DragKind.SPRITE
 	document.context.drag_sprite_file_name = file_name
 	document.context.drag_reorder_target_index = -1
 	_show_drag_preview(document.skin_data.load_texture(file_name))
@@ -705,9 +700,9 @@ func _update_preview_drop_state() -> void:
 	preview_sprite.modulate = Color(0.7, 1.0, 0.75, 1.0) if _preview_replace_hovered else Color.WHITE
 
 func _finish_drag() -> void:
-	if document.context.drag_kind == SkinEditorContextScript.DragKind.NONE:
+	if document.context.drag_kind == SkinEditorContext.DragKind.NONE:
 		return
-	if document.context.drag_kind == SkinEditorContextScript.DragKind.SPRITE:
+	if document.context.drag_kind == SkinEditorContext.DragKind.SPRITE:
 		if _preview_replace_hovered:
 			_replace_frame_sprite(document.context.selected_frame_index, document.context.drag_sprite_file_name)
 		elif document.context.drag_reorder_target_index >= 0:
@@ -720,9 +715,9 @@ func _finish_drag() -> void:
 	_rebuild_frame_list()
 
 func _update_drag_feedback(mouse_position: Vector2) -> void:
-	if document.context.drag_kind == SkinEditorContextScript.DragKind.NONE:
+	if document.context.drag_kind == SkinEditorContext.DragKind.NONE:
 		return
-	if document.context.drag_kind == SkinEditorContextScript.DragKind.SPRITE:
+	if document.context.drag_kind == SkinEditorContext.DragKind.SPRITE:
 		var next_replace_hovered := _is_mouse_over_preview(mouse_position)
 		var next_drop_index := -1 if next_replace_hovered else _get_frame_drop_index(mouse_position)
 		var changed = next_replace_hovered != _preview_replace_hovered or next_drop_index != document.context.drag_reorder_target_index
@@ -732,7 +727,7 @@ func _update_drag_feedback(mouse_position: Vector2) -> void:
 			_update_preview_drop_state()
 			_rebuild_frame_list()
 		return
-	if document.context.drag_kind == SkinEditorContextScript.DragKind.FRAME:
+	if document.context.drag_kind == SkinEditorContext.DragKind.FRAME:
 		var drop_index := _get_frame_drop_index(mouse_position)
 		if drop_index < 0:
 			return
@@ -783,8 +778,8 @@ func _get_frame_items() -> Array:
 func _on_save_pressed() -> bool:
 	if document.skin_data.animations.is_empty():
 		return false
-	SkinValidationScript.ensure_unique_animation_ids(document.skin_data)
-	SkinValidationScript.cleanup_player_slots(document.skin_data)
+	SkinValidation.ensure_unique_animation_ids(document.skin_data)
+	SkinValidation.cleanup_player_slots(document.skin_data)
 	if document.skin_data.idle == null and not document.skin_data.animations.is_empty():
 		document.skin_data.idle = document.skin_data.animations[0]
 	if document.skin_data.idle == null:
@@ -792,13 +787,13 @@ func _on_save_pressed() -> bool:
 
 	var old_path = document.file_path
 	var old_reference_name = document.context.referenced_skin_file_name
-	if document.context.open_mode == SkinEditorContextScript.OpenMode.CUSTOM:
+	if document.context.open_mode == SkinEditorContext.OpenMode.CUSTOM:
 		old_reference_name = old_path.get_file()
 	elif old_reference_name == "" and old_path != "":
 		old_reference_name = old_path.get_base_dir().get_file()
 	var preferred_name = document.skin_data.skin_name.strip_edges()
 	if preferred_name == "":
-		if document.context.open_mode == SkinEditorContextScript.OpenMode.CHART:
+		if document.context.open_mode == SkinEditorContext.OpenMode.CHART:
 			preferred_name = old_reference_name
 		else:
 			preferred_name = old_path.get_base_dir().get_file()
@@ -807,33 +802,33 @@ func _on_save_pressed() -> bool:
 		preferred_name = "skin"
 
 	var target_path = old_path
-	if document.context.open_mode == SkinEditorContextScript.OpenMode.CHART:
+	if document.context.open_mode == SkinEditorContext.OpenMode.CHART:
 		var current_skin_name = document.directory_path.get_file()
 		if old_path == "" or current_skin_name != preferred_name:
-			target_path = SkinSerializationScript.make_unique_chart_skin_file_path(document.context.chart_folder_path, preferred_name)
+			target_path = SkinSerialization.make_unique_chart_skin_file_path(document.context.chart_folder_path, preferred_name)
 	else:
 		var current_skin_name = document.directory_path.get_file()
-		if old_path == "" or old_path.get_file() != SkinSerializationScript.CHART_SKIN_JSON_NAME or current_skin_name != preferred_name:
-			target_path = SkinSerializationScript.make_unique_skin_file_path(document.directory_path.get_base_dir(), preferred_name)
+		if old_path == "" or old_path.get_file() != SkinSerialization.CHART_SKIN_JSON_NAME or current_skin_name != preferred_name:
+			target_path = SkinSerialization.make_unique_skin_file_path(document.directory_path.get_base_dir(), preferred_name)
 
-	var saved_path := SkinSerializationScript.save_skin_document(document, target_path)
+	var saved_path := SkinSerialization.save_skin_document(document, target_path)
 	if saved_path == "":
 		return false
 
-	var saved_reference_name := saved_path.get_base_dir().get_file() if document.context.open_mode == SkinEditorContextScript.OpenMode.CHART else saved_path.get_file()
-	if document.context.open_mode == SkinEditorContextScript.OpenMode.CUSTOM:
+	var saved_reference_name := saved_path.get_base_dir().get_file() if document.context.open_mode == SkinEditorContext.OpenMode.CHART else saved_path.get_file()
+	if document.context.open_mode == SkinEditorContext.OpenMode.CUSTOM:
 		Config.custom_skin_path = ProjectSettings.localize_path(saved_path.get_base_dir())
 		Config.save_config()
 	else:
 		if document.context.chart_folder_path != "" and old_reference_name != "":
-			SkinRefCleanupScript.rename_skin_references(document.context.chart_folder_path, old_reference_name, saved_reference_name)
+			SkinRefCleanup.rename_skin_references(document.context.chart_folder_path, old_reference_name, saved_reference_name)
 		document.context.referenced_skin_file_name = saved_reference_name
 		if CM.selected_chart != null and (CM.selected_chart.file_skin == old_reference_name or CM.selected_chart.file_skin == ""):
 			CM.selected_chart.file_skin = saved_reference_name
 
-	var valid_ids := SkinValidationScript.get_animation_ids(document.skin_data)
-	if document.context.open_mode == SkinEditorContextScript.OpenMode.CHART and document.context.chart_folder_path != "":
-		SkinRefCleanupScript.clear_invalid_animation_refs_for_skin(
+	var valid_ids := SkinValidation.get_animation_ids(document.skin_data)
+	if document.context.open_mode == SkinEditorContext.OpenMode.CHART and document.context.chart_folder_path != "":
+		SkinRefCleanup.clear_invalid_animation_refs_for_skin(
 			document.context.chart_folder_path,
 			document.context.referenced_skin_file_name,
 			valid_ids,
@@ -841,7 +836,7 @@ func _on_save_pressed() -> bool:
 		)
 
 	if old_path != saved_path:
-		SkinSerializationScript.delete_obsolete_skin_path(old_path, saved_path)
+		SkinSerialization.delete_obsolete_skin_path(old_path, saved_path)
 
 	_refresh_all()
 	return true
@@ -859,7 +854,7 @@ func _return_to_chart() -> void:
 	_return_to_chart_now()
 
 func _return_to_default_target() -> void:
-	if document.context.return_target == SkinEditorContextScript.ReturnTarget.EDITOR:
+	if document.context.return_target == SkinEditorContext.ReturnTarget.EDITOR:
 		_return_to_chart()
 	else:
 		_return_to_menu()

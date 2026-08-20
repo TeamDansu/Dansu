@@ -1,7 +1,7 @@
 extends TabBar
 class_name EditorSFXPanel
 
-@export var editor: Editor
+@export var editor: ChartEditor
 @export var hit_option: OptionButton
 @export var move_option: OptionButton
 @export var trace_option: OptionButton

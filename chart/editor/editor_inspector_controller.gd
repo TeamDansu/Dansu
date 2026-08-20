@@ -1,10 +1,9 @@
 extends Node
 class_name EditorInspectorController
 
-const SkinSerializationScript = preload("res://skin/skin_serialization.gd")
 const CREATE_NEW_SKIN_ID := 1000000
 
-@export var editor: Editor
+@export var editor: ChartEditor
 @export var title_line_edit: LineEdit
 @export var artist_line_edit: LineEdit
 @export var difficulty_line_edit: LineEdit
@@ -26,7 +25,7 @@ const CREATE_NEW_SKIN_ID := 1000000
 @export var cover_file_dialog: FileDialog
 @export var audio_file_dialog: FileDialog
 
-var timing_scene := preload("res://scenes/editor/ui/inspector/timing.tscn")
+var timing_scene := preload("res://scenes/chart/editor/ui/inspector/timing.tscn")
 var timing_items: Array[EditorTimingItem] = []
 var _syncing_metadata := false
 var _skin_picker_items: Array[String] = []
@@ -213,7 +212,7 @@ func open_skin_browser() -> void:
 	if editor == null or editor.chart == null or skin_picker_menu == null:
 		return
 	var chart_folder_path := ProjectSettings.globalize_path(editor.chart.folder_path)
-	var skins_root_path := SkinSerializationScript.get_chart_skin_root_path(chart_folder_path)
+	var skins_root_path := SkinSerialization.get_chart_skin_root_path(chart_folder_path)
 	FileSystem.ensure_dir(skins_root_path)
 
 	_skin_picker_items.clear()
@@ -221,7 +220,7 @@ func open_skin_browser() -> void:
 	var folder_names := DirAccess.get_directories_at(skins_root_path)
 	folder_names.sort()
 	for folder_name in folder_names:
-		var skin_json_path := skins_root_path.path_join(folder_name).path_join(SkinSerializationScript.CHART_SKIN_JSON_NAME)
+		var skin_json_path := skins_root_path.path_join(folder_name).path_join(SkinSerialization.CHART_SKIN_JSON_NAME)
 		if not FileAccess.file_exists(skin_json_path):
 			continue
 		var id := _skin_picker_items.size()

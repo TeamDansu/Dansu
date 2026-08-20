@@ -1,7 +1,7 @@
 extends RefCounted
 class_name EditorHistory
 
-static func capture(editor: Editor) -> Dictionary:
+static func capture(editor: ChartEditor) -> Dictionary:
 	var parsed_chart := CM.ensure_parsed_chart()
 	return {
 		"chart": _capture_chart(editor.chart),
@@ -14,7 +14,7 @@ static func capture(editor: Editor) -> Dictionary:
 		"beat_division": editor.timeline.beat_division if editor.timeline != null else 4,
 	}
 
-static func restore(editor: Editor, snapshot: Dictionary) -> void:
+static func restore(editor: ChartEditor, snapshot: Dictionary) -> void:
 	if editor == null or editor.chart == null:
 		return
 	_restore_chart(editor.chart, snapshot.get("chart", {}))
@@ -327,7 +327,7 @@ static func _capture_selection(selection: ChartEditorSelection) -> Dictionary:
 		data["point_index"] = selection.selected_point_index
 	return data
 
-static func _restore_selection(editor: Editor, data: Dictionary) -> void:
+static func _restore_selection(editor: ChartEditor, data: Dictionary) -> void:
 	var kind := String(data.get("kind", "clear"))
 	if kind == "clear":
 		editor.selection.clear()

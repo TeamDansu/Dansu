@@ -1,6 +1,6 @@
 [gd_scene format=3 uid="uid://3rgo3pf21gx1"]
 
-[ext_resource type="Script" path="res://scenes/skineditor/frame.gd" id="1_8dht2"]
+[ext_resource type="Script" path="res://skin/editor/ui/frame.gd" id="1_8dht2"]
 [ext_resource type="Texture2D" uid="uid://cw8cihgunxcv6" path="res://icon.svg" id="1_q7gpl"]
 
 [node name="FrameTexture" type="TextureRect" unique_id=1039923924 node_paths=PackedStringArray("frame_index_label")]

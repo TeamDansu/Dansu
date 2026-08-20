@@ -1,6 +1,6 @@
 [gd_scene load_steps=2 format=3]
 
-[ext_resource type="Script" path="res://scenes/skineditor/hit_slot_row.gd" id="1_row"]
+[ext_resource type="Script" path="res://skin/editor/ui/hit_slot_row.gd" id="1_row"]
 
 [node name="HitSlotRow" type="HBoxContainer" node_paths=PackedStringArray("label", "option_button", "remove_button")]
 theme_override_constants/separation = 8

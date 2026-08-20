@@ -1,11 +1,10 @@
 extends Control
-class_name Editor
+class_name ChartEditor
 
 signal selection_changed()
 signal hitsounds_changed()
 
-const SkinEditorRouterScript = preload("res://skin/skin_editor_router.gd")
-const EVENT_EDITOR_SCENE_PATH := "res://scenes/editor/event_editor_scene.tscn"
+const EVENT_EDITOR_SCENE_PATH := "res://scenes/chart/events/editor/event_editor_scene.tscn"
 const DEFAULT_PIXELS_PER_MS := 1.0
 const MIN_PIXELS_PER_MS := 0.2
 const MAX_PIXELS_PER_MS := 4.0
@@ -294,7 +293,7 @@ func _open_skin_editor() -> void:
 
 func _open_skin_editor_now() -> void:
 	CM.selected_chart = chart
-	SkinEditorRouterScript.open_chart_skin_editor(chart)
+	SkinEditorRouter.open_chart_skin_editor(chart)
 
 func open_new_chart_skin_editor() -> void:
 	if chart == null:
@@ -306,7 +305,7 @@ func open_new_chart_skin_editor() -> void:
 
 func _open_new_chart_skin_editor_now() -> void:
 	CM.selected_chart = chart
-	SkinEditorRouterScript.open_new_chart_skin_editor(chart)
+	SkinEditorRouter.open_new_chart_skin_editor(chart)
 
 func _open_event_editor() -> void:
 	if chart == null:

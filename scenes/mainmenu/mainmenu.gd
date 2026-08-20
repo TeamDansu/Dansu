@@ -225,17 +225,17 @@ func _recalculate_all_chart_ratings() -> void:
 func _open_new_chartset_editor() -> void:
 	if EditorChartOps.prepare_new_chartset_chart() == null:
 		return
-	Transition.transition_to("res://scenes/editor/editor_scene.tscn", 1)
+	Transition.transition_to("res://scenes/chart/editor/editor_scene.tscn", 1)
 
 func _open_new_difficulty_editor() -> void:
 	if EditorChartOps.prepare_new_difficulty_chart() == null:
 		return
-	Transition.transition_to("res://scenes/editor/editor_scene.tscn", 1)
+	Transition.transition_to("res://scenes/chart/editor/editor_scene.tscn", 1)
 
 func _open_selected_chart_editor() -> void:
 	if not CM.parse_selected_chart():
 		return
-	Transition.transition_to("res://scenes/editor/editor_scene.tscn", 1)
+	Transition.transition_to("res://scenes/chart/editor/editor_scene.tscn", 1)
 
 
 func _update_logo_pulse(delta: float) -> void:

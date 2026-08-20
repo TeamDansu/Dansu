@@ -1,7 +1,6 @@
 extends RefCounted
 class_name PlayerSkinResolver
 
-const SkinSerializationScript = preload("res://skin/skin_serialization.gd")
 
 static func load_active() -> PlayerSkinData:
 	var chart: Chart = CM.selected_chart
@@ -15,11 +14,11 @@ static func load_active() -> PlayerSkinData:
 static func _load_chart_skin(skin: PlayerSkinData, chart: Chart) -> bool:
 	if Config.ignore_chart_skin or chart == null or chart.file_skin.is_empty():
 		return false
-	var path := SkinSerializationScript.ensure_chart_skin_path(chart)
+	var path := SkinSerialization.ensure_chart_skin_path(chart)
 	return not path.is_empty() and skin.parse_objects(PlayerSkinData.TYPE.IN_CHART, "", path.get_file())
 
 static func _load_custom_skin(skin: PlayerSkinData) -> bool:
 	if Config.custom_skin_path.is_empty():
 		return false
-	var path := SkinSerializationScript.get_custom_skin_file_path()
+	var path := SkinSerialization.get_custom_skin_file_path()
 	return skin.parse_objects(PlayerSkinData.TYPE.IN_SKIN_FOLDER, path.get_base_dir().get_file(), path.get_file())

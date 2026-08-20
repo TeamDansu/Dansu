@@ -1,16 +1,16 @@
 [gd_scene format=3 uid="uid://b61fiutj2ccpr"]
 
-[ext_resource type="Script" uid="uid://cok8t52rpdwr5" path="res://skin/skin_editor.gd" id="1_1bx3f"]
-[ext_resource type="PackedScene" uid="uid://c0f1pv7v7l8io" path="res://scenes/skineditor/animation_button.tscn" id="1_xwaek"]
-[ext_resource type="PackedScene" uid="uid://3rgo3pf21gx1" path="res://scenes/skineditor/frame.tscn" id="2_6eirq"]
+[ext_resource type="Script" uid="uid://cok8t52rpdwr5" path="res://skin/editor/skin_editor.gd" id="1_1bx3f"]
+[ext_resource type="PackedScene" uid="uid://c0f1pv7v7l8io" path="res://scenes/skin/editor/animation_button.tscn" id="1_xwaek"]
+[ext_resource type="PackedScene" uid="uid://3rgo3pf21gx1" path="res://scenes/skin/editor/frame.tscn" id="2_6eirq"]
 [ext_resource type="Theme" uid="uid://d3ctsqw4vkokp" path="res://resources/themes/editor_mainmenu_theme.tres" id="3_theme"]
-[ext_resource type="PackedScene" uid="uid://txbv3tuwtel0" path="res://scenes/skineditor/sprite_image.tscn" id="4_6eirq"]
+[ext_resource type="PackedScene" uid="uid://txbv3tuwtel0" path="res://scenes/skin/editor/sprite_image.tscn" id="4_6eirq"]
 [ext_resource type="Texture2D" uid="uid://n48htgfia26x" path="res://resources/skins/danshe/sprite/danshe_dance_2.png" id="4_byoka"]
 [ext_resource type="Texture2D" uid="uid://qfbvykpfreya" path="res://resources/skins/danshe/sprite/danshe_dance_1.png" id="4_hbx7w"]
 [ext_resource type="Texture2D" uid="uid://caegtu8bhulxq" path="res://resources/skins/danshe/sprite/danshe_idle.png" id="5_3574f"]
 [ext_resource type="Shader" uid="uid://cflu32au5woaj" path="res://resources/shaders/bg.gdshader" id="6_bg"]
 [ext_resource type="Shader" uid="uid://cnchsob31pe3k" path="res://resources/shaders/liquid.gdshader" id="7_liquid"]
-[ext_resource type="PackedScene" uid="uid://cwras8rjfuils" path="res://scenes/editor/ui/unsaved_changes_dialog.tscn" id="8_unsaved"]
+[ext_resource type="PackedScene" uid="uid://cwras8rjfuils" path="res://scenes/editor/shared/unsaved_changes_dialog.tscn" id="8_unsaved"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_background"]
 shader = ExtResource("6_bg")

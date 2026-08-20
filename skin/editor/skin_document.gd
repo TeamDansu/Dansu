@@ -1,11 +1,9 @@
 extends RefCounted
 class_name SkinDocument
 
-const SkinEditorContextScript = preload("res://skin/skin_editor_context.gd")
-const PlayerSkinDataScript = preload("res://skin/skin_data.gd")
 
-var context = SkinEditorContextScript.new()
-var skin_data = PlayerSkinDataScript.new()
+var context = SkinEditorContext.new()
+var skin_data = PlayerSkinData.new()
 var file_path := ""
 var directory_path := ""
 var sprite_directory_name := "sprite"
@@ -20,20 +18,20 @@ func load_from_file(target_path: String, open_mode: int) -> bool:
 	context.skin_file_path = file_path
 	context.open_mode = open_mode
 	dirty = false
-	skin_data = PlayerSkinDataScript.new()
+	skin_data = PlayerSkinData.new()
 
 	var folder_name := ""
 	var json_name := target_path.get_file()
-	var type := PlayerSkinDataScript.TYPE.IN_SKIN_FOLDER
+	var type := PlayerSkinData.TYPE.IN_SKIN_FOLDER
 
 	match open_mode:
-		SkinEditorContextScript.OpenMode.CUSTOM:
-			type = PlayerSkinDataScript.TYPE.IN_SKIN_FOLDER
+		SkinEditorContext.OpenMode.CUSTOM:
+			type = PlayerSkinData.TYPE.IN_SKIN_FOLDER
 			folder_name = directory_path.get_file()
-		SkinEditorContextScript.OpenMode.CHART:
-			type = PlayerSkinDataScript.TYPE.IN_CHART
+		SkinEditorContext.OpenMode.CHART:
+			type = PlayerSkinData.TYPE.IN_CHART
 		_:
-			type = PlayerSkinDataScript.TYPE.IN_SKIN_FOLDER
+			type = PlayerSkinData.TYPE.IN_SKIN_FOLDER
 
 	return skin_data.parse_objects(type, folder_name, json_name)
 
@@ -45,16 +43,16 @@ func create_empty(open_mode: int, target_directory_path: String) -> void:
 	context.skin_file_path = ""
 	context.open_mode = open_mode
 	dirty = false
-	skin_data = PlayerSkinDataScript.new()
+	skin_data = PlayerSkinData.new()
 
 	match open_mode:
-		SkinEditorContextScript.OpenMode.CHART:
-			skin_data.type = PlayerSkinDataScript.TYPE.IN_CHART
-		SkinEditorContextScript.OpenMode.CUSTOM:
-			skin_data.type = PlayerSkinDataScript.TYPE.IN_SKIN_FOLDER
+		SkinEditorContext.OpenMode.CHART:
+			skin_data.type = PlayerSkinData.TYPE.IN_CHART
+		SkinEditorContext.OpenMode.CUSTOM:
+			skin_data.type = PlayerSkinData.TYPE.IN_SKIN_FOLDER
 			skin_data.folder_name = directory_path.get_file()
 		_:
-			skin_data.type = PlayerSkinDataScript.TYPE.IN_SKIN_FOLDER
+			skin_data.type = PlayerSkinData.TYPE.IN_SKIN_FOLDER
 	skin_data.skin_name = "new skin"
 
 func mark_dirty() -> void:
@@ -91,7 +89,7 @@ func get_next_animation_id() -> int:
 	return max_id + 1
 
 func _resolve_sprite_directory_name(open_mode: int, target_directory_path: String, prefer_new_layout: bool = false) -> String:
-	if open_mode == SkinEditorContextScript.OpenMode.CHART:
+	if open_mode == SkinEditorContext.OpenMode.CHART:
 		return "sprites"
 	if prefer_new_layout:
 		return "sprites"

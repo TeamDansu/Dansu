@@ -1,6 +1,6 @@
 [gd_scene format=3]
 
-[ext_resource type="Script" uid="uid://doxrt0duc8l2s" path="res://chart/events/event_editor/event_frame_toolbar.gd" id="1_toolbar"]
+[ext_resource type="Script" uid="uid://doxrt0duc8l2s" path="res://chart/events/editor/event_frame_toolbar.gd" id="1_toolbar"]
 
 [node name="EventFrameToolbar" type="HBoxContainer" node_paths=PackedStringArray("selector", "add_button", "duplicate_button", "remove_button")]
 theme_override_constants/separation = 8

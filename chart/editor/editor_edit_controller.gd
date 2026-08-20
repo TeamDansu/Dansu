@@ -1,7 +1,7 @@
 extends Node
 class_name EditorEditController
 
-@export var editor: Editor
+@export var editor: ChartEditor
 
 func handle_mouse_button(event: InputEventMouseButton) -> void:
 	if editor == null or not event.pressed:

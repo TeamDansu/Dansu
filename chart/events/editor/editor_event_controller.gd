@@ -15,8 +15,8 @@ const CAMERA_COLOR := Color("46b8ff")
 const THEME_COLOR := Color("5ed39a")
 const SKIN_COLOR := Color("ef6f8f")
 const OVERLAY_COLOR := Color("ffb547")
-const INSPECTOR_ITEM_SCENE := preload("res://scenes/editor/ui/event_inspector_item.tscn")
-const FRAME_TOOLBAR_SCENE := preload("res://scenes/editor/ui/event_frame_toolbar.tscn")
+const INSPECTOR_ITEM_SCENE := preload("res://scenes/chart/events/editor/event_inspector_item.tscn")
+const FRAME_TOOLBAR_SCENE := preload("res://scenes/chart/events/editor/event_frame_toolbar.tscn")
 
 
 class SelectedFrame:

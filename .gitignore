@@ -11,6 +11,8 @@
 # Temporary and backup files
 *.[Tt][Mm][Pp]
 *.old
+/bin/~*.dll
+*.pdb
 
 # Operating-system metadata
 .DS_Store

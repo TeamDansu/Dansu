@@ -1,7 +1,7 @@
 extends Control
 class_name EditorBPMLines
 
-@export var editor: Editor
+@export var editor: ChartEditor
 @export var chart_panel: Control
 
 var _last_position := Vector2(INF, INF)

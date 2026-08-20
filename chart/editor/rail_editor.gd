@@ -4,7 +4,7 @@ class_name EditorRail
 @export var point_handle_template: TextureRect
 
 var rail: Rail = null
-var editor: Editor = null
+var editor: ChartEditor = null
 var _panel_size := Vector2.ZERO
 var _judge_y := 0.0
 var _pixels_per_ms := 0.0

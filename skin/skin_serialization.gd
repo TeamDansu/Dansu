@@ -1,7 +1,6 @@
 extends RefCounted
 class_name SkinSerialization
 
-const SkinValidationScript = preload("res://skin/skin_validation.gd")
 const CHART_SKINS_DIR_NAME := "skins"
 const CHART_SKIN_JSON_NAME := "skin.json"
 const CHART_SKIN_SPRITES_DIR_NAME := "sprites"
@@ -24,8 +23,8 @@ static func save_skin_document(document, target_file_path: String = "") -> Strin
 	if previous_directory_path != "" and previous_directory_path != target_path.get_base_dir():
 		_copy_directory_contents(previous_sprite_directory_path, target_path.get_base_dir().path_join(sprite_directory_name))
 
-	SkinValidationScript.ensure_unique_animation_ids(document.skin_data)
-	SkinValidationScript.cleanup_player_slots(document.skin_data)
+	SkinValidation.ensure_unique_animation_ids(document.skin_data)
+	SkinValidation.cleanup_player_slots(document.skin_data)
 
 	var payload := {
 		"name": document.skin_data.skin_name,

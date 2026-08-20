@@ -1,12 +1,12 @@
 [gd_scene format=3 uid="uid://bi35fq8etnlvr"]
 
-[ext_resource type="Script" uid="uid://c5x8818oc50es" path="res://chart/events/event_editor/event_editor.gd" id="1_editor"]
-[ext_resource type="Script" uid="uid://b7y0ibvawl116" path="res://chart/events/event_editor/editor_event_controller.gd" id="2_controller"]
-[ext_resource type="Script" uid="uid://deaxdrmfu360n" path="res://chart/events/event_editor/event_editor_preview.gd" id="3_preview"]
-[ext_resource type="PackedScene" uid="uid://c70h3r7fc4lba" path="res://scenes/editor/event_editor_panel.tscn" id="4_timeline"]
+[ext_resource type="Script" uid="uid://c5x8818oc50es" path="res://chart/events/editor/event_editor.gd" id="1_editor"]
+[ext_resource type="Script" uid="uid://b7y0ibvawl116" path="res://chart/events/editor/editor_event_controller.gd" id="2_controller"]
+[ext_resource type="Script" uid="uid://deaxdrmfu360n" path="res://chart/events/editor/event_editor_preview.gd" id="3_preview"]
+[ext_resource type="PackedScene" uid="uid://c70h3r7fc4lba" path="res://scenes/chart/events/editor/event_editor_panel.tscn" id="4_timeline"]
 [ext_resource type="Theme" uid="uid://d3ctsqw4vkokp" path="res://resources/themes/editor_mainmenu_theme.tres" id="5_theme"]
 [ext_resource type="Shader" uid="uid://cflu32au5woaj" path="res://resources/shaders/bg.gdshader" id="6_bg"]
-[ext_resource type="PackedScene" uid="uid://cwras8rjfuils" path="res://scenes/editor/ui/unsaved_changes_dialog.tscn" id="7_unsaved"]
+[ext_resource type="PackedScene" uid="uid://cwras8rjfuils" path="res://scenes/editor/shared/unsaved_changes_dialog.tscn" id="7_unsaved"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_background"]
 shader = ExtResource("6_bg")

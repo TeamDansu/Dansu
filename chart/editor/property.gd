@@ -3,7 +3,7 @@ extends TabBar
 const NOTE_TYPE_MOVE := 2
 const NOTE_DIR_NONE := -1
 
-@export var editor: Editor
+@export var editor: ChartEditor
 @export var note_tab: Control
 @export var rail_tab: Control
 @export var note_time_lineedit: LineEdit

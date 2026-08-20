@@ -1,6 +1,6 @@
 [gd_scene format=3 uid="uid://c0f1pv7v7l8io"]
 
-[ext_resource type="Script" path="res://scenes/skineditor/animation_button.gd" id="1_7r7cb"]
+[ext_resource type="Script" path="res://skin/editor/ui/animation_button.gd" id="1_7r7cb"]
 [ext_resource type="Texture2D" uid="uid://cw8cihgunxcv6" path="res://icon.svg" id="1_syu7c"]
 
 [node name="animation" type="Button" unique_id=382686474 node_paths=PackedStringArray("animation_name", "first_frame_texture", "remove_button")]
