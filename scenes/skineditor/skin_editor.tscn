@@ -10,7 +10,7 @@
 [ext_resource type="Texture2D" uid="uid://caegtu8bhulxq" path="res://resources/skins/danshe/sprite/danshe_idle.png" id="5_3574f"]
 [ext_resource type="Shader" uid="uid://cflu32au5woaj" path="res://resources/shaders/bg.gdshader" id="6_bg"]
 [ext_resource type="Shader" uid="uid://cnchsob31pe3k" path="res://resources/shaders/liquid.gdshader" id="7_liquid"]
-[ext_resource type="PackedScene" path="res://scenes/editor/ui/unsaved_changes_dialog.tscn" id="8_unsaved"]
+[ext_resource type="PackedScene" uid="uid://cwras8rjfuils" path="res://scenes/editor/ui/unsaved_changes_dialog.tscn" id="8_unsaved"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_background"]
 shader = ExtResource("6_bg")
@@ -400,24 +400,27 @@ position = Vector2(968, 496)
 scale = Vector2(0.2, 0.2)
 texture = ExtResource("4_hbx7w")
 
-[node name="DragPreview" type="TextureRect" parent="."]
+[node name="DragPreview" type="TextureRect" parent="." unique_id=1573458474]
 visible = false
+self_modulate = Color(1, 1, 1, 0.5)
 z_index = 100
 custom_minimum_size = Vector2(96, 96)
+layout_mode = 0
 offset_right = 96.0
 offset_bottom = 96.0
 mouse_filter = 2
-self_modulate = Color(1, 1, 1, 0.5)
 expand_mode = 1
 stretch_mode = 5
 
-[node name="Dialogs" type="Node" parent="."]
+[node name="Dialogs" type="Node" parent="." unique_id=319213067]
 
-[node name="ImportDialog" type="FileDialog" parent="Dialogs"]
+[node name="ImportDialog" type="FileDialog" parent="Dialogs" unique_id=98028452]
+title = "Open File(s)"
 file_mode = 1
 access = 2
-use_native_dialog = true
 filters = PackedStringArray("*.png ; PNG Image")
+use_native_dialog = true
 
-[node name="UnsavedChangesDialog" parent="Dialogs" instance=ExtResource("8_unsaved")]
+[node name="UnsavedChangesDialog" parent="Dialogs" unique_id=1239745447 instance=ExtResource("8_unsaved")]
+visible = false
 message = "Save skin changes before leaving?"
