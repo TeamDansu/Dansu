@@ -52,6 +52,7 @@ func _ready() -> void:
 
 
 func set_interaction_enabled(enabled: bool) -> void:
+	var was_enabled := _interaction_enabled
 	_interaction_enabled = enabled
 	if not is_node_ready():
 		return
@@ -60,12 +61,20 @@ func set_interaction_enabled(enabled: bool) -> void:
 	if not enabled:
 		button.release_focus()
 		_play_hover(false)
+	elif not was_enabled and _is_mouse_over_button():
+		_hover_enter()
 
 
 func _apply_interaction_state() -> void:
 	button.disabled = false
 	button.mouse_filter = Control.MOUSE_FILTER_STOP
 	button.focus_mode = Control.FOCUS_ALL if _interaction_enabled else Control.FOCUS_NONE
+
+
+func _is_mouse_over_button() -> bool:
+	if not button.is_visible_in_tree():
+		return false
+	return Rect2(Vector2.ZERO, button.size).has_point(button.get_local_mouse_position())
 
 
 func _update_button() -> void:
