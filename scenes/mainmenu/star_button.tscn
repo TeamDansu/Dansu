@@ -2,7 +2,7 @@
 
 [ext_resource type="Texture2D" uid="uid://dsuq2l4s6g0ku" path="res://resources/icons/star.svg" id="1_gol86"]
 [ext_resource type="Script" uid="uid://co8sjsrhea7lh" path="res://scenes/mainmenu/star_button.gd" id="2_el5pr"]
-[ext_resource type="FontFile" uid="uid://drcicje7q2t7x" path="res://resources/fonts/Next Bravo.ttf" id="2_iorlk"]
+[ext_resource type="FontFile" uid="uid://cay31gip2omwr" path="res://resources/fonts/BebasNeue-Regular.ttf" id="3_iorlk"]
 
 [node name="StarButton" type="TextureRect" unique_id=939246191]
 self_modulate = Color(0.49019608, 0.5058824, 0.78039217, 1)
@@ -13,10 +13,9 @@ texture = ExtResource("1_gol86")
 expand_mode = 2
 script = ExtResource("2_el5pr")
 
-[node name="SelectionGlow" type="TextureRect" parent="."]
-visible = false
+[node name="SelectionGlow" type="TextureRect" parent="." unique_id=2001392262]
+modulate = Color(1, 1, 1, 0.5764706)
 show_behind_parent = true
-self_modulate = Color(0.4392157, 0.35686275, 0.87058824, 0.72)
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -45,8 +44,8 @@ offset_right = 42.0
 offset_bottom = 20.528
 mouse_filter = 1
 theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
-theme_override_fonts/font = ExtResource("2_iorlk")
-theme_override_font_sizes/font_size = 32
-text = "0.5"
+theme_override_fonts/font = ExtResource("3_iorlk")
+theme_override_font_sizes/font_size = 35
+text = "12"
 horizontal_alignment = 1
 vertical_alignment = 1

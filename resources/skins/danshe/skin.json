@@ -39,8 +39,8 @@
 	"idle": 1,
 	"jump": 1,
 	"land": 1,
-	"left": 1,
-	"right": 1,
+	"left": -1,
+	"right": -1,
 	"repeat_idle": true
   },
   "name": "Danshe",

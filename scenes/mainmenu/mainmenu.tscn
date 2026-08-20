@@ -916,6 +916,20 @@ text = "ranked"
 horizontal_alignment = 1
 vertical_alignment = 1
 
+[node name="NewDifficulty" type="Button" parent="ChartInfo" unique_id=1382980622]
+visible = false
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.50600004
+anchor_top = 0.794
+anchor_right = 0.50600004
+anchor_bottom = 0.794
+offset_left = -87.15805
+offset_top = -15.272034
+offset_right = 87.84195
+offset_bottom = 15.727966
+text = "+ new chart"
+
 [node name="Charts" type="Control" parent="." unique_id=836592076 node_paths=PackedStringArray("content")]
 layout_mode = 1
 anchors_preset = 9
@@ -1154,26 +1168,30 @@ button_text = "play"
 icon_texture = ExtResource("13_hqrtg")
 hover_scale = 1.04
 
+[node name="Edit" parent="MenuButtons" unique_id=1229603769 instance=ExtResource("4_da4vi")]
+layout_mode = 2
+bg_color = Color(0.87, 0.41658503, 0.35670003, 1)
+button_text = "Edit"
+icon_texture = ExtResource("15_dx8qc")
+hover_scale = 1.04
+
 [node name="Browse" parent="MenuButtons" unique_id=274242608 instance=ExtResource("4_da4vi")]
 layout_mode = 2
+bg_color = Color(0.35670003, 0.87, 0.54490995, 1)
 button_text = "browse"
 icon_texture = ExtResource("14_dx8qc")
 hover_scale = 1.04
 
-[node name="Edit" parent="MenuButtons" unique_id=1229603769 instance=ExtResource("4_da4vi")]
-layout_mode = 2
-button_text = "Editor"
-icon_texture = ExtResource("15_dx8qc")
-hover_scale = 1.04
-
 [node name="Options" parent="MenuButtons" unique_id=1579782365 instance=ExtResource("4_da4vi")]
 layout_mode = 2
+bg_color = Color(0.20377445, 0.23855725, 0.2738289, 1)
 button_text = "Options"
 icon_texture = ExtResource("14_hqrtg")
 hover_scale = 1.04
 
 [node name="Exit" parent="MenuButtons" unique_id=1189508582 instance=ExtResource("4_da4vi")]
 layout_mode = 2
+bg_color = Color(0.6911973, 0.12315311, 0.320819, 1)
 button_text = "Exit"
 icon_texture = ExtResource("13_ne1f7")
 hover_scale = 1.04
@@ -1253,9 +1271,25 @@ button_text = "back"
 icon_texture = ExtResource("23_c5bhb")
 hover_scale = 1.04
 
+[node name="NewChart" parent="BottomButtons" unique_id=1500546478 instance=ExtResource("4_da4vi")]
+visible = false
+custom_minimum_size = Vector2(300, 64)
+layout_mode = 2
+bg_color = Color(0.10980392, 0.101960786, 0.1764706, 1)
+button_text = "New chart"
+icon_texture = ExtResource("15_dx8qc")
+hover_scale = 1.04
+
 [node name="Spacer" type="Control" parent="BottomButtons" unique_id=2087293157]
 layout_mode = 2
 size_flags_horizontal = 3
+
+[node name="Edit" parent="BottomButtons" unique_id=1648492515 instance=ExtResource("4_da4vi")]
+visible = false
+custom_minimum_size = Vector2(240, 64)
+layout_mode = 2
+bg_color = Color(0.105882354, 0.09019608, 0.16470589, 1)
+button_text = "EDIT"
 
 [node name="Play" parent="BottomButtons" unique_id=513521786 instance=ExtResource("4_da4vi")]
 custom_minimum_size = Vector2(240, 64)
