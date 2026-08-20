@@ -414,7 +414,7 @@ func _apply_rank_state(rank_index: int) -> void:
 			_format_rank_score(ScoreRank.minimum(rank_index + 1))
 		]
 	else:
-		next_rank_score.text = "MAX\n%s" % _format_rank_score(MAX_SCORE_DISPLAY)
+		next_rank_score.text = "X\n%s" % _format_rank_score(MAX_SCORE_DISPLAY)
 
 	_apply_rank_colors(rank_index)
 

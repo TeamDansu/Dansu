@@ -3,14 +3,14 @@ class_name ScoreRank
 
 const MAX_SCORE := 101.0
 const DATA := [
-	{"label": "D", "min": 0.0, "color": Color(0.071, 0.063, 0.071, 1.0)},
-	{"label": "C", "min": 70.0, "color": Color(0.22, 0.191, 0.215, 1.0)},
-	{"label": "B", "min": 85.0, "color": Color(0.826, 0.374, 0.444, 1.0)},
-	{"label": "A", "min": 90.0, "color": Color("c6fba6ff")},
-	{"label": "S", "min": 95.0, "color": Color(0.965, 0.925, 0.745, 1.0)},
-	{"label": "S+", "min": 99.0, "color": Color(0.977, 0.872, 0.698, 1.0)},
-	{"label": "SS", "min": 100.0, "color": Color(0.915, 0.643, 0.895, 1.0)},
-	{"label": "X", "min": 101.0, "color": Color(0.702, 0.846, 0.935, 1.0)},
+	{"label": "D", "min": 0.0, "color": Color("121012")},
+	{"label": "C", "min": 70.0, "color": Color("383137")},
+	{"label": "B", "min": 85.0, "color": Color("d35f71")},
+	{"label": "A", "min": 90.0, "color": Color("c6fba6")},
+	{"label": "S", "min": 95.0, "color": Color("f6ecbe")},
+	{"label": "S+", "min": 99.0, "color": Color("f9deb2")},
+	{"label": "SS", "min": 100.0, "color": Color("e9a4e4")},
+	{"label": "X", "min": 101.0, "color": Color("b3d8ee")},
 ]
 
 static func index_for_score(value: float) -> int:
