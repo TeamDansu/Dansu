@@ -6,7 +6,7 @@
 [ext_resource type="PackedScene" path="res://scenes/gameplay/player_hit_stars.tscn" id="3_hit_stars"]
 [ext_resource type="Script" uid="uid://3sywjcfkoeok" path="res://skin/skin_sprite.gd" id="4_gh441"]
 [ext_resource type="Script" uid="uid://bbdx5bqe5jpho" path="res://scenes/gameplay/shadow.gd" id="4_i6m2i"]
-[ext_resource type="Texture2D" uid="uid://qfbvykpfreya" path="res://resources/skins/danshe/sprite/danshe_dance_1.png" id="4_q64rj"]
+[ext_resource type="Texture2D" uid="uid://qfbvykpfreya" path="res://resources/skins/danshe/sprites/danshe_dance_1.png" id="4_q64rj"]
 [ext_resource type="FontFile" uid="uid://drcicje7q2t7x" path="res://resources/fonts/Next Bravo.ttf" id="6_0w2j2"]
 [ext_resource type="Shader" uid="uid://qbfnricvyktb" path="res://resources/shaders/wave.gdshader" id="6_gh441"]
 [ext_resource type="Shader" uid="uid://bsgm7ys7ay7o" path="res://resources/shaders/stage_sky.gdshader" id="8_t6o8f"]
