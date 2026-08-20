@@ -2,8 +2,8 @@ extends HBoxContainer
 
 
 func _ready() -> void:
-	$Play.button.pressed.connect(_play)
-	$Back.button.pressed.connect(_back)
+	$Play.activated.connect(_play)
+	$Back.activated.connect(_back)
 
 func _play() -> void:
 	Game.play_selected_chart()

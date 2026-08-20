@@ -1,10 +1,10 @@
 extends VBoxContainer
 
 func _ready() -> void:
-	$Play.button.pressed.connect(_play)
-	$Browse.button.pressed.connect(_play)
-	$Options.button.pressed.connect(_open_options)
-	$Exit.button.pressed.connect(_exit_game)
+	$Play.activated.connect(_play)
+	$Browse.activated.connect(_play)
+	$Options.activated.connect(_open_options)
+	$Exit.activated.connect(_exit_game)
 
 func _play() -> void:
 	var menu := get_parent() as DansuMainMenu

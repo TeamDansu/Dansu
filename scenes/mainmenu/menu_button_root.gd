@@ -2,6 +2,8 @@
 extends Control
 class_name MenuBigButton
 
+signal activated()
+
 @export var bg_color : Color = Color("705bde")
 
 @export var button_text := "PLAY":
@@ -61,8 +63,8 @@ func set_interaction_enabled(enabled: bool) -> void:
 
 
 func _apply_interaction_state() -> void:
-	button.disabled = not _interaction_enabled
-	button.mouse_filter = Control.MOUSE_FILTER_STOP if _interaction_enabled else Control.MOUSE_FILTER_IGNORE
+	button.disabled = false
+	button.mouse_filter = Control.MOUSE_FILTER_STOP
 	button.focus_mode = Control.FOCUS_ALL if _interaction_enabled else Control.FOCUS_NONE
 
 
@@ -92,9 +94,10 @@ func _hover_exit() -> void:
 
 
 func _pressed() -> void:
+	$click.play(0.1)
 	if not _interaction_enabled:
 		return
-	$click.play(0.1)
+
 	if tween:
 		tween.kill()
 
@@ -110,6 +113,7 @@ func _pressed() -> void:
 		Vector2.ONE * hover_scale,
 		0.12
 	)
+	activated.emit()
 
 
 func _play_hover(state: bool) -> void:
