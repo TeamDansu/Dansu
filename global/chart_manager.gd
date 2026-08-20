@@ -157,11 +157,11 @@ func _load(_is_reload: bool) -> void:
 	_database = DB.get("connection") if DB != null else null
 	if _database == null:
 		push_error("[database] DansuDB is unavailable")
-		call_deferred("_emit_initial_ready")
+		call_deferred("_emit_loading_failure")
 		return
 	if not _database.prepare_rating_cache(Rating.CACHE_VERSION):
 		push_error("[database] failed to prepare rating cache: %s" % _database.get_last_error_message())
-		call_deferred("_emit_initial_ready")
+		call_deferred("_emit_loading_failure")
 		return
 
 	_refresh_library_from_database(false)
@@ -320,6 +320,11 @@ func _emit_initial_ready() -> void:
 	if not chartsets.is_empty():
 		if selected_chartset == null:
 			selected_chartset = chartsets[0]
+
+
+func _emit_loading_failure() -> void:
+	_emit_initial_ready()
+	database_sync_finished.emit(false)
 
 
 func _emit_update() -> void:

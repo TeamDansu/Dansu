@@ -8,6 +8,7 @@ const LOGO_PULSE_DURATION := 0.34
 const LOGO_RETURN_SPEED := 12.0
 const EXIT_START_DELAY := 0.4
 const EXIT_FADE_DURATION := 1.5
+const MIN_LOADING_DISPLAY_SECONDS := 1.0
 
 @export var progress_bar : ProgressBar
 @export var current_chartset_label: Label
@@ -28,6 +29,8 @@ var progress: float = 0.0
 var loading_timer = 0.0
 var is_exiting := false
 var is_menu_transitioning := false
+var _loading_started_msec := 0
+var _loading_completion_started := false
 var _logo_pulse_time := LOGO_PULSE_DURATION
 var _last_logo_half_beat_key := ""
 var _last_logo_chart_key := ""
@@ -38,6 +41,8 @@ func _enter_tree() -> void:
 		call_deferred("_refresh_chart_browser")
 
 func _ready() -> void:
+	_loading_started_msec = Time.get_ticks_msec()
+
 	if progress_bar == null:
 		progress_bar = $LoadingProgress/ProgressBar
 	if current_chartset_label == null:
@@ -56,7 +61,7 @@ func _ready() -> void:
 	_set_button_group_interaction(bottom_buttons, false)
 
 	CM.progress_changed.connect(_update_progress)
-	CM.loading_finished.connect(_loading_finished)
+	CM.database_sync_finished.connect(_on_database_sync_finished)
 
 	if Game.stage == Game.GameStage.Loading:
 		CM._load(false)
@@ -204,8 +209,24 @@ func _update_progress(_progress: float) -> void:
 	if progress_bar != null:
 		progress_bar.value = _progress
 
-func _loading_finished() -> void:
+func _on_database_sync_finished(_success: bool) -> void:
+	if _loading_completion_started:
+		return
+
+	_loading_completion_started = true
+	var elapsed_seconds := float(Time.get_ticks_msec() - _loading_started_msec) / 1000.0
+	var remaining_seconds := maxf(MIN_LOADING_DISPLAY_SECONDS - elapsed_seconds, 0.0)
+	if remaining_seconds > 0.0:
+		await get_tree().create_timer(remaining_seconds).timeout
+	if not is_inside_tree() or is_exiting:
+		return
+
+	_finish_loading()
+
+
+func _finish_loading() -> void:
 	print("[charts] load time %f" %loading_timer)
+	_update_progress(1.0)
 	if chart_scroll != null:
 		chart_scroll.rebuild_items()
 	if current_chartset_label != null:
