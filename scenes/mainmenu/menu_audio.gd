@@ -111,7 +111,7 @@ func _get_song_key(chart: Chart) -> String:
 	if chart == null:
 		return ""
 
-	return "%s::%s" % [chart.folder_name, chart.file_audio]
+	return "%s::%s::%s" % [chart.storage_root, chart.folder_name, chart.file_audio]
 
 
 func get_current_chart_time_msec() -> float:

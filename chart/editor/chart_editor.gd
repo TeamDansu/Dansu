@@ -147,6 +147,7 @@ func _ensure_chart() -> Chart:
 		return CM.selected_chart
 	var fallback := Chart.new()
 	fallback.build_uuid()
+	fallback.storage_root = FileSystem.editor_chart_path
 	fallback.title = ""
 	fallback.artist = ""
 	fallback.difficulty = ""

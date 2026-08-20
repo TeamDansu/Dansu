@@ -154,6 +154,11 @@ vertical_alignment = 1
 custom_minimum_size = Vector2(150, 0)
 layout_mode = 2
 
+[node name="PlayTest" type="Button" parent="TopBar/Margin/Row" unique_id=899135205]
+custom_minimum_size = Vector2(100, 0)
+layout_mode = 2
+text = "play test"
+
 [node name="Save" type="Button" parent="TopBar/Margin/Row" unique_id=287334942]
 custom_minimum_size = Vector2(100, 0)
 layout_mode = 2
@@ -280,7 +285,7 @@ from file browser"
 
 [node name="label" type="Label" parent="Inspector/Chart/ScrollContainer/Contents" unique_id=1915322027]
 layout_mode = 2
-text = "title"
+text = "*title"
 horizontal_alignment = 1
 
 [node name="title" type="LineEdit" parent="Inspector/Chart/ScrollContainer/Contents" unique_id=1474887788]
@@ -302,7 +307,7 @@ alignment = 1
 
 [node name="label2" type="Label" parent="Inspector/Chart/ScrollContainer/Contents" unique_id=498360221]
 layout_mode = 2
-text = "difficulty"
+text = "*difficulty"
 horizontal_alignment = 1
 
 [node name="difficulty" type="LineEdit" parent="Inspector/Chart/ScrollContainer/Contents" unique_id=1577139298]
@@ -840,18 +845,24 @@ oversampling_override = 1.0
 
 [node name="CoverFileDialog" type="FileDialog" parent="Dialogs" unique_id=1775982255]
 oversampling_override = 1.0
+title = "Open a File"
+file_mode = 0
 access = 2
 filters = PackedStringArray("*.png,*.jpg,*.jpeg,*.webp ; Cover Image")
 use_native_dialog = true
 
 [node name="AudioFileDialog" type="FileDialog" parent="Dialogs" unique_id=355767714]
 oversampling_override = 1.0
+title = "Open a File"
+file_mode = 0
 access = 2
 filters = PackedStringArray("*.mp3,*.ogg,*.wav ; Audio File")
 use_native_dialog = true
 
 [node name="SFXFileDialog" type="FileDialog" parent="Dialogs" unique_id=2099921210]
 oversampling_override = 1.0
+title = "Open a File"
+file_mode = 0
 access = 2
 filters = PackedStringArray("*.wav ; WAV Audio")
 use_native_dialog = true

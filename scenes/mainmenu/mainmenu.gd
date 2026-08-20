@@ -24,11 +24,17 @@ const MIN_LOADING_DISPLAY_SECONDS := 1.0
 @onready var logo: Control = $Logo
 @onready var menu_buttons: VBoxContainer = $MenuButtons
 @onready var bottom_buttons: HBoxContainer = $BottomButtons
+@onready var bottom_play_button: MenuBigButton = $BottomButtons/Play
+@onready var bottom_edit_button: MenuBigButton = $BottomButtons/Edit
+@onready var new_chart_button: MenuBigButton = $BottomButtons/NewChart
+@onready var new_difficulty_button: Button = $ChartInfo/NewDifficulty
+@onready var chart_info_panel = $ChartInfo/Panel
 
 var progress: float = 0.0
 var loading_timer = 0.0
 var is_exiting := false
 var is_menu_transitioning := false
+var is_editor_mode := false
 var _loading_started_msec := 0
 var _loading_completion_started := false
 var _logo_pulse_time := LOGO_PULSE_DURATION
@@ -73,6 +79,9 @@ func _ready() -> void:
 		sort_option_button.item_selected.connect(_on_sort_item_selected)
 		_setup_sort_options()
 
+	new_difficulty_button.pressed.connect(open_new_difficulty_editor)
+	_apply_song_select_mode(false)
+
 func _process(delta):
 	if is_exiting:
 		return
@@ -80,13 +89,18 @@ func _process(delta):
 	loading_timer += delta
 	_update_logo_pulse(delta)
 
-	if Game.stage == Game.GameStage.Main and not is_menu_transitioning:
+	if (
+		Game.stage == Game.GameStage.Main
+		and Game.main_menu_state == Game.MainMenuState.SongSelect
+		and is_editor_mode
+		and not is_menu_transitioning
+	):
 		if Input.is_action_just_pressed("shortcut_create_chartset"):
-			_open_new_chartset_editor()
+			open_new_chart_editor()
 		elif Input.is_action_just_pressed("shortcut_new_difficulty"):
-			_open_new_difficulty_editor()
+			open_new_difficulty_editor()
 		elif Input.is_action_just_pressed("shortcut_enter_editor"):
-			_open_selected_chart_editor()
+			open_selected_chart_editor()
 
 
 func _input(event: InputEvent) -> void:
@@ -124,7 +138,7 @@ func _unhandled_input(event: InputEvent) -> void:
 			get_viewport().set_input_as_handled()
 
 
-func begin_song_select() -> void:
+func begin_song_select(editor_mode: bool = false) -> void:
 	if is_exiting or is_menu_transitioning:
 		return
 
@@ -132,6 +146,7 @@ func begin_song_select() -> void:
 		return
 
 	is_menu_transitioning = true
+	_apply_song_select_mode(editor_mode)
 	_set_button_group_interaction(menu_buttons, false)
 	_set_button_group_interaction(bottom_buttons, false)
 	Game.main_menu_state = Game.MainMenuState.SongSelect
@@ -144,6 +159,7 @@ func begin_song_select() -> void:
 	if is_exiting or not is_inside_tree():
 		return
 	_set_button_group_interaction(bottom_buttons, true)
+	new_difficulty_button.disabled = not is_editor_mode
 	is_menu_transitioning = false
 
 
@@ -155,6 +171,7 @@ func return_to_main_menu() -> void:
 		return
 
 	is_menu_transitioning = true
+	new_difficulty_button.disabled = true
 	_set_button_group_interaction(bottom_buttons, false)
 	_set_button_group_interaction(menu_buttons, false)
 	Game.main_menu_state = Game.MainMenuState.Home
@@ -174,6 +191,20 @@ func _set_button_group_interaction(group: Control, enabled: bool) -> void:
 	for child in group.get_children():
 		if child is MenuBigButton:
 			child.set_interaction_enabled(enabled)
+
+
+func _apply_song_select_mode(editor_mode: bool) -> void:
+	is_editor_mode = editor_mode
+	bottom_play_button.visible = not editor_mode
+	bottom_edit_button.visible = editor_mode
+	new_chart_button.visible = editor_mode
+	new_difficulty_button.visible = editor_mode
+	new_difficulty_button.disabled = true
+
+	if chart_info_panel != null and chart_info_panel.has_method("set_score_ui_bound"):
+		chart_info_panel.set_score_ui_bound(not editor_mode)
+	if chart_scroll != null:
+		chart_scroll.set_editor_mode(editor_mode)
 
 
 func begin_exit() -> void:
@@ -278,17 +309,17 @@ func _recalculate_all_chart_ratings() -> void:
 	else:
 		print(message)
 
-func _open_new_chartset_editor() -> void:
+func open_new_chart_editor() -> void:
 	if EditorChartOps.prepare_new_chartset_chart() == null:
 		return
 	Transition.transition_to("res://scenes/chart/editor/editor_scene.tscn", 1)
 
-func _open_new_difficulty_editor() -> void:
+func open_new_difficulty_editor() -> void:
 	if EditorChartOps.prepare_new_difficulty_chart() == null:
 		return
 	Transition.transition_to("res://scenes/chart/editor/editor_scene.tscn", 1)
 
-func _open_selected_chart_editor() -> void:
+func open_selected_chart_editor() -> void:
 	if not CM.parse_selected_chart():
 		return
 	Transition.transition_to("res://scenes/chart/editor/editor_scene.tscn", 1)

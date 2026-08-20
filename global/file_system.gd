@@ -4,6 +4,7 @@ class_name FileSystem
 const res_skin_path: String = "res://resources/skins/"
 const res_hitsounds_path: String = "res://resources/audio/hitsounds/"
 const chart_path: String = "user://charts"
+const editor_chart_path: String = "user://editor/charts"
 const skin_path: String = "user://skins"
 const startup_import_dir_name := "import"
 

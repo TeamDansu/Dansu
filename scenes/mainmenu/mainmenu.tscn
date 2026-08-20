@@ -928,7 +928,7 @@ offset_left = -87.15805
 offset_top = -15.272034
 offset_right = 87.84195
 offset_bottom = 15.727966
-text = "+ new chart"
+text = "new difficulty"
 
 [node name="Charts" type="Control" parent="." unique_id=836592076 node_paths=PackedStringArray("content")]
 layout_mode = 1

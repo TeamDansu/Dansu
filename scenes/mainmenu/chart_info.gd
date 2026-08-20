@@ -32,6 +32,7 @@ const THUMB_CROSSFADE_DURATION := 0.24
 @onready var score_label: Label = $"../Score"
 @onready var ranked_label: Label = $"../Ranked"
 
+var score_ui_bound := true
 var click_tween: Tween
 var thumb_tween: Tween
 
@@ -148,6 +149,10 @@ func _refresh(chart: Chart) -> void:
 
 
 func _refresh_best_play(chart: Chart) -> void:
+	if not score_ui_bound:
+		_hide_score_ui()
+		return
+
 	var best_play: Score = Scores.get_best_play(chart) if chart != null else null
 	var has_record := best_play != null
 
@@ -171,6 +176,26 @@ func _refresh_best_play(chart: Chart) -> void:
 
 	var is_full_combo := best_play.miss == 0 and best_play.high_combo >= best_play.notes
 	full_combo_label.visible = is_full_combo
+
+
+func set_score_ui_bound(bound: bool) -> void:
+	score_ui_bound = bound
+	if not is_node_ready():
+		return
+	_refresh_best_play(current_cover_chart)
+
+
+func _hide_score_ui() -> void:
+	for label: Label in [
+		rank_label,
+		full_combo_label,
+		all_just_label,
+		perfect_label,
+		never_played_label,
+		score_label,
+		ranked_label,
+	]:
+		label.visible = false
 
 
 func _on_mouse_entered() -> void:

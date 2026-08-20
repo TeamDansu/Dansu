@@ -29,6 +29,7 @@ var filehash: String = ""
 var file_modified_time: int = 0
 var file_size: int = 0
 var availability: Availability = Availability.UNKNOWN
+var storage_root: String = FileSystem.chart_path
 var folder_name: String = ""
 var file_name: String = ""
 var is_built_in := false
@@ -52,11 +53,11 @@ var skin_root_path: String:
 
 var file_path: String:
 	get:
-		return FileSystem.chart_path.path_join(folder_name).path_join(file_name)
+		return storage_root.path_join(folder_name).path_join(file_name)
 
 var folder_path: String:
 	get:
-		return FileSystem.chart_path.path_join(folder_name)
+		return storage_root.path_join(folder_name)
 
 var search_string: String = ""
 var search_string_lower: String = ""

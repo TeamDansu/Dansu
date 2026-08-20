@@ -25,12 +25,14 @@ var target_scroll := 0.0
 var smooth_speed := 12.0
 var search_text := ""
 var sort_mode: SortMode = SortMode.TITLE
+var editor_mode := false
 var _last_cover_request_ids: Array[int] = []
 
 
 func _ready() -> void:
 	CM.loading_finished.connect(_init_charts)
 	CM.chart_update.connect(_on_chart_update)
+	CM.editor_chart_update.connect(_on_chart_update)
 
 
 func _init_charts() -> void:
@@ -87,6 +89,14 @@ func set_sort_mode(value: int) -> void:
 	var single_chart_mode := is_single_chart_mode()
 	if single_chart_mode != was_single_chart_mode:
 		single_chart_mode_changed.emit(single_chart_mode)
+	rebuild_items()
+
+
+func set_editor_mode(enabled: bool) -> void:
+	if editor_mode == enabled:
+		return
+	editor_mode = enabled
+	_last_cover_request_ids.clear()
 	rebuild_items()
 
 
@@ -226,7 +236,8 @@ func _build_visible_items() -> Array[SongListItem]:
 	var items: Array[SongListItem] = []
 	var lowered_word := search_text.strip_edges().to_lower()
 
-	for chartset in CM.chartsets:
+	var source_chartsets := CM.editor_chartsets if editor_mode else CM.chartsets
+	for chartset in source_chartsets:
 		var matched_charts: Array[Chart] = []
 		for chart in chartset.charts:
 			if lowered_word.is_empty() or chart.search_string_lower.contains(lowered_word):

@@ -231,13 +231,14 @@ static func has_duplicate_difficulty(chart: Chart, difficulty: String) -> bool:
 static func save_chart(chart: Chart, previous_file_path: String) -> bool:
 	if chart == null:
 		return false
+	chart.storage_root = FileSystem.editor_chart_path
 
 	if chart.chart_set == null:
 		chart.chart_set = CM.selected_chartset
 	if chart.chart_set == null:
 		return false
 	if chart.chart_set.db_id <= 0 and chart.chart_set.charts.is_empty():
-		chart.chart_set.folder_name = CM.make_unique_chartset_folder_name(chart.title.strip_edges())
+		chart.chart_set.folder_name = CM.make_unique_editor_chartset_folder_name(chart.title.strip_edges())
 		chart.folder_name = chart.chart_set.folder_name
 	if chart.folder_name.is_empty():
 		chart.folder_name = chart.chart_set.folder_name
@@ -258,16 +259,17 @@ static func save_chart(chart: Chart, previous_file_path: String) -> bool:
 	var success := ChartFileStore.save(CM.parsed_chart, previous_file_path)
 	if success:
 		chart.build_search_string()
-		success = CM.register_saved_chart(chart)
+		success = CM.register_saved_editor_chart(chart)
 	return success
 
 static func prepare_new_chartset_chart() -> Chart:
 	var chart_set := ChartSet.new()
 	chart_set.build_uuid()
-	chart_set.folder_name = CM.make_unique_chartset_folder_name()
+	chart_set.folder_name = CM.make_unique_editor_chartset_folder_name()
 
 	var chart := Chart.new()
 	chart.build_uuid()
+	chart.storage_root = FileSystem.editor_chart_path
 	chart.chart_set = chart_set
 	chart.folder_name = chart_set.folder_name
 
@@ -289,6 +291,7 @@ static func prepare_new_difficulty_chart() -> Chart:
 
 	var chart := Chart.new()
 	chart.build_uuid()
+	chart.storage_root = FileSystem.editor_chart_path
 	chart.chart_set = chart_set
 	chart.folder_name = chart_set.folder_name
 	chart.copy_shared_metadata_from(source_chart)

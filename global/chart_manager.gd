@@ -5,6 +5,7 @@ signal progress_changed(ratio: float)
 signal loading_finished()
 signal database_sync_finished(success: bool)
 signal chart_update(chart_set)
+signal editor_chart_update(chart_set)
 signal chart_selected(chart: Chart)
 signal chartset_selected(chart_set: ChartSet)
 
@@ -13,6 +14,7 @@ const SONG_PATH := "user://charts/"
 var selected_chart: Chart = null
 var selected_chartset: ChartSet = null
 var chartsets: Array[ChartSet] = []
+var editor_chartsets: Array[ChartSet] = []
 var parsed_chart: ParsedChart = null
 
 var chartsets_by_db_id: Dictionary = {}
@@ -114,6 +116,81 @@ func register_saved_chart(chart: Chart) -> bool:
 	return true
 
 
+func register_saved_editor_chart(chart: Chart) -> bool:
+	if chart == null or chart.chart_set == null:
+		return false
+	if not FileAccess.file_exists(chart.file_path):
+		return false
+
+	chart.storage_root = FileSystem.editor_chart_path
+	chart.db_id = -1
+	chart.chart_set.db_id = -1
+	chart.availability = Chart.Availability.AVAILABLE
+	chart.file_modified_time = int(FileAccess.get_modified_time(chart.file_path))
+	chart.file_size = _get_file_size(chart.file_path)
+	chart.filehash = FileAccess.get_sha256(chart.file_path)
+
+	if not editor_chartsets.has(chart.chart_set):
+		editor_chartsets.append(chart.chart_set)
+	if not chart.chart_set.charts.has(chart):
+		chart.chart_set.charts.append(chart)
+
+	select_chartset(chart.chart_set)
+	select_chart(chart)
+	editor_chart_update.emit(editor_chartsets)
+	return true
+
+
+func reload_editor_library() -> void:
+	FileSystem.ensure_dir(FileSystem.editor_chart_path)
+	editor_chartsets.clear()
+
+	var folder_names := DirAccess.get_directories_at(FileSystem.editor_chart_path)
+	folder_names.sort()
+	for folder_name in folder_names:
+		var folder_path := FileSystem.editor_chart_path.path_join(folder_name)
+		var file_names := DirAccess.get_files_at(folder_path)
+		file_names.sort()
+
+		var chart_set := ChartSet.new()
+		chart_set.folder_name = folder_name
+		for file_name in file_names:
+			if not file_name.ends_with(Config.FILE_EXTENSION):
+				continue
+
+			var parsed_set := ChartSet.new()
+			parsed_set.folder_name = folder_name
+			var chart := Chart.new()
+			chart.storage_root = FileSystem.editor_chart_path
+			chart.folder_name = folder_name
+			chart.file_name = file_name
+			chart.chart_set = parsed_set
+			if not Parser.parse_meta(chart):
+				push_warning("[editor charts] invalid chart metadata: %s" % chart.file_path)
+				continue
+
+			if chart_set.uuid.is_empty():
+				chart_set.uuid = parsed_set.uuid
+			elif not parsed_set.uuid.is_empty() and parsed_set.uuid != chart_set.uuid:
+				push_warning("[editor charts] conflicting chartset UUID: %s" % chart.file_path)
+				continue
+
+			chart.chart_set = chart_set
+			chart.db_id = -1
+			chart.availability = Chart.Availability.AVAILABLE
+			chart.file_modified_time = int(FileAccess.get_modified_time(chart.file_path))
+			chart.file_size = _get_file_size(chart.file_path)
+			chart_set.charts.append(chart)
+
+		if chart_set.charts.is_empty():
+			continue
+		if chart_set.uuid.is_empty():
+			chart_set.build_uuid()
+		editor_chartsets.append(chart_set)
+
+	editor_chart_update.emit(editor_chartsets)
+
+
 func recalculate_all_ratings() -> Dictionary:
 	var total := 0
 	var updated := 0
@@ -154,6 +231,7 @@ func recalculate_all_ratings() -> Dictionary:
 
 func _load(_is_reload: bool) -> void:
 	FileSystem.ensure_dir(SONG_PATH)
+	reload_editor_library()
 	_database = DB.get("connection") if DB != null else null
 	if _database == null:
 		push_error("[database] DansuDB is unavailable")
@@ -341,4 +419,30 @@ func _chartset_folder_exists(folder_name: String) -> bool:
 			return true
 
 	var absolute_path := ProjectSettings.globalize_path(FileSystem.chart_path.path_join(normalized))
+	return DirAccess.dir_exists_absolute(absolute_path)
+
+
+func make_unique_editor_chartset_folder_name(preferred_name: String = "new_chartset") -> String:
+	var base_name := preferred_name.strip_edges().validate_filename()
+	if base_name.is_empty():
+		base_name = "new_chartset"
+
+	var candidate := base_name
+	var suffix := 2
+	while _editor_chartset_folder_exists(candidate):
+		candidate = "%s_%d" % [base_name, suffix]
+		suffix += 1
+	return candidate
+
+
+func _editor_chartset_folder_exists(folder_name: String) -> bool:
+	var normalized := folder_name.strip_edges()
+	if normalized.is_empty():
+		return true
+
+	for chartset in editor_chartsets:
+		if chartset != null and chartset.folder_name == normalized:
+			return true
+
+	var absolute_path := ProjectSettings.globalize_path(FileSystem.editor_chart_path.path_join(normalized))
 	return DirAccess.dir_exists_absolute(absolute_path)
