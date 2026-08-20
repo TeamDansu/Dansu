@@ -5,6 +5,7 @@ signal selection_changed()
 signal hitsounds_changed()
 
 const EVENT_EDITOR_SCENE_PATH := "res://scenes/chart/events/editor/event_editor_scene.tscn"
+const GAMEPLAY_SCENE_PATH := "res://scenes/gameplay/gameplay.tscn"
 const DEFAULT_PIXELS_PER_MS := 1.0
 const MIN_PIXELS_PER_MS := 0.2
 const MAX_PIXELS_PER_MS := 4.0
@@ -17,6 +18,7 @@ const TRANSPORT_UI_UPDATE_USEC := 33333
 @export var song_slider: HSlider
 @export var current_time_label: Label
 @export var back_button: Button
+@export var playtest_button: Button
 @export var save_button: Button
 @export var delete_button: Button
 @export var hit_button: Button
@@ -87,7 +89,7 @@ func _ready() -> void:
 	_update_slider_range()
 	refresh_views()
 	_update_save_button_state()
-	mark_saved_state()
+	_restore_or_mark_saved_state()
 	UIFocusUtils.disable_focus_recursive(self)
 
 func _process(_delta: float) -> void:
@@ -187,6 +189,8 @@ func _connect_ui() -> void:
 		song_slider.value_changed.connect(_on_song_slider_value_changed)
 	if back_button != null:
 		back_button.pressed.connect(exit)
+	if playtest_button != null:
+		playtest_button.pressed.connect(_start_playtest)
 	if save_button != null:
 		save_button.pressed.connect(_save_chart)
 	if edit_controller != null:
@@ -315,6 +319,23 @@ func _open_event_editor() -> void:
 	Game.reopen_editor_without_chart_reload = true
 	Transition.transition_to(EVENT_EDITOR_SCENE_PATH, 0.45)
 
+
+func _start_playtest() -> void:
+	if chart == null or CM.parsed_chart == null:
+		Notification.notice("no chart available for playtest", Notification.Type.WARNING)
+		return
+	if chart.get_stream() == null:
+		Notification.notice("audio file is required for playtest", Notification.Type.WARNING)
+		return
+
+	if transport.playing:
+		transport.pause()
+	CM.selected_chart = chart
+	CM.parsed_chart.chart = chart
+	EditorChartOps.sort_chart_objects()
+	Game.begin_editor_playtest(Game.current_time, _saved_snapshot)
+	Transition.transition_to(GAMEPLAY_SCENE_PATH, 0.45)
+
 # UI state
 
 func _update_slider_range() -> void:
@@ -394,6 +415,14 @@ func _restore_history_snapshot(snapshot: Dictionary) -> void:
 
 func mark_saved_state() -> void:
 	_saved_snapshot = _capture_saved_state()
+
+
+func _restore_or_mark_saved_state() -> void:
+	var playtest_saved_snapshot := Game.take_editor_playtest_saved_snapshot()
+	if playtest_saved_snapshot.is_empty():
+		mark_saved_state()
+	else:
+		_saved_snapshot = playtest_saved_snapshot
 
 func _has_unsaved_changes() -> bool:
 	if _saved_snapshot.is_empty():

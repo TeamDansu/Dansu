@@ -5,6 +5,7 @@ const DEFAULT_MOVE_SFX := preload("res://resources/audio/hitsounds/chop.wav")
 const SFX_PLAYER_COUNT := 8
 const JUDGE_POPUP_SCENE := preload("res://scenes/gameplay/judge_popup.tscn")
 const RESULT_SCENE_PATH := "res://scenes/result_scene.tscn"
+const CHART_EDITOR_SCENE_PATH := "res://scenes/chart/editor/editor_scene.tscn"
 const COMBO_POP_SCALE := Vector2(0.96, 1.12)
 const COMBO_POP_DURATION_IN := 0.08
 const COMBO_POP_DURATION_OUT := 0.14
@@ -104,6 +105,7 @@ var _overlay_texture_values: Array[Texture2D] = []
 # timeline
 var audio_start_target_usec: int = 0
 var pause_begin_usec: int = 0
+var _playback_start_time_ms := 0.0
 
 func _ready() -> void:
 	_setup_combo_hud()
@@ -142,12 +144,14 @@ func reset() -> void:
 	holding_long_hit_keycode = 0
 	standing_rail = null
 
+	_playback_start_time_ms = maxf(0.0, Game.editor_playtest_start_time_ms) if Game.editor_playtest_active else 0.0
 	audio_start_target_usec = Time.get_ticks_usec() + int(LEAD_IN_MS * 1000.0)
 	_discard_timestamp_events()
 
 	_update_current_time()
 	_rebuild_hitsound_cache()
 	_build_game_objects()
+	_skip_notes_before_playtest_start()
 	_collect_camera_events()
 	_collect_overlay_events()
 	_collect_theme_events()
@@ -236,7 +240,7 @@ func _process(delta: float) -> void:
 		var play_call_time_usec := audio_start_target_usec - int(startup_delay_sec * 1000000.0)
 
 		if now_usec >= play_call_time_usec:
-			songplayer.play()
+			songplayer.play(_playback_start_time_ms / 1000.0)
 			is_song_playing = true
 	_update_current_time()
 	_spawn_objects()
@@ -275,10 +279,13 @@ func pause() -> void:
 
 func exit() -> void:
 	Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
+	if Game.editor_playtest_active:
+		_return_to_chart_editor()
+		return
 	Transition.return_to_menu(1)
 
 func _update_current_time() -> void:
-	Game.current_time = (
+	Game.current_time = _playback_start_time_ms + (
 		(Time.get_ticks_usec() - audio_start_target_usec) / 1000.0
 	) - Config.offset
 
@@ -304,7 +311,7 @@ func _discard_timestamp_events() -> void:
 	TimestampInput.poll_events()
 
 func _timestamp_to_game_time(timestamp_usec: int) -> float:
-	return (
+	return _playback_start_time_ms + (
 		float(timestamp_usec - audio_start_target_usec) / 1000.0
 	) - Config.offset
 
@@ -451,6 +458,32 @@ func _build_game_objects() -> void:
 	if _play_time_ms > 0.0:
 		song_end = int(_play_time_ms + SONG_FADE_DELAY_AFTER_PLAY_END_MS)
 
+	_set_next_note()
+
+
+func _skip_notes_before_playtest_start() -> void:
+	if not Game.editor_playtest_active or _playback_start_time_ms <= 0.0:
+		return
+
+	for note_entry in notes:
+		var note := note_entry.note
+		if note.time >= _playback_start_time_ms:
+			break
+		processed_notes[note] = Score.NONE
+		if note.length > 0:
+			processed_long_releases[note] = Score.NONE
+
+	while note_spawn_index < notes.size() \
+			and notes[note_spawn_index].note.time < _playback_start_time_ms:
+		note_spawn_index += 1
+	while touch_note_process_index < touch_notes.size() \
+			and touch_notes[touch_note_process_index].note.time < _playback_start_time_ms:
+		touch_note_process_index += 1
+	while long_release_process_index < long_release_notes.size() \
+			and processed_long_releases.has(long_release_notes[long_release_process_index]):
+		long_release_process_index += 1
+
+	next_process_note_index = 0
 	_set_next_note()
 
 
@@ -939,9 +972,19 @@ func _check_result_transition() -> void:
 		return
 
 	_result_transition_started = true
+	if Game.editor_playtest_active:
+		_return_to_chart_editor()
+		return
 	Scores.record_play(CM.selected_chart, score)
 	Game.last_result_score = score
 	Transition.transition_to(RESULT_SCENE_PATH, 1.0)
+
+
+func _return_to_chart_editor() -> void:
+	set_process(false)
+	songplayer.stop()
+	Game.finish_editor_playtest()
+	Transition.transition_to(CHART_EDITOR_SCENE_PATH, 0.45)
 
 func _update_song_fade(delta: float) -> void:
 	if song_end <= 0:

@@ -144,6 +144,7 @@ func register_saved_editor_chart(chart: Chart) -> bool:
 func reload_editor_library() -> void:
 	FileSystem.ensure_dir(FileSystem.editor_chart_path)
 	editor_chartsets.clear()
+	var parser := Parser.new()
 
 	var folder_names := DirAccess.get_directories_at(FileSystem.editor_chart_path)
 	folder_names.sort()
@@ -178,6 +179,12 @@ func reload_editor_library() -> void:
 			chart.chart_set = chart_set
 			chart.db_id = -1
 			chart.availability = Chart.Availability.AVAILABLE
+			var parse_result := parser.parse_object(chart)
+			if parse_result.success and parse_result.parsed_chart != null:
+				chart.rating = Rating.calculate_rating(parse_result.parsed_chart)
+				chart.rating_calculated = true
+			else:
+				push_warning("[editor charts] failed to calculate rating: %s" % chart.file_path)
 			chart.file_modified_time = int(FileAccess.get_modified_time(chart.file_path))
 			chart.file_size = _get_file_size(chart.file_path)
 			chart_set.charts.append(chart)

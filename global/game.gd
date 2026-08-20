@@ -9,6 +9,9 @@ var current_time := 0.0
 var last_result_score: Score = null
 var skin_editor_request = null
 var reopen_editor_without_chart_reload := false
+var editor_playtest_active := false
+var editor_playtest_start_time_ms := 0.0
+var editor_playtest_saved_snapshot: Dictionary = {}
 
 var color_map = {
 	0: Color("7f9af9ff"),
@@ -44,5 +47,30 @@ func get_color_from_rating(value: float,fade: bool = false) -> Color:
 
 
 func play_selected_chart() -> void:
+	cancel_editor_playtest()
 	if CM.parse_selected_chart():
 		Transition.transition_to("res://scenes/gameplay/gameplay.tscn",1.0)
+
+
+func begin_editor_playtest(start_time_ms: float, saved_snapshot: Dictionary) -> void:
+	editor_playtest_active = true
+	editor_playtest_start_time_ms = start_time_ms
+	editor_playtest_saved_snapshot = saved_snapshot.duplicate(true)
+
+
+func finish_editor_playtest() -> void:
+	current_time = editor_playtest_start_time_ms
+	editor_playtest_active = false
+	reopen_editor_without_chart_reload = true
+
+
+func cancel_editor_playtest() -> void:
+	editor_playtest_active = false
+	editor_playtest_start_time_ms = 0.0
+	editor_playtest_saved_snapshot.clear()
+
+
+func take_editor_playtest_saved_snapshot() -> Dictionary:
+	var snapshot := editor_playtest_saved_snapshot
+	editor_playtest_saved_snapshot = {}
+	return snapshot
