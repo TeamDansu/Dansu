@@ -1,5 +1,18 @@
-*.tmp
+# Godot editor-generated cache
 .godot/
+
+# Generated export/build directories
 /android/
-.old
 /plugins/
+
+# Local editor settings
+.vscode/
+
+# Temporary and backup files
+*.[Tt][Mm][Pp]
+*.old
+
+# Operating-system metadata
+.DS_Store
+Thumbs.db
+Desktop.ini
